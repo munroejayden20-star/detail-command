@@ -11,7 +11,9 @@ import {
   CloudUpload,
   Loader2,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -437,6 +439,120 @@ export function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-4 w-4" /> Danger zone
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ResetAllData />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ResetAllData() {
+  const { data, dispatch, reload } = useStore();
+  const [busy, setBusy] = useState(false);
+
+  async function handleReset() {
+    const confirm1 = window.confirm(
+      "Wipe ALL data? This deletes every customer, appointment, lead, task, service, template, checklist, expense, purchase, photo, and calendar block from your account. Settings stay. This cannot be undone."
+    );
+    if (!confirm1) return;
+    const confirm2 = window.prompt(
+      "Type RESET to confirm. This cannot be undone."
+    );
+    if (confirm2 !== "RESET") {
+      toast.message("Reset cancelled");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      // Dispatch deletes in dependency-safe order. Each dispatch updates the
+      // local reducer immediately and fires a fire-and-forget cloud sync.
+      data.appointments.forEach((a) =>
+        dispatch({ type: "deleteAppointment", id: a.id })
+      );
+      data.tasks.forEach((t) => dispatch({ type: "deleteTask", id: t.id }));
+      (data.photos ?? []).forEach((p) =>
+        dispatch({ type: "deletePhoto", id: p.id })
+      );
+      data.checklists.forEach((c) =>
+        dispatch({ type: "deleteChecklist", id: c.id })
+      );
+      data.startup.forEach((i) =>
+        dispatch({ type: "deleteStartup", id: i.id })
+      );
+      data.expenses.forEach((e) =>
+        dispatch({ type: "deleteExpense", id: e.id })
+      );
+      data.leads.forEach((l) => dispatch({ type: "deleteLead", id: l.id }));
+      data.services.forEach((s) =>
+        dispatch({ type: "deleteService", id: s.id })
+      );
+      data.templates.forEach((t) =>
+        dispatch({ type: "deleteTemplate", id: t.id })
+      );
+      data.blocks.forEach((b) => dispatch({ type: "deleteBlock", id: b.id }));
+      data.customers.forEach((c) =>
+        dispatch({ type: "deleteCustomer", id: c.id })
+      );
+
+      // Give cloud syncs a beat to land before re-pulling the snapshot.
+      await new Promise((r) => setTimeout(r, 800));
+      await reload();
+      toast.success("All data cleared. You're on a clean slate.");
+    } catch (err) {
+      console.error("[reset]", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Reset failed — try again or use the SQL fallback in the README."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const totalRows =
+    data.customers.length +
+    data.appointments.length +
+    data.leads.length +
+    data.tasks.length +
+    data.services.length +
+    data.templates.length +
+    data.checklists.length +
+    data.expenses.length +
+    data.startup.length +
+    data.blocks.length +
+    (data.photos?.length ?? 0);
+
+  return (
+    <div>
+      <p className="text-sm font-semibold">Reset all data</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Wipe every record from your account so you can build from a true clean slate.
+        Your account, settings, and profile stay. {totalRows} record
+        {totalRows === 1 ? "" : "s"} will be deleted.
+      </p>
+      <Button
+        variant="ghost"
+        className="mt-3 text-destructive hover:bg-destructive/10"
+        onClick={handleReset}
+        disabled={busy || totalRows === 0}
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Trash2 className="h-4 w-4" />
+        )}
+        {totalRows === 0 ? "Already empty" : `Reset all data (${totalRows} rows)`}
+      </Button>
     </div>
   );
 }
