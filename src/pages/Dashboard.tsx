@@ -10,7 +10,7 @@ import {
   Sparkles,
   Bell,
   ArrowRight,
-  PhoneCall,
+  MessageSquare,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,9 @@ import { AppointmentRow } from "@/components/appointments/AppointmentRow";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
+import { ReachOutDialog, type ReachOutContact } from "@/components/contact/ReachOutDialog";
 import { useStore } from "@/store/store";
+import { vehicleStr } from "@/lib/utils";
 import {
   appointmentsOnDay,
   appointmentsThisWeek,
@@ -44,6 +46,7 @@ export function DashboardPage() {
   const [appOpen, setAppOpen] = useState(false);
   const [custOpen, setCustOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
+  const [reachContact, setReachContact] = useState<ReachOutContact | null>(null);
 
   const today = useMemo(() => new Date(), []);
   const todays = appointmentsOnDay(data, today);
@@ -221,23 +224,35 @@ export function DashboardPage() {
                 description="When a job is within ~48 hours and still scheduled or inquiry, it'll show up here."
               />
             ) : (
-              unconfirmed.map((a) => (
-                <ConfirmRow
-                  key={a.id}
-                  apptId={a.id}
-                  customerName={
-                    data.customers.find((c) => c.id === a.customerId)?.name ?? "—"
-                  }
-                  start={a.start}
-                  onConfirm={() =>
-                    dispatch({
-                      type: "updateAppointment",
-                      id: a.id,
-                      patch: { status: "confirmed", reminderSent: true },
-                    })
-                  }
-                />
-              ))
+              unconfirmed.map((a) => {
+                const cust = data.customers.find((c) => c.id === a.customerId);
+                return (
+                  <ConfirmRow
+                    key={a.id}
+                    apptId={a.id}
+                    customerName={cust?.name ?? "—"}
+                    start={a.start}
+                    onConfirm={() =>
+                      dispatch({
+                        type: "updateAppointment",
+                        id: a.id,
+                        patch: { status: "confirmed", reminderSent: true },
+                      })
+                    }
+                    onReachOut={() =>
+                      cust
+                        ? setReachContact({
+                            name: cust.name,
+                            phone: cust.phone,
+                            email: cust.email ?? null,
+                            address: cust.address ?? null,
+                            vehicle: vehicleStr(a.vehicle),
+                          })
+                        : null
+                    }
+                  />
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -313,6 +328,11 @@ export function DashboardPage() {
       <AppointmentDialog open={appOpen} onOpenChange={setAppOpen} />
       <CustomerDialog open={custOpen} onOpenChange={setCustOpen} />
       <TaskQuickAdd open={taskOpen} onOpenChange={setTaskOpen} />
+      <ReachOutDialog
+        open={!!reachContact}
+        onOpenChange={(v) => !v && setReachContact(null)}
+        contact={reachContact ?? { name: "" }}
+      />
     </div>
   );
 }
@@ -321,11 +341,12 @@ function ConfirmRow({
   customerName,
   start,
   onConfirm,
-  apptId,
+  onReachOut,
 }: {
   customerName: string;
   start: string;
   onConfirm: () => void;
+  onReachOut: () => void;
   apptId: string;
 }) {
   return (
@@ -337,11 +358,9 @@ function ConfirmRow({
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" asChild>
-          <Link to={`/templates`}>
-            <PhoneCall className="h-3.5 w-3.5" />
-            Reach out
-          </Link>
+        <Button size="sm" variant="outline" onClick={onReachOut}>
+          <MessageSquare className="h-3.5 w-3.5" />
+          Reach out
         </Button>
         <Button size="sm" onClick={onConfirm}>
           Mark confirmed

@@ -122,6 +122,17 @@ create table if not exists startup_items (
 );
 create index if not exists startup_items_user_id_idx on startup_items(user_id);
 
+-- Phase 3: budget / future-purchase tracker fields
+alter table startup_items
+  add column if not exists category text not null default 'misc',
+  add column if not exists priority text not null default 'want',
+  add column if not exists status text not null default 'want',
+  add column if not exists link text,
+  add column if not exists target_date timestamptz,
+  add column if not exists actual_cost numeric;
+-- Backfill status from purchased flag for existing rows
+update startup_items set status = 'purchased' where purchased = true and status = 'want';
+
 create table if not exists templates (
   id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -135,11 +146,24 @@ create table if not exists checklist_groups (
   id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
-  kind text not null,
+  kind text,
   items jsonb not null default '[]'::jsonb,
   appointment_id text
 );
 create index if not exists checklist_groups_user_id_idx on checklist_groups(user_id);
+
+-- Phase 3: custom checklist builder
+alter table checklist_groups
+  add column if not exists category text,
+  add column if not exists description text,
+  add column if not exists customer_id text,
+  add column if not exists vehicle text,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+-- Backfill category from legacy `kind` so existing rows still group
+update checklist_groups set category = coalesce(category, kind, 'custom') where category is null;
+-- Allow `kind` to be null going forward
+alter table checklist_groups alter column kind drop not null;
 
 create table if not exists blocked_times (
   id text primary key,
@@ -164,6 +188,15 @@ create table if not exists settings (
   owner_name text not null default '',
   contact_phone text not null default ''
 );
+
+-- Phase 3: profile customization
+alter table settings
+  add column if not exists email text,
+  add column if not exists service_area text,
+  add column if not exists business_description text,
+  add column if not exists accent_color text,
+  add column if not exists avatar_url text,
+  add column if not exists logo_url text;
 
 -- ---------- Row Level Security ----------
 

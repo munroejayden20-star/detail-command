@@ -172,13 +172,68 @@ export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: "misc", label: "Miscellaneous" },
 ];
 
+export type PurchaseCategory =
+  | "pressure_washer"
+  | "hoses"
+  | "chemicals"
+  | "towels"
+  | "interior_tools"
+  | "polisher"
+  | "extractor"
+  | "generator"
+  | "water_tank"
+  | "van_setup"
+  | "branding"
+  | "business"
+  | "misc";
+
+export const PURCHASE_CATEGORIES: { value: PurchaseCategory; label: string }[] = [
+  { value: "pressure_washer", label: "Pressure washer setup" },
+  { value: "hoses", label: "Hoses & fittings" },
+  { value: "chemicals", label: "Chemicals" },
+  { value: "towels", label: "Towels" },
+  { value: "interior_tools", label: "Interior tools" },
+  { value: "polisher", label: "Polisher / pads" },
+  { value: "extractor", label: "Extractor" },
+  { value: "generator", label: "Generator" },
+  { value: "water_tank", label: "Water tank" },
+  { value: "van_setup", label: "Van setup" },
+  { value: "branding", label: "Branding / marketing" },
+  { value: "business", label: "Business / legal" },
+  { value: "misc", label: "Miscellaneous" },
+];
+
+export type PurchaseStatus = "want" | "need_soon" | "saving" | "purchased" | "delayed";
+
+export const PURCHASE_STATUSES: { value: PurchaseStatus; label: string; tone: string }[] = [
+  { value: "want", label: "Want", tone: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200" },
+  { value: "need_soon", label: "Need Soon", tone: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200" },
+  { value: "saving", label: "Saving For", tone: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" },
+  { value: "purchased", label: "Purchased", tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200" },
+  { value: "delayed", label: "Delayed", tone: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200" },
+];
+
 export interface StartupItem {
   id: ID;
   name: string;
+  /** Planned/target budget */
   budget: number;
+  /** Amount spent toward this item (legacy — also tracks partial payments) */
   spent: number;
   purchased: boolean;
   notes?: string;
+  /** Purchase category */
+  category?: PurchaseCategory;
+  /** Priority (high/medium/low) */
+  priority?: Priority;
+  /** Lifecycle status */
+  status?: PurchaseStatus;
+  /** Optional product link */
+  link?: string;
+  /** Target date to purchase */
+  targetDate?: string;
+  /** Actual paid cost once purchased */
+  actualCost?: number;
 }
 
 export interface Template {
@@ -194,12 +249,46 @@ export interface ChecklistItem {
   done: boolean;
 }
 
+export type ChecklistCategory =
+  | "pre_job"
+  | "exterior"
+  | "interior"
+  | "full_detail"
+  | "interior_restoration"
+  | "post_job"
+  | "equipment"
+  | "supplies"
+  | "marketing"
+  | "admin"
+  | "custom";
+
+export const CHECKLIST_CATEGORIES: { value: ChecklistCategory; label: string }[] = [
+  { value: "pre_job", label: "Pre-Job" },
+  { value: "exterior", label: "Exterior Detail" },
+  { value: "interior", label: "Interior Detail" },
+  { value: "full_detail", label: "Full Detail" },
+  { value: "interior_restoration", label: "Interior Restoration" },
+  { value: "post_job", label: "Post-Job" },
+  { value: "equipment", label: "Equipment" },
+  { value: "supplies", label: "Supplies" },
+  { value: "marketing", label: "Marketing" },
+  { value: "admin", label: "Admin" },
+  { value: "custom", label: "Custom" },
+];
+
 export interface ChecklistGroup {
   id: ID;
   name: string;
-  kind: "pre" | "exterior" | "interior" | "post";
+  /** Legacy field — kept for backwards compatibility with old rows. */
+  kind?: "pre" | "exterior" | "interior" | "post" | string;
+  category: ChecklistCategory;
+  description?: string;
   items: ChecklistItem[];
   appointmentId?: ID;
+  customerId?: ID;
+  vehicle?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface BlockedTime {
@@ -221,6 +310,15 @@ export interface Settings {
   businessName: string;
   ownerName: string;
   contactPhone: string;
+  email?: string;
+  serviceArea?: string;
+  businessDescription?: string;
+  /** Tailwind brand color name or HEX — used as accent in UI accents. */
+  accentColor?: string;
+  /** Optional avatar (data URL or remote URL). For now set as URL string. */
+  avatarUrl?: string;
+  /** Optional logo (data URL or remote URL). Defaults to /logo.svg. */
+  logoUrl?: string;
 }
 
 export interface AppData {

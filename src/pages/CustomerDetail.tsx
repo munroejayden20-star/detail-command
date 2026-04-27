@@ -12,6 +12,7 @@ import {
   Repeat,
   Star,
   Plus,
+  MessageSquare,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
+import { ReachOutDialog } from "@/components/contact/ReachOutDialog";
 import { AppointmentRow } from "@/components/appointments/AppointmentRow";
 import { useStore } from "@/store/store";
 import {
@@ -35,6 +37,7 @@ export function CustomerDetailPage() {
   const customer = data.customers.find((c) => c.id === id);
   const [editOpen, setEditOpen] = useState(false);
   const [newAppt, setNewAppt] = useState(false);
+  const [reachOpen, setReachOpen] = useState(false);
 
   if (!customer) {
     return (
@@ -116,7 +119,10 @@ export function CustomerDetailPage() {
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setReachOpen(true)}>
+              <MessageSquare className="h-4 w-4" /> Reach out
+            </Button>
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4" /> Edit
             </Button>
@@ -218,6 +224,18 @@ export function CustomerDetailPage() {
 
       <CustomerDialog open={editOpen} onOpenChange={setEditOpen} customer={customer} />
       <AppointmentDialog open={newAppt} onOpenChange={setNewAppt} />
+      <ReachOutDialog
+        open={reachOpen}
+        onOpenChange={setReachOpen}
+        contact={{
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email ?? null,
+          address: customer.address ?? null,
+          vehicle: customer.vehicles[0] ? vehicleStr(customer.vehicles[0]) : null,
+          followUpNotes: customer.notes ?? null,
+        }}
+      />
     </div>
   );
 }

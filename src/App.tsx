@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { Toaster } from "sonner";
 import { StoreProvider, useStore } from "@/store/store";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthGuard } from "@/auth/AuthGuard";
@@ -18,10 +19,19 @@ import { ExpensesPage } from "@/pages/Expenses";
 import { StartupPage } from "@/pages/Startup";
 import { ChecklistsPage } from "@/pages/Checklists";
 import { SettingsPage } from "@/pages/Settings";
+import { CalculatorPage } from "@/pages/Calculator";
 
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        toastOptions={{
+          className: "!font-sans",
+        }}
+      />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
@@ -47,6 +57,7 @@ export default function App() {
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/startup" element={<StartupPage />} />
           <Route path="/checklists" element={<ChecklistsPage />} />
+          <Route path="/calculator" element={<CalculatorPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

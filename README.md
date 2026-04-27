@@ -205,6 +205,48 @@ Put them in `.env.local` (gitignored). If they're missing, the app shows a frien
 
 ---
 
+## Connecting to GitHub
+
+The project is already a local git repo with one initial commit. To push it to GitHub:
+
+### 1. Create the repo
+
+On <https://github.com/new>, create an **empty** repo (no README, no `.gitignore`, no license — those already exist locally). Name it whatever you like, e.g. `detail-command`. Make it **Private** unless you specifically want it public.
+
+Copy the repo URL it shows you (it ends in `.git`).
+
+### 2. Connect and push
+
+From the project root (`C:\Users\arkis\dev\detail-command`):
+
+```bash
+git remote add origin https://github.com/YOUR_USERNAME/detail-command.git
+git branch -M main
+git push -u origin main
+```
+
+If GitHub asks you to authenticate, use a Personal Access Token (Settings → Developer settings → Personal access tokens → Tokens (classic) → generate one with the `repo` scope) — paste it as the password when prompted.
+
+### 3. Day-to-day flow
+
+```bash
+git add .
+git commit -m "Describe the change"
+git push
+```
+
+### Safety checks before you push
+
+- Run `git ls-files | grep -E "^\.env"` — only `.env.example` should appear. Real secrets live in `.env.local`, which is git-ignored.
+- The `.gitignore` blocks `node_modules/`, `dist/`, `.vercel/`, every `.env*` file (except the example), all log files, IDE caches, and OS junk.
+- Supabase's anon key is safe to commit because the protection comes from RLS policies, not the key itself — but we still don't commit it (Vercel reads it from env vars). Never commit a `service_role` key.
+
+### Vercel + GitHub auto-deploy (optional)
+
+Once GitHub is connected, in the Vercel dashboard for this project: **Settings → Git → Connect Git Repository**. After that, every `git push` to `main` triggers a production deploy automatically.
+
+---
+
 ## Migration from the previous version
 
 If you ran an older release of this app on this device, it stored everything in `localStorage` under `detail-command:v1`. After signing in for the first time:

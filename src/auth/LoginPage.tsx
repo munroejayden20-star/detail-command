@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Droplets, Loader2, Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -59,9 +59,7 @@ export function LoginPage() {
     <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-muted/30 px-4 py-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft">
-            <Droplets className="h-6 w-6" />
-          </div>
+          <img src="/logo.svg" alt="Detail Command" className="h-11 w-11 rounded-xl shadow-soft" />
           <div>
             <p className="text-sm font-semibold tracking-tight">Detail Command</p>
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -199,9 +197,7 @@ function SetupRequiredScreen() {
     <div className="min-h-screen w-full bg-gradient-to-br from-background to-muted/40 px-4 py-12">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft">
-            <Droplets className="h-6 w-6" />
-          </div>
+          <img src="/logo.svg" alt="Detail Command" className="h-11 w-11 rounded-xl shadow-soft" />
           <div>
             <p className="text-sm font-semibold tracking-tight">Detail Command</p>
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">

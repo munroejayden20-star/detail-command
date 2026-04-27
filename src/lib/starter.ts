@@ -31,7 +31,7 @@ export function makeStarterContent(): {
       id: uid(),
       name: "Exterior Detail",
       description:
-        "Foam wash · Hand wash · Wheels & tires · Dry · Tire shine · Spray protection",
+        "Two-bucket hand wash with foam pre-soak. Wheels, tires, and wells degreased. Bug & tar removal as needed. Hand-dried with microfiber, tire shine, and a spray sealant for 1–2 months of beading. Best for cars that get washed regularly.",
       priceLow: 80,
       priceHigh: 120,
       durationMinutes: 90,
@@ -40,7 +40,7 @@ export function makeStarterContent(): {
       id: uid(),
       name: "Interior Detail",
       description:
-        "Vacuum · Wipe down surfaces · Deep clean plastics · Windows · Light stain removal",
+        "Full trash-out, blow-out, and vacuum (seats, carpets, mats, trunk, cracks, vents). All hard surfaces cleaned and dressed — dash, console, doors, trim. Light stain spot-treatment on seats and carpet. Glass inside. Final smell check before I hand it back.",
       priceLow: 120,
       priceHigh: 180,
       durationMinutes: 120,
@@ -48,20 +48,34 @@ export function makeStarterContent(): {
     {
       id: uid(),
       name: "Full Detail",
-      description: "Interior + Exterior · Most popular",
+      description:
+        "Most popular package — combines the Interior + Exterior Detail end-to-end. Full hand wash, wheels, tires, dry, sealant, plus a complete interior reset (vacuum, surfaces, glass, light stain work). Best for vehicles that haven't been detailed in a while.",
       priceLow: 180,
       priceHigh: 250,
       durationMinutes: 180,
     },
+    {
+      id: uid(),
+      name: "Interior Restoration Detail",
+      description:
+        "Deep interior reset for heavily soiled vehicles. Hot-water extraction on seats and carpets. Heavy stain and pet-hair removal. Crevice and trim deep-clean. Optional seat removal when safely applicable to reach under-seat areas. Optional odor treatment to neutralize smoke, pet, food, or mildew. Starting at $350; pricing scales to $600+ depending on size, condition, and add-ons.",
+      priceLow: 350,
+      priceHigh: 600,
+      durationMinutes: 300,
+    },
   ];
 
   const addons: Service[] = [
-    { id: uid(), name: "Pet hair removal", priceLow: 20, priceHigh: 50, durationMinutes: 20, isAddon: true },
-    { id: uid(), name: "Stain extraction", priceLow: 30, priceHigh: 80, durationMinutes: 25, isAddon: true },
-    { id: uid(), name: "Spray sealant upgrade", priceLow: 20, priceHigh: 20, durationMinutes: 15, isAddon: true },
-    { id: uid(), name: "Quick polish", priceLow: 50, priceHigh: 100, durationMinutes: 45, isAddon: true },
-    { id: uid(), name: "Engine bay wipe-down", priceLow: 25, priceHigh: 45, durationMinutes: 20, isAddon: true },
-    { id: uid(), name: "Odor treatment", priceLow: 25, priceHigh: 60, durationMinutes: 20, isAddon: true },
+    { id: uid(), name: "Pet hair removal", description: "Heavy pet hair pulled with rubber tools and high-suction extraction. For cars with fur embedded in carpet/seats.", priceLow: 20, priceHigh: 50, durationMinutes: 20, isAddon: true },
+    { id: uid(), name: "Stain extraction", description: "Hot-water extraction on seats, carpet, and mats. Best for coffee, soda, food, and water stains.", priceLow: 30, priceHigh: 80, durationMinutes: 25, isAddon: true },
+    { id: uid(), name: "Odor treatment", description: "Neutralizer-and-enzyme treatment for smoke, pet, food, or mildew odors. Pairs well with stain extraction.", priceLow: 25, priceHigh: 60, durationMinutes: 20, isAddon: true },
+    { id: uid(), name: "Spray sealant upgrade", description: "Steps up the exterior protection from base spray to a longer-lasting ceramic spray sealant. 3–6 months of beading.", priceLow: 20, priceHigh: 20, durationMinutes: 15, isAddon: true },
+    { id: uid(), name: "Interior protectant upgrade", description: "Premium UV/protectant on dash, console, and trim. Reduces fading and gives a clean satin finish (no greasy shine).", priceLow: 15, priceHigh: 30, durationMinutes: 10, isAddon: true },
+    { id: uid(), name: "Quick polish", description: "Hand polish on hood, roof, and trunk to remove light swirls and improve gloss. Not a full paint correction.", priceLow: 50, priceHigh: 100, durationMinutes: 45, isAddon: true },
+    { id: uid(), name: "Engine bay wipe-down", description: "Plastics and covers cleaned and dressed. Visual refresh — does not include pressure washing of electrical.", priceLow: 25, priceHigh: 45, durationMinutes: 20, isAddon: true },
+    { id: uid(), name: "Heavy mud / dirt prep", description: "Extra pre-rinse and degrease pass for mud, off-road dirt, or construction grime before the main wash.", priceLow: 20, priceHigh: 40, durationMinutes: 15, isAddon: true },
+    { id: uid(), name: "Excessive trash removal", description: "For interiors with significant trash buildup. Bagged and removed before the detail begins.", priceLow: 15, priceHigh: 35, durationMinutes: 15, isAddon: true },
+    { id: uid(), name: "Water spot treatment", description: "Acid-safe water-spot remover on glass and paint. For cars left under sprinklers or hard-water dripping.", priceLow: 20, priceHigh: 50, durationMinutes: 20, isAddon: true },
   ];
 
   const templates: Template[] = [
@@ -109,11 +123,15 @@ export function makeStarterContent(): {
     },
   ];
 
+  const now = new Date().toISOString();
   const checklists: ChecklistGroup[] = [
     {
       id: uid(),
       name: "Pre-Job Checklist",
+      category: "pre_job",
       kind: "pre",
+      createdAt: now,
+      updatedAt: now,
       items: [
         "Confirm customer",
         "Confirm address",
@@ -130,7 +148,10 @@ export function makeStarterContent(): {
     {
       id: uid(),
       name: "Exterior Workflow",
+      category: "exterior",
       kind: "exterior",
+      createdAt: now,
+      updatedAt: now,
       items: [
         "Pre-rinse",
         "Foam",
@@ -146,7 +167,10 @@ export function makeStarterContent(): {
     {
       id: uid(),
       name: "Interior Workflow",
+      category: "interior",
       kind: "interior",
+      createdAt: now,
+      updatedAt: now,
       items: [
         "Trash removal",
         "Blowout",
@@ -163,7 +187,10 @@ export function makeStarterContent(): {
     {
       id: uid(),
       name: "Post-Job Checklist",
+      category: "post_job",
       kind: "post",
+      createdAt: now,
+      updatedAt: now,
       items: [
         "Take after photos",
         "Collect payment",
@@ -176,26 +203,31 @@ export function makeStarterContent(): {
     },
   ];
 
-  // Empty equipment categories — user fills in budget/spent as they purchase.
-  const startup: StartupItem[] = [
-    "Pressure washer",
-    "Wet/dry vacuum",
-    "Microfiber towels (bulk)",
-    "Chemicals starter pack",
-    "Foam cannon",
-    "Buckets + grit guards",
-    "Brush set",
-    "Trunk organizer",
-    "Extension cord",
-    "Hose + reel",
-    "Storage bins",
-    "Marketing materials (cards, magnets)",
-  ].map((name) => ({
+  // Empty planned-purchase rows — user fills in budget/cost as they go.
+  const startup: StartupItem[] = (
+    [
+      ["Pressure washer", "pressure_washer"],
+      ["Wet/dry vacuum", "interior_tools"],
+      ["Microfiber towels (bulk)", "towels"],
+      ["Chemicals starter pack", "chemicals"],
+      ["Foam cannon", "pressure_washer"],
+      ["Buckets + grit guards", "interior_tools"],
+      ["Brush set", "interior_tools"],
+      ["Trunk organizer", "van_setup"],
+      ["Extension cord", "van_setup"],
+      ["Hose + reel", "hoses"],
+      ["Storage bins", "van_setup"],
+      ["Marketing materials (cards, magnets)", "branding"],
+    ] as const
+  ).map(([name, category]) => ({
     id: uid(),
     name,
     budget: 0,
     spent: 0,
     purchased: false,
+    category,
+    priority: "medium" as const,
+    status: "want" as const,
   }));
 
   // Default M-F day-job blocks for the current week.

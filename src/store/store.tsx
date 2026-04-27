@@ -54,7 +54,9 @@ type Action =
   | { type: "addTemplate"; template: Template }
   | { type: "updateTemplate"; id: string; patch: Partial<Template> }
   | { type: "deleteTemplate"; id: string }
+  | { type: "addChecklist"; checklist: ChecklistGroup }
   | { type: "updateChecklist"; id: string; patch: Partial<ChecklistGroup> }
+  | { type: "deleteChecklist"; id: string }
   | { type: "toggleChecklistItem"; groupId: string; itemId: string }
   | { type: "resetChecklist"; id: string }
   | { type: "addBlock"; block: BlockedTime }
@@ -146,6 +148,10 @@ function reducer(state: AppData, action: Action): AppData {
     case "deleteTemplate":
       return { ...state, templates: state.templates.filter((t) => t.id !== action.id) };
 
+    case "addChecklist":
+      return { ...state, checklists: [action.checklist, ...state.checklists] };
+    case "deleteChecklist":
+      return { ...state, checklists: state.checklists.filter((c) => c.id !== action.id) };
     case "updateChecklist":
       return {
         ...state,
@@ -446,6 +452,16 @@ async function syncAction(action: Action, userId: string): Promise<void> {
       return;
     }
 
+    case "addChecklist": {
+      const r = await api.insertChecklist(action.checklist, userId);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "deleteChecklist": {
+      const r = await api.deleteChecklist(action.id);
+      if (r.error) throw r.error;
+      return;
+    }
     case "updateChecklist": {
       const r = await api.updateChecklist(action.id, action.patch);
       if (r.error) throw r.error;

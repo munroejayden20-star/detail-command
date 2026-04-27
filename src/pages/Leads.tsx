@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { format, formatISO, parseISO } from "date-fns";
-import { Plus, Trash2, MessageSquareText } from "lucide-react";
+import { Plus, Trash2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { useStore, makeId } from "@/store/store";
+import { ReachOutDialog } from "@/components/contact/ReachOutDialog";
 import {
   LEAD_STATUSES,
   type Lead,
@@ -170,7 +171,8 @@ function LeadDialog({
   onOpenChange: (open: boolean) => void;
   lead?: Lead;
 }) {
-  const { dispatch, data } = useStore();
+  const { dispatch } = useStore();
+  const [reachOpen, setReachOpen] = useState(false);
   const [form, setForm] = useState<Lead>(() =>
     lead ?? {
       id: makeId(),
@@ -220,11 +222,6 @@ function LeadDialog({
       onOpenChange(false);
     }
   }
-
-  // Find a couple message templates to copy
-  const templates = data.templates.filter((t) =>
-    ["intro", "booking"].includes(t.tag)
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -352,26 +349,15 @@ function LeadDialog({
             />
           </div>
 
-          {templates.length ? (
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Quick reply templates
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {templates.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => navigator.clipboard?.writeText(t.body)}
-                    className="inline-flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-xs hover:border-primary/40"
-                    title="Copy to clipboard"
-                  >
-                    <MessageSquareText className="h-3 w-3" />
-                    {t.title}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {form.phone ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setReachOpen(true)}
+            >
+              <MessageSquare className="h-4 w-4" /> Reach out (text · call · email)
+            </Button>
           ) : null}
 
           <DialogFooter className="!justify-between">
@@ -390,6 +376,19 @@ function LeadDialog({
             </div>
           </DialogFooter>
         </form>
+        <ReachOutDialog
+          open={reachOpen}
+          onOpenChange={setReachOpen}
+          contact={{
+            name: form.name || "Lead",
+            phone: form.phone ?? null,
+            vehicle: form.vehicle ?? null,
+            followUpNotes: form.notes ?? null,
+            lastContacted: form.lastContacted
+              ? form.lastContacted.slice(0, 10)
+              : null,
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -17,8 +17,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { SectionHeader } from "@/components/ui/section-header";
 import { useStore } from "@/store/store";
+import { initials } from "@/lib/utils";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/auth/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -188,42 +190,110 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle>Business profile</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="biz">Business name</Label>
-            <Input
-              id="biz"
-              value={settings.businessName}
-              onChange={(e) => update("businessName", e.target.value)}
+        <CardContent className="space-y-4">
+          {/* Avatar preview */}
+          <div className="flex items-center gap-4">
+            <ProfileAvatar
+              name={settings.ownerName || settings.businessName || "Detail"}
+              avatarUrl={settings.avatarUrl}
+              size={56}
             />
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="avatar">Profile picture URL (optional)</Label>
+              <Input
+                id="avatar"
+                value={settings.avatarUrl ?? ""}
+                onChange={(e) => update("avatarUrl", e.target.value || (undefined as any))}
+                placeholder="https://… (or leave blank for an initials avatar)"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Direct file uploads are coming with the photos system in Phase 4. For now you can
+                paste any image URL.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="owner">Your name</Label>
-            <Input
-              id="owner"
-              value={settings.ownerName}
-              onChange={(e) => update("ownerName", e.target.value)}
-              placeholder="Used in dashboard greeting"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cphone">Contact phone</Label>
-            <Input
-              id="cphone"
-              value={settings.contactPhone}
-              onChange={(e) => update("contactPhone", e.target.value)}
-              placeholder="(555) 555-5555"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="goal">Break-even goal</Label>
-            <Input
-              id="goal"
-              type="number"
-              min="0"
-              value={settings.startupGoal}
-              onChange={(e) => update("startupGoal", Number(e.target.value))}
-            />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="biz">Business name</Label>
+              <Input
+                id="biz"
+                value={settings.businessName}
+                onChange={(e) => update("businessName", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="owner">Your name</Label>
+              <Input
+                id="owner"
+                value={settings.ownerName}
+                onChange={(e) => update("ownerName", e.target.value)}
+                placeholder="Used in dashboard greeting"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cphone">Contact phone</Label>
+              <Input
+                id="cphone"
+                value={settings.contactPhone}
+                onChange={(e) => update("contactPhone", e.target.value)}
+                placeholder="(555) 555-5555"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cemail">Contact email</Label>
+              <Input
+                id="cemail"
+                type="email"
+                value={settings.email ?? ""}
+                onChange={(e) => update("email", e.target.value || (undefined as any))}
+                placeholder="you@example.com"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="area">Service area</Label>
+              <Input
+                id="area"
+                value={settings.serviceArea ?? ""}
+                onChange={(e) =>
+                  update("serviceArea", e.target.value || (undefined as any))
+                }
+                placeholder="e.g. Greater Charlotte, NC — within 25 miles of 28202"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="bizdesc">Business description</Label>
+              <Textarea
+                id="bizdesc"
+                rows={3}
+                value={settings.businessDescription ?? ""}
+                onChange={(e) =>
+                  update("businessDescription", e.target.value || (undefined as any))
+                }
+                placeholder="A short pitch you can paste into messages, social bios, etc."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="goal">Starter budget goal</Label>
+              <Input
+                id="goal"
+                type="number"
+                min="0"
+                value={settings.startupGoal}
+                onChange={(e) => update("startupGoal", Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="accent">Accent color (CSS color or HEX)</Label>
+              <Input
+                id="accent"
+                value={settings.accentColor ?? ""}
+                onChange={(e) =>
+                  update("accentColor", e.target.value || (undefined as any))
+                }
+                placeholder="#2f7bff"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -368,6 +438,48 @@ export function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+export function ProfileAvatar({
+  name,
+  avatarUrl,
+  size = 36,
+  className,
+}: {
+  name: string;
+  avatarUrl?: string;
+  size?: number;
+  className?: string;
+}) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        width={size}
+        height={size}
+        className={cn(
+          "rounded-full object-cover shadow-soft",
+          className
+        )}
+      />
+    );
+  }
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 font-semibold text-white shadow-soft",
+        className
+      )}
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.36),
+      }}
+    >
+      {initials(name) || "DC"}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   Receipt,
   Wrench,
   ListChecks,
+  Calculator,
   Settings as SettingsIcon,
   X,
   Plus,
@@ -37,10 +38,11 @@ const PRIMARY: NavItem[] = [
 const MORE: NavItem[] = [
   { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/services", label: "Services", icon: Sparkles },
+  { to: "/calculator", label: "Calculator", icon: Calculator },
   { to: "/templates", label: "Templates", icon: MessageSquareText },
   { to: "/revenue", label: "Revenue", icon: TrendingUp },
   { to: "/expenses", label: "Expenses", icon: Receipt },
-  { to: "/startup", label: "Startup", icon: Wrench },
+  { to: "/startup", label: "Budget", icon: Wrench },
   { to: "/checklists", label: "Checklists", icon: ListChecks },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];

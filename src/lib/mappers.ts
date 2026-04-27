@@ -329,6 +329,8 @@ export function expenseFromRow(r: any): Expense {
 
 /* ---------- Startup items ---------- */
 
+// NOTE: requires Phase 3 migration columns (category, priority, status, link,
+// target_date, actual_cost). Run the latest supabase/schema.sql once.
 export function startupToRow(i: StartupItem, userId: string) {
   return {
     id: i.id,
@@ -338,6 +340,12 @@ export function startupToRow(i: StartupItem, userId: string) {
     spent: i.spent,
     purchased: !!i.purchased,
     notes: i.notes ?? null,
+    category: i.category ?? "misc",
+    priority: i.priority ?? "medium",
+    status: i.status ?? (i.purchased ? "purchased" : "want"),
+    link: i.link ?? null,
+    target_date: i.targetDate ?? null,
+    actual_cost: i.actualCost ?? null,
   };
 }
 
@@ -348,6 +356,12 @@ export function startupPatchToRow(p: Partial<StartupItem>): Record<string, unkno
   if (p.spent !== undefined) out.spent = p.spent;
   if (p.purchased !== undefined) out.purchased = !!p.purchased;
   if (p.notes !== undefined) out.notes = p.notes ?? null;
+  if (p.category !== undefined) out.category = p.category;
+  if (p.priority !== undefined) out.priority = p.priority;
+  if (p.status !== undefined) out.status = p.status;
+  if (p.link !== undefined) out.link = p.link ?? null;
+  if (p.targetDate !== undefined) out.target_date = p.targetDate ?? null;
+  if (p.actualCost !== undefined) out.actual_cost = p.actualCost ?? null;
   return out;
 }
 
@@ -359,6 +373,12 @@ export function startupFromRow(r: any): StartupItem {
     spent: Number(r.spent ?? 0),
     purchased: !!r.purchased,
     notes: r.notes ?? undefined,
+    category: (r.category ?? "misc") as StartupItem["category"],
+    priority: (r.priority ?? "medium") as StartupItem["priority"],
+    status: (r.status ?? (r.purchased ? "purchased" : "want")) as StartupItem["status"],
+    link: r.link ?? undefined,
+    targetDate: r.target_date ?? undefined,
+    actualCost: r.actual_cost != null ? Number(r.actual_cost) : undefined,
   };
 }
 
@@ -393,23 +413,51 @@ export function templateFromRow(r: any): Template {
 
 /* ---------- Checklist groups ---------- */
 
+function categoryFromLegacyKind(kind?: string): ChecklistGroup["category"] {
+  switch (kind) {
+    case "pre":
+      return "pre_job";
+    case "post":
+      return "post_job";
+    case "exterior":
+      return "exterior";
+    case "interior":
+      return "interior";
+    default:
+      return "custom";
+  }
+}
+
+// NOTE: requires Phase 3 migration columns (category, description, customer_id,
+// vehicle, created_at, updated_at). Run the latest supabase/schema.sql once.
 export function checklistToRow(c: ChecklistGroup, userId: string) {
   return {
     id: c.id,
     user_id: userId,
     name: c.name,
-    kind: c.kind,
+    kind: c.kind ?? null,
+    category: c.category ?? categoryFromLegacyKind(c.kind),
+    description: c.description ?? null,
     items: c.items,
     appointment_id: c.appointmentId ?? null,
+    customer_id: c.customerId ?? null,
+    vehicle: c.vehicle ?? null,
+    created_at: c.createdAt ?? new Date().toISOString(),
+    updated_at: c.updatedAt ?? new Date().toISOString(),
   };
 }
 
 export function checklistPatchToRow(p: Partial<ChecklistGroup>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   if (p.name !== undefined) out.name = p.name;
-  if (p.kind !== undefined) out.kind = p.kind;
+  if (p.kind !== undefined) out.kind = p.kind ?? null;
+  if (p.category !== undefined) out.category = p.category;
+  if (p.description !== undefined) out.description = p.description ?? null;
   if (p.items !== undefined) out.items = p.items;
   if (p.appointmentId !== undefined) out.appointment_id = p.appointmentId ?? null;
+  if (p.customerId !== undefined) out.customer_id = p.customerId ?? null;
+  if (p.vehicle !== undefined) out.vehicle = p.vehicle ?? null;
+  out.updated_at = new Date().toISOString();
   return out;
 }
 
@@ -417,9 +465,15 @@ export function checklistFromRow(r: any): ChecklistGroup {
   return {
     id: r.id,
     name: r.name,
-    kind: r.kind as ChecklistGroup["kind"],
+    kind: r.kind ?? undefined,
+    category: (r.category ?? categoryFromLegacyKind(r.kind)) as ChecklistGroup["category"],
+    description: r.description ?? undefined,
     items: r.items ?? [],
     appointmentId: r.appointment_id ?? undefined,
+    customerId: r.customer_id ?? undefined,
+    vehicle: r.vehicle ?? undefined,
+    createdAt: r.created_at ?? undefined,
+    updatedAt: r.updated_at ?? undefined,
   };
 }
 
@@ -448,6 +502,9 @@ export function blockFromRow(r: any): BlockedTime {
 
 /* ---------- Settings ---------- */
 
+// NOTE: requires Phase 3 migration columns (email, service_area,
+// business_description, accent_color, avatar_url, logo_url). Run the latest
+// supabase/schema.sql once.
 export function settingsToRow(s: Settings, userId: string) {
   return {
     user_id: userId,
@@ -461,6 +518,12 @@ export function settingsToRow(s: Settings, userId: string) {
     business_name: s.businessName,
     owner_name: s.ownerName,
     contact_phone: s.contactPhone,
+    email: s.email ?? null,
+    service_area: s.serviceArea ?? null,
+    business_description: s.businessDescription ?? null,
+    accent_color: s.accentColor ?? null,
+    avatar_url: s.avatarUrl ?? null,
+    logo_url: s.logoUrl ?? null,
   };
 }
 
@@ -476,6 +539,12 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.businessName !== undefined) out.business_name = p.businessName;
   if (p.ownerName !== undefined) out.owner_name = p.ownerName;
   if (p.contactPhone !== undefined) out.contact_phone = p.contactPhone;
+  if (p.email !== undefined) out.email = p.email ?? null;
+  if (p.serviceArea !== undefined) out.service_area = p.serviceArea ?? null;
+  if (p.businessDescription !== undefined) out.business_description = p.businessDescription ?? null;
+  if (p.accentColor !== undefined) out.accent_color = p.accentColor ?? null;
+  if (p.avatarUrl !== undefined) out.avatar_url = p.avatarUrl ?? null;
+  if (p.logoUrl !== undefined) out.logo_url = p.logoUrl ?? null;
   return out;
 }
 
@@ -491,5 +560,11 @@ export function settingsFromRow(r: any): Settings {
     businessName: r.business_name ?? "Detail Command",
     ownerName: r.owner_name ?? "",
     contactPhone: r.contact_phone ?? "",
+    email: r.email ?? undefined,
+    serviceArea: r.service_area ?? undefined,
+    businessDescription: r.business_description ?? undefined,
+    accentColor: r.accent_color ?? undefined,
+    avatarUrl: r.avatar_url ?? undefined,
+    logoUrl: r.logo_url ?? undefined,
   };
 }

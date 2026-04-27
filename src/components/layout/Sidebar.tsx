@@ -1,4 +1,6 @@
 import { NavLink } from "react-router-dom";
+import { useStore } from "@/store/store";
+import { ProfileAvatar } from "@/pages/Settings";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -11,8 +13,8 @@ import {
   Receipt,
   Wrench,
   ListChecks,
+  Calculator,
   Settings as SettingsIcon,
-  Droplets,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,10 +32,11 @@ const NAV: NavItem[] = [
   { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/services", label: "Services", icon: Sparkles },
+  { to: "/calculator", label: "Quote Calculator", icon: Calculator },
   { to: "/templates", label: "Templates", icon: MessageSquareText },
   { to: "/revenue", label: "Revenue", icon: TrendingUp },
   { to: "/expenses", label: "Expenses", icon: Receipt },
-  { to: "/startup", label: "Startup", icon: Wrench },
+  { to: "/startup", label: "Budget & Purchases", icon: Wrench },
   { to: "/checklists", label: "Checklists", icon: ListChecks },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -44,6 +47,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { data } = useStore();
+  const settings = data.settings;
+  const displayName = settings.ownerName || settings.businessName || "Detail Command";
   return (
     <>
       {open ? (
@@ -59,11 +65,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         )}
       >
         <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft">
-            <Droplets className="h-5 w-5" />
-          </div>
-          <div className="leading-tight">
-            <p className="text-sm font-semibold tracking-tight">Detail Command</p>
+          <img
+            src={settings.logoUrl || "/logo.svg"}
+            alt={settings.businessName || "Detail Command"}
+            className="h-9 w-9 rounded-lg shadow-soft object-cover"
+          />
+          <div className="leading-tight min-w-0">
+            <p className="truncate text-sm font-semibold tracking-tight">
+              {settings.businessName || "Detail Command"}
+            </p>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
               Mobile detailing hub
             </p>
@@ -94,12 +104,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </ul>
         </nav>
         <div className="border-t border-border p-4">
-          <div className="rounded-lg bg-gradient-to-br from-brand-500/10 to-brand-700/10 p-3 text-xs">
-            <p className="font-semibold text-foreground">Weekend warrior mode</p>
-            <p className="mt-1 text-muted-foreground">
-              Sat & Sun are your main booking days. Weekday evenings optional.
-            </p>
-          </div>
+          <NavLink
+            to="/settings"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent transition-colors"
+          >
+            <ProfileAvatar name={displayName} avatarUrl={settings.avatarUrl} size={36} />
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-semibold">{displayName}</p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {settings.serviceArea || "Set your profile →"}
+              </p>
+            </div>
+          </NavLink>
         </div>
       </aside>
     </>
