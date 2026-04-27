@@ -299,6 +299,40 @@ export interface BlockedTime {
   recurring?: "none" | "weekly";
 }
 
+export type PhotoType =
+  | "before"
+  | "after"
+  | "general"
+  | "vehicle"
+  | "damage"
+  | "proof"
+  | "marketing";
+
+export const PHOTO_TYPES: { value: PhotoType; label: string; tone: string }[] = [
+  { value: "before", label: "Before", tone: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200" },
+  { value: "after", label: "After", tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200" },
+  { value: "general", label: "General", tone: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200" },
+  { value: "vehicle", label: "Vehicle", tone: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" },
+  { value: "damage", label: "Damage", tone: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200" },
+  { value: "proof", label: "Proof", tone: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-200" },
+  { value: "marketing", label: "Marketing", tone: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-200" },
+];
+
+export interface Photo {
+  id: ID;
+  storagePath: string;
+  type: PhotoType;
+  customerId?: ID;
+  appointmentId?: ID;
+  vehicle?: string;
+  notes?: string;
+  tags?: string[];
+  width?: number;
+  height?: number;
+  sizeBytes?: number;
+  createdAt: string;
+}
+
 export interface Settings {
   theme: "light" | "dark" | "system";
   bufferMinutes: number;
@@ -333,5 +367,6 @@ export interface AppData {
   templates: Template[];
   checklists: ChecklistGroup[];
   blocks: BlockedTime[];
+  photos: Photo[];
   settings: Settings;
 }

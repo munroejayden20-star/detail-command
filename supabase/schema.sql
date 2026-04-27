@@ -198,6 +198,26 @@ alter table settings
   add column if not exists avatar_url text,
   add column if not exists logo_url text;
 
+-- Phase 4: photos metadata
+create table if not exists photos (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  storage_path text not null,
+  type text not null default 'general',
+  customer_id text references customers(id) on delete set null,
+  appointment_id text references appointments(id) on delete set null,
+  vehicle text,
+  notes text,
+  tags jsonb not null default '[]'::jsonb,
+  width integer,
+  height integer,
+  size_bytes integer,
+  created_at timestamptz not null default now()
+);
+create index if not exists photos_user_id_idx on photos(user_id);
+create index if not exists photos_customer_id_idx on photos(customer_id);
+create index if not exists photos_appointment_id_idx on photos(appointment_id);
+
 -- ---------- Row Level Security ----------
 
 alter table customers enable row level security;
@@ -210,6 +230,7 @@ alter table startup_items enable row level security;
 alter table templates enable row level security;
 alter table checklist_groups enable row level security;
 alter table blocked_times enable row level security;
+alter table photos enable row level security;
 alter table settings enable row level security;
 
 -- Helper to (re)create the four CRUD policies for a table
@@ -218,7 +239,7 @@ declare
   t text;
   tables text[] := array[
     'customers','appointments','leads','tasks','services',
-    'expenses','startup_items','templates','checklist_groups','blocked_times'
+    'expenses','startup_items','templates','checklist_groups','blocked_times','photos'
   ];
 begin
   foreach t in array tables loop
@@ -242,6 +263,48 @@ create policy "users select own settings" on settings for select using (auth.uid
 create policy "users insert own settings" on settings for insert with check (auth.uid() = user_id);
 create policy "users update own settings" on settings for update using (auth.uid() = user_id);
 create policy "users delete own settings" on settings for delete using (auth.uid() = user_id);
+
+-- ---------- Storage bucket for photos (Phase 4) ----------
+
+-- Create a private bucket for photo uploads (idempotent).
+insert into storage.buckets (id, name, public)
+values ('photos', 'photos', false)
+on conflict (id) do nothing;
+
+-- Storage RLS: users can only read/write/delete files inside a folder named
+-- after their own auth UID. Path layout used by the app: <user_id>/<photo_id>.<ext>
+drop policy if exists "users read own photo files" on storage.objects;
+drop policy if exists "users upload own photo files" on storage.objects;
+drop policy if exists "users update own photo files" on storage.objects;
+drop policy if exists "users delete own photo files" on storage.objects;
+
+create policy "users read own photo files"
+  on storage.objects for select
+  using (
+    bucket_id = 'photos'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "users upload own photo files"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'photos'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "users update own photo files"
+  on storage.objects for update
+  using (
+    bucket_id = 'photos'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "users delete own photo files"
+  on storage.objects for delete
+  using (
+    bucket_id = 'photos'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
 
 -- ==========================================================================
 -- Done. After running this, configure VITE_SUPABASE_URL and

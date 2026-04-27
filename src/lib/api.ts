@@ -33,6 +33,9 @@ import {
   templateFromRow,
   templatePatchToRow,
   templateToRow,
+  photoFromRow,
+  photoPatchToRow,
+  photoToRow,
 } from "./mappers";
 import { makeStarterContent, EMPTY_DATA } from "./starter";
 
@@ -54,6 +57,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     templates,
     checklists,
     blocks,
+    photos,
     settingsRow,
   ] = await Promise.all([
     sb.from("customers").select("*").order("created_at", { ascending: false }),
@@ -66,10 +70,11 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     sb.from("templates").select("*"),
     sb.from("checklist_groups").select("*"),
     sb.from("blocked_times").select("*"),
+    sb.from("photos").select("*").order("created_at", { ascending: false }),
     sb.from("settings").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
-  const errs = [customers, appointments, leads, tasks, services, expenses, startup, templates, checklists, blocks].filter(
+  const errs = [customers, appointments, leads, tasks, services, expenses, startup, templates, checklists, blocks, photos].filter(
     (r) => r.error
   );
   if (errs.length) throw errs[0].error;
@@ -87,6 +92,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     templates: (templates.data ?? []).map(templateFromRow),
     checklists: (checklists.data ?? []).map(checklistFromRow),
     blocks: (blocks.data ?? []).map(blockFromRow),
+    photos: (photos.data ?? []).map(photoFromRow),
     settings: settingsRow.data ? settingsFromRow(settingsRow.data) : EMPTY_DATA.settings,
   };
 }
@@ -149,6 +155,7 @@ import type {
   Customer,
   Expense,
   Lead,
+  Photo,
   Service,
   Settings,
   StartupItem,
@@ -224,6 +231,29 @@ export const api = {
   insertBlock: (b: BlockedTime, userId: string) =>
     sbOrThrow().from("blocked_times").insert(blockToRow(b, userId)),
   deleteBlock: (id: string) => sbOrThrow().from("blocked_times").delete().eq("id", id),
+
+  // Photos (metadata rows; binary lives in Supabase Storage)
+  insertPhoto: (p: Photo, userId: string) =>
+    sbOrThrow().from("photos").insert(photoToRow(p, userId)),
+  updatePhoto: (id: string, p: Partial<Photo>) =>
+    sbOrThrow().from("photos").update(photoPatchToRow(p)).eq("id", id),
+  deletePhoto: (id: string) => sbOrThrow().from("photos").delete().eq("id", id),
+  uploadPhotoFile: async (file: File, path: string) => {
+    const sb = sbOrThrow();
+    return sb.storage.from("photos").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type || "image/jpeg",
+    });
+  },
+  removePhotoFile: async (path: string) => {
+    const sb = sbOrThrow();
+    return sb.storage.from("photos").remove([path]);
+  },
+  signPhotoUrl: async (path: string, expiresIn = 3600) => {
+    const sb = sbOrThrow();
+    return sb.storage.from("photos").createSignedUrl(path, expiresIn);
+  },
 
   // Settings
   upsertSettings: (s: Settings, userId: string) =>

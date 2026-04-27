@@ -20,6 +20,7 @@ import { StartupPage } from "@/pages/Startup";
 import { ChecklistsPage } from "@/pages/Checklists";
 import { SettingsPage } from "@/pages/Settings";
 import { CalculatorPage } from "@/pages/Calculator";
+import { PhotosPage } from "@/pages/Photos";
 
 export default function App() {
   return (
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/startup" element={<StartupPage />} />
           <Route path="/checklists" element={<ChecklistsPage />} />
           <Route path="/calculator" element={<CalculatorPage />} />
+          <Route path="/photos" element={<PhotosPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

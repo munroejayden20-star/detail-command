@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { Plus, Trash2, Repeat as RepeatIcon } from "lucide-react";
+import { Plus, Trash2, Repeat as RepeatIcon, Search } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -18,12 +20,23 @@ export function TasksPage() {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "open" | "done">("open");
   const [category, setCategory] = useState<TaskCategory | "all">("all");
+  const [priority, setPriority] = useState<"all" | "high" | "medium" | "low">("all");
+  const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
     let list = [...data.tasks];
     if (filter === "open") list = list.filter((t) => !t.completed);
     if (filter === "done") list = list.filter((t) => t.completed);
     if (category !== "all") list = list.filter((t) => t.category === category);
+    if (priority !== "all") list = list.filter((t) => t.priority === priority);
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          (t.notes ?? "").toLowerCase().includes(q)
+      );
+    }
     return list.sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
       const ad = a.dueDate ? parseISO(a.dueDate).getTime() : Infinity;
@@ -63,15 +76,26 @@ export function TasksPage() {
         <SmallStat label="Overdue" value={counts.overdue} tone={counts.overdue ? "danger" : "muted"} />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-          <TabsList>
-            <TabsTrigger value="open">Open</TabsTrigger>
-            <TabsTrigger value="done">Done</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="flex flex-wrap gap-1.5">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <TabsList>
+              <TabsTrigger value="open">Open</TabsTrigger>
+              <TabsTrigger value="done">Done</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks…"
+              className="pl-9"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
           <Button
             size="sm"
             variant={category === "all" ? "default" : "outline"}
@@ -89,6 +113,30 @@ export function TasksPage() {
               {c.label}
             </Button>
           ))}
+          <span className="mx-2 hidden h-5 w-px bg-border sm:inline-block" />
+          {(["all", "high", "medium", "low"] as const).map((p) => (
+            <Button
+              key={p}
+              size="sm"
+              variant={priority === p ? "default" : "outline"}
+              onClick={() => setPriority(p)}
+              className="capitalize"
+            >
+              {p === "all" ? "Any priority" : `${p} priority`}
+            </Button>
+          ))}
+          {(query || category !== "all" || priority !== "all") && (
+            <button
+              onClick={() => {
+                setQuery("");
+                setCategory("all");
+                setPriority("all");
+              }}
+              className="ml-1 rounded-md border border-dashed px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
+            >
+              Reset filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -118,9 +166,21 @@ export function TasksPage() {
             />
           ) : (
             filtered.map((t) => (
-              <TaskRow key={t.id} task={t} onToggle={() =>
-                dispatch({ type: "updateTask", id: t.id, patch: { completed: !t.completed } })
-              } onDelete={() => dispatch({ type: "deleteTask", id: t.id })} />
+              <TaskRow
+                key={t.id}
+                task={t}
+                onToggle={() =>
+                  dispatch({
+                    type: "updateTask",
+                    id: t.id,
+                    patch: { completed: !t.completed },
+                  })
+                }
+                onDelete={() => {
+                  dispatch({ type: "deleteTask", id: t.id });
+                  toast.success("Task deleted");
+                }}
+              />
             ))
           )}
         </CardContent>

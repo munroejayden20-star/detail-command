@@ -10,6 +10,8 @@ import type {
   ChecklistGroup,
   BlockedTime,
   Settings,
+  Photo,
+  PhotoType,
   JobStatus,
   PaymentStatus,
   Priority,
@@ -497,6 +499,54 @@ export function blockFromRow(r: any): BlockedTime {
     end: r.end_at,
     label: r.label,
     recurring: (r.recurring ?? "none") as BlockedTime["recurring"],
+  };
+}
+
+/* ---------- Photos ---------- */
+
+export function photoToRow(p: Photo, userId: string) {
+  return {
+    id: p.id,
+    user_id: userId,
+    storage_path: p.storagePath,
+    type: p.type,
+    customer_id: p.customerId ?? null,
+    appointment_id: p.appointmentId ?? null,
+    vehicle: p.vehicle ?? null,
+    notes: p.notes ?? null,
+    tags: p.tags ?? [],
+    width: p.width ?? null,
+    height: p.height ?? null,
+    size_bytes: p.sizeBytes ?? null,
+    created_at: p.createdAt,
+  };
+}
+
+export function photoPatchToRow(p: Partial<Photo>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (p.type !== undefined) out.type = p.type;
+  if (p.customerId !== undefined) out.customer_id = p.customerId ?? null;
+  if (p.appointmentId !== undefined) out.appointment_id = p.appointmentId ?? null;
+  if (p.vehicle !== undefined) out.vehicle = p.vehicle ?? null;
+  if (p.notes !== undefined) out.notes = p.notes ?? null;
+  if (p.tags !== undefined) out.tags = p.tags ?? [];
+  return out;
+}
+
+export function photoFromRow(r: any): Photo {
+  return {
+    id: r.id,
+    storagePath: r.storage_path,
+    type: (r.type ?? "general") as PhotoType,
+    customerId: r.customer_id ?? undefined,
+    appointmentId: r.appointment_id ?? undefined,
+    vehicle: r.vehicle ?? undefined,
+    notes: r.notes ?? undefined,
+    tags: r.tags ?? [],
+    width: r.width != null ? Number(r.width) : undefined,
+    height: r.height != null ? Number(r.height) : undefined,
+    sizeBytes: r.size_bytes != null ? Number(r.size_bytes) : undefined,
+    createdAt: r.created_at,
   };
 }
 

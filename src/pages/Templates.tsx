@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { SectionHeader } from "@/components/ui/section-header";
+import { toast } from "sonner";
 import { useStore, makeId } from "@/store/store";
 import type { Template } from "@/lib/types";
 
@@ -28,6 +29,7 @@ export function TemplatesPage() {
 
   function copyText(t: Template) {
     navigator.clipboard?.writeText(t.body);
+    toast.success("Template copied");
     setCopied(t.id);
     setTimeout(() => setCopied(null), 1500);
   }
@@ -68,8 +70,10 @@ export function TemplatesPage() {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`Delete "${t.title}"?`))
+                      if (window.confirm(`Delete "${t.title}"?`)) {
                         dispatch({ type: "deleteTemplate", id: t.id });
+                        toast.success("Template deleted");
+                      }
                     }}
                     className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
                     aria-label="Delete"
@@ -131,8 +135,10 @@ function TemplateDialog({
     e.preventDefault();
     if (template) {
       dispatch({ type: "updateTemplate", id: template.id, patch: form });
+      toast.success("Template saved");
     } else {
       dispatch({ type: "addTemplate", template: form });
+      toast.success("Template added");
     }
     onOpenChange(false);
   }

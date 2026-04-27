@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { SectionHeader } from "@/components/ui/section-header";
+import { toast } from "sonner";
 import { useStore, makeId } from "@/store/store";
 import type { Service } from "@/lib/types";
 
@@ -55,7 +56,10 @@ export function ServicesPage() {
                 setOpen(true);
               }}
               onDelete={() => {
-                if (window.confirm(`Delete "${s.name}"?`)) dispatch({ type: "deleteService", id: s.id });
+                if (window.confirm(`Delete "${s.name}"?`)) {
+                  dispatch({ type: "deleteService", id: s.id });
+                  toast.success("Service deleted");
+                }
               }}
             />
           ))}
@@ -78,7 +82,10 @@ export function ServicesPage() {
                 setOpen(true);
               }}
               onDelete={() => {
-                if (window.confirm(`Delete add-on "${s.name}"?`)) dispatch({ type: "deleteService", id: s.id });
+                if (window.confirm(`Delete add-on "${s.name}"?`)) {
+                  dispatch({ type: "deleteService", id: s.id });
+                  toast.success("Add-on deleted");
+                }
               }}
             />
           ))}
@@ -180,8 +187,10 @@ function ServiceDialog({
     e.preventDefault();
     if (service) {
       dispatch({ type: "updateService", id: service.id, patch: form });
+      toast.success("Service saved");
     } else {
       dispatch({ type: "addService", service: form });
+      toast.success("Service added");
     }
     onOpenChange(false);
   }

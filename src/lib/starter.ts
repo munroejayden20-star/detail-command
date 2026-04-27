@@ -277,6 +277,7 @@ export const EMPTY_DATA: AppData = {
   templates: [],
   checklists: [],
   blocks: [],
+  photos: [],
   settings: {
     theme: "system",
     bufferMinutes: 30,

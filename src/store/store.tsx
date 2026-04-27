@@ -14,6 +14,7 @@ import type {
   Customer,
   Expense,
   Lead,
+  Photo,
   Service,
   Settings,
   StartupItem,
@@ -61,6 +62,9 @@ type Action =
   | { type: "resetChecklist"; id: string }
   | { type: "addBlock"; block: BlockedTime }
   | { type: "deleteBlock"; id: string }
+  | { type: "addPhoto"; photo: Photo }
+  | { type: "updatePhoto"; id: string; patch: Partial<Photo> }
+  | { type: "deletePhoto"; id: string }
   | { type: "updateSettings"; patch: Partial<Settings> };
 
 function reducer(state: AppData, action: Action): AppData {
@@ -185,6 +189,21 @@ function reducer(state: AppData, action: Action): AppData {
       return { ...state, blocks: [...state.blocks, action.block] };
     case "deleteBlock":
       return { ...state, blocks: state.blocks.filter((b) => b.id !== action.id) };
+
+    case "addPhoto":
+      return { ...state, photos: [action.photo, ...(state.photos ?? [])] };
+    case "updatePhoto":
+      return {
+        ...state,
+        photos: (state.photos ?? []).map((p) =>
+          p.id === action.id ? { ...p, ...action.patch } : p
+        ),
+      };
+    case "deletePhoto":
+      return {
+        ...state,
+        photos: (state.photos ?? []).filter((p) => p.id !== action.id),
+      };
 
     case "updateSettings":
       return { ...state, settings: { ...state.settings, ...action.patch } };
@@ -490,6 +509,22 @@ async function syncAction(action: Action, userId: string): Promise<void> {
     }
     case "deleteBlock": {
       const r = await api.deleteBlock(action.id);
+      if (r.error) throw r.error;
+      return;
+    }
+
+    case "addPhoto": {
+      const r = await api.insertPhoto(action.photo, userId);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "updatePhoto": {
+      const r = await api.updatePhoto(action.id, action.patch);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "deletePhoto": {
+      const r = await api.deletePhoto(action.id);
       if (r.error) throw r.error;
       return;
     }

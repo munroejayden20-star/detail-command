@@ -22,6 +22,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { ReachOutDialog } from "@/components/contact/ReachOutDialog";
+import { PhotoGallery } from "@/components/photos/PhotoGallery";
+import { PhotoUploader } from "@/components/photos/PhotoUploader";
 import { AppointmentRow } from "@/components/appointments/AppointmentRow";
 import { useStore } from "@/store/store";
 import {
@@ -55,6 +57,12 @@ export function CustomerDetailPage() {
   const appts = data.appointments
     .filter((a) => a.customerId === customer.id)
     .sort((a, b) => b.start.localeCompare(a.start));
+  const photos = (data.photos ?? []).filter((p) => p.customerId === customer.id);
+  const beforePhotos = photos.filter((p) => p.type === "before");
+  const afterPhotos = photos.filter((p) => p.type === "after");
+  const otherPhotos = photos.filter(
+    (p) => p.type !== "before" && p.type !== "after"
+  );
   const ltv = customerLifetimeValue(data, customer.id);
   const count = customerAppointmentCount(data, customer.id);
 
@@ -221,6 +229,81 @@ export function CustomerDetailPage() {
           ) : null}
         </div>
       </div>
+
+      {/* Photos */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Photos</CardTitle>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {photos.length} total · {beforePhotos.length} before ·{" "}
+              {afterPhotos.length} after
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <PhotoUploader
+              defaultType="before"
+              customerId={customer.id}
+              vehicle={customer.vehicles[0] ? vehicleStr(customer.vehicles[0]) : undefined}
+              label="Before"
+            />
+            <PhotoUploader
+              defaultType="after"
+              customerId={customer.id}
+              vehicle={customer.vehicles[0] ? vehicleStr(customer.vehicles[0]) : undefined}
+              label="After"
+            />
+            <PhotoUploader
+              defaultType="general"
+              customerId={customer.id}
+              vehicle={customer.vehicles[0] ? vehicleStr(customer.vehicles[0]) : undefined}
+              label="Other"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {photos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No photos yet. Upload before/after shots to build a portfolio for this customer.
+            </p>
+          ) : (
+            <>
+              {beforePhotos.length > 0 || afterPhotos.length > 0 ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Before
+                    </p>
+                    <PhotoGallery
+                      photos={beforePhotos}
+                      size="sm"
+                      emptyText="No before shots."
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      After
+                    </p>
+                    <PhotoGallery
+                      photos={afterPhotos}
+                      size="sm"
+                      emptyText="No after shots."
+                    />
+                  </div>
+                </div>
+              ) : null}
+              {otherPhotos.length > 0 ? (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Vehicle / general
+                  </p>
+                  <PhotoGallery photos={otherPhotos} size="sm" />
+                </div>
+              ) : null}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <CustomerDialog open={editOpen} onOpenChange={setEditOpen} customer={customer} />
       <AppointmentDialog open={newAppt} onOpenChange={setNewAppt} />

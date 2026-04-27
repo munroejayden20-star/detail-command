@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 import { useStore, makeId } from "@/store/store";
 import type { Customer, Vehicle } from "@/lib/types";
 
@@ -69,8 +70,10 @@ export function CustomerDialog({ open, onOpenChange, customer }: CustomerDialogP
     };
     if (customer) {
       dispatch({ type: "updateCustomer", id: customer.id, patch: payload });
+      toast.success("Customer saved");
     } else {
       dispatch({ type: "addCustomer", customer: payload });
+      toast.success("Customer added");
     }
     onOpenChange(false);
   }

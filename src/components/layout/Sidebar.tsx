@@ -14,6 +14,7 @@ import {
   Wrench,
   ListChecks,
   Calculator,
+  Image as ImageIcon,
   Settings as SettingsIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ const NAV: NavItem[] = [
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/services", label: "Services", icon: Sparkles },
   { to: "/calculator", label: "Quote Calculator", icon: Calculator },
+  { to: "/photos", label: "Photos", icon: ImageIcon },
   { to: "/templates", label: "Templates", icon: MessageSquareText },
   { to: "/revenue", label: "Revenue", icon: TrendingUp },
   { to: "/expenses", label: "Expenses", icon: Receipt },

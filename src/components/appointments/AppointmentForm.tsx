@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { addMinutes, formatISO, parseISO } from "date-fns";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -153,8 +154,10 @@ export function AppointmentForm({ appointment, initialDate, onDone, onDelete }: 
 
     if (appointment) {
       dispatch({ type: "updateAppointment", id: appointment.id, patch: payload });
+      toast.success("Appointment saved");
     } else {
       dispatch({ type: "addAppointment", appt: payload });
+      toast.success("Appointment booked");
     }
     onDone();
   }
