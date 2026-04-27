@@ -247,6 +247,67 @@ Once GitHub is connected, in the Vercel dashboard for this project: **Settings �
 
 ---
 
+## Daily workflow — making a change and pushing it
+
+Once GitHub is connected and Vercel is hooked up, this is the **entire** loop for making changes and getting them onto your phone:
+
+### The three commands
+
+From `C:\Users\arkis\dev\detail-command`:
+
+```bash
+git add .
+git commit -m "short description of what changed"
+git push
+```
+
+That's it. ~1 minute later, the next time you tap the home-screen icon on your phone, it's running the new version.
+
+### About the commit message
+
+Anything works — `git commit -m "update"` is totally fine. But a 3–6 word description (e.g. `add ceramic coating service`, `fix calculator rounding`) costs 5 seconds and saves your future self when you're scrolling `git log` looking for when something changed.
+
+Quick templates:
+- `add <thing>` — new feature
+- `fix <thing>` — bug fix
+- `update <thing>` — tweak existing
+- `remove <thing>` — delete
+- `tweak styling` — CSS/visuals
+- `wip` — work in progress, you'll fix later
+
+### One-line shortcut
+
+```bash
+git commit -am "message" && git push
+```
+
+`-am` stages all **already-tracked** files and commits in one step. New files (ones git has never seen) still need `git add .` first — when in doubt, just use the three-command version.
+
+### When something goes weird
+
+- **`git push` says "Everything up-to-date"** — your local changes weren't committed yet. Run `git add . && git commit -m "..."` first, then push again.
+- **`git push` rejected ("non-fast-forward")** — another device pushed first. Run `git pull --rebase`, then `git push` again.
+- **`git status` shows something you don't want to commit** — add it to `.gitignore` (one filename per line), then `git add .gitignore` and commit.
+
+### See what you're about to commit
+
+```bash
+git status   # which files changed
+git diff     # exactly what changed in those files
+```
+
+### How the phone gets the update
+
+You don't install anything. The phone has the Vercel URL saved to home screen. When you push:
+
+1. GitHub receives the commit
+2. Vercel sees the push, builds, deploys to production (~1 min)
+3. Next time you open the home-screen app, the browser fetches the new bundle
+
+If a deploy doesn't seem to show up, do a pull-to-refresh inside the app, or fully close it and reopen — the HTML wrapper occasionally caches for a few seconds.
+
+---
+
 ## Migration from the previous version
 
 If you ran an older release of this app on this device, it stored everything in `localStorage` under `detail-command:v1`. After signing in for the first time:
