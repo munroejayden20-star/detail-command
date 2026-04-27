@@ -46,27 +46,15 @@ Open <http://localhost:5173>. Sign up with email + password (or magic link), and
 
 ---
 
-## What was removed (vs. the previous version)
+## Starter content
 
-Every piece of hardcoded sample/demo activity is gone. Specifically removed from `src/lib/seed.ts`:
+A brand-new account is seeded once (idempotently, on first sign-in) with the menu/scripts/checklists you'll use day-to-day:
 
-- All 5 sample customers (Marcus Reyes, Jasmine Carter, Devon Lee, Ana Torres, Ricky Patel)
-- All 4 sample appointments
-- All 5 sample leads
-- All 10 sample tasks
-- All 5 sample expenses
-- All fake spent-amounts on startup items (now $0 / not purchased)
-- All mock vehicle records and condition notes
+- 4 service packages — Exterior, Interior, Full, and Interior Restoration — plus 10 add-ons.
+- 7 message templates (move-off-Facebook, first response, booking close, water/power, day-before, on-my-way, review request).
+- 4 default checklists (Pre-Job, Exterior, Interior, Post-Job) with their full item lists.
 
-What stayed (because the original spec explicitly asked for these — they're starter business config, not fake activity):
-
-- Service menu (Exterior Detail / Interior Detail / Full Detail) and 6 add-ons
-- The 7 message templates (move-off-Facebook, first response, booking close, water/power, day-before, on-my-way, review request)
-- The 4 checklist groups (Pre-Job / Exterior / Interior / Post-Job) with all the items from the spec
-- The 12 equipment categories (Pressure washer, Vacuum, Microfiber towels, etc.) with $0 spent and not-yet-purchased
-- Default Monday–Friday 8am–5pm "day job" availability blocks
-
-These are seeded **per user, the first time they sign in**, idempotently. You can edit or delete any of them.
+Customers, appointments, leads, tasks, expenses, photos, and purchases all start **completely empty**. No fake activity ever.
 
 ---
 
@@ -308,56 +296,7 @@ If a deploy doesn't seem to show up, do a pull-to-refresh inside the app, or ful
 
 ---
 
-## Migration from the previous version
-
-If you ran an older release of this app on this device, it stored everything in `localStorage` under `detail-command:v1`. After signing in for the first time:
-
-1. Settings → **"Local-only data found on this device"** banner appears (only if data exists)
-2. Click **Import this device's data** → all customers, appointments, leads, tasks, services, expenses, etc. are upserted into your Supabase account
-3. The legacy key is cleared on success
-4. Subsequent loads come from cloud only
-
-If you want to skip migrating, click **Discard** on the banner.
-
----
-
-## Feature tour
-
-### Dashboard
-Real command-center home. Greeting that adapts to the time of day, four stat cards (week revenue estimate, jobs booked this week, pending follow-ups, open tasks), today's appointments, upcoming jobs, jobs that need confirmation, today's tasks, and a "weekend snapshot." On a fresh account every number is 0, every list is an empty state with a "Add your first ___" button — no fake activity.
-
-### Calendar
-Three views with drag-and-drop: Month, Week (7am–8pm), Day. Status-colored bars (inquiry → scheduled → confirmed → in-progress → completed → follow-up → canceled), block-time dialog, weekend columns gently highlighted, recurring weekday day-job overlays.
-
-### Appointments
-Every field from the original spec: customer (pick or create inline), address, vehicle (year/make/model/color + condition), interior/exterior notes, pet-hair/stains/heavy-dirt flags, **water and power access toggles**, service package + add-ons (auto-prices and auto-sets duration), final price, deposit, payment status, customer vs. internal notes, status pipeline.
-
-### Customers (CRM)
-Searchable card grid with avatars, repeat/monthly badges, lifetime revenue. Click into a profile to see full history, vehicles, last visit, and a one-click "Book job" button.
-
-### Leads
-Kanban pipeline: New → Contacted → Waiting → Booked → Lost. Source, interest level, last contact, follow-up date, and one-click copy of intro/booking templates.
-
-### Tasks, Services, Templates, Revenue, Expenses, Startup, Checklists, Settings
-Each section as in the original spec, with empty-state messaging for fresh accounts.
-
----
-
-## How to expand later
-
-1. **SMS reminders** — Twilio + a Supabase Edge Function that runs daily at 5pm and texts unconfirmed jobs the day-before template
-2. **Online booking** — public route `/book/:slug` that POSTs to a Supabase function, no auth required for customers
-3. **Payments** — Stripe Checkout for deposits, with a webhook updating `appointments.deposit_paid`
-4. **Google Calendar sync** — bidirectional via the Calendar API; `start_at` / `end_at` are already calendar-native
-5. **Customer photo uploads** — `before_photos` / `after_photos` columns are already JSONB arrays. Add Supabase Storage buckets and store URLs
-6. **Invoices** — generate PDFs from completed appointment data via a serverless function
-7. **Realtime cross-device sync** — swap the focus-refetch for `supabase.channel('table:*').on('postgres_changes', ...)` subscriptions
-8. **Multi-user / helpers** — add a `team_members` table referencing the owner's `auth.uid()`, and an `assigned_to` column on appointments
-
----
-
 ## Notes
 
 - Status colors live as `.status-*` and `.status-bar-*` utilities in `src/index.css` — change them once and they update across pills, calendar bars, and chips.
 - All write actions go through a single `syncAction` switch in `src/store/store.tsx`. Adding a new entity = add an action type in the reducer + a sync case + a CRUD wrapper in `src/lib/api.ts`.
-- The build emits a single ~1.1 MB JS bundle. If you want to slim it, the calendar and revenue charts (recharts + dnd-kit) are good candidates for `React.lazy` route splitting.

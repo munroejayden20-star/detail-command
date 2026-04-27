@@ -331,8 +331,6 @@ export function expenseFromRow(r: any): Expense {
 
 /* ---------- Startup items ---------- */
 
-// NOTE: requires Phase 3 migration columns (category, priority, status, link,
-// target_date, actual_cost). Run the latest supabase/schema.sql once.
 export function startupToRow(i: StartupItem, userId: string) {
   return {
     id: i.id,
@@ -430,14 +428,11 @@ function categoryFromLegacyKind(kind?: string): ChecklistGroup["category"] {
   }
 }
 
-// NOTE: requires Phase 3 migration columns (category, description, customer_id,
-// vehicle, created_at, updated_at). Run the latest supabase/schema.sql once.
 export function checklistToRow(c: ChecklistGroup, userId: string) {
   return {
     id: c.id,
     user_id: userId,
     name: c.name,
-    kind: c.kind ?? null,
     category: c.category ?? categoryFromLegacyKind(c.kind),
     description: c.description ?? null,
     items: c.items,
@@ -452,7 +447,6 @@ export function checklistToRow(c: ChecklistGroup, userId: string) {
 export function checklistPatchToRow(p: Partial<ChecklistGroup>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   if (p.name !== undefined) out.name = p.name;
-  if (p.kind !== undefined) out.kind = p.kind ?? null;
   if (p.category !== undefined) out.category = p.category;
   if (p.description !== undefined) out.description = p.description ?? null;
   if (p.items !== undefined) out.items = p.items;
@@ -552,9 +546,6 @@ export function photoFromRow(r: any): Photo {
 
 /* ---------- Settings ---------- */
 
-// NOTE: requires Phase 3 migration columns (email, service_area,
-// business_description, accent_color, avatar_url, logo_url). Run the latest
-// supabase/schema.sql once.
 export function settingsToRow(s: Settings, userId: string) {
   return {
     user_id: userId,

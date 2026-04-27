@@ -19,8 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionHeader } from "@/components/ui/section-header";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useStore } from "@/store/store";
-import { initials } from "@/lib/utils";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/auth/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -207,8 +207,7 @@ export function SettingsPage() {
                 placeholder="https://… (or leave blank for an initials avatar)"
               />
               <p className="text-[11px] text-muted-foreground">
-                Direct file uploads are coming with the photos system in Phase 4. For now you can
-                paste any image URL.
+                Paste any image URL, or leave blank for a clean initials avatar.
               </p>
             </div>
           </div>
@@ -438,48 +437,6 @@ export function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-export function ProfileAvatar({
-  name,
-  avatarUrl,
-  size = 36,
-  className,
-}: {
-  name: string;
-  avatarUrl?: string;
-  size?: number;
-  className?: string;
-}) {
-  if (avatarUrl) {
-    return (
-      <img
-        src={avatarUrl}
-        alt={name}
-        width={size}
-        height={size}
-        className={cn(
-          "rounded-full object-cover shadow-soft",
-          className
-        )}
-      />
-    );
-  }
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 font-semibold text-white shadow-soft",
-        className
-      )}
-      style={{
-        width: size,
-        height: size,
-        fontSize: Math.round(size * 0.36),
-      }}
-    >
-      {initials(name) || "DC"}
     </div>
   );
 }

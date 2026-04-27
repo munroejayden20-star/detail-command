@@ -1,4 +1,3 @@
-import { addDays, formatISO, setHours, setMinutes, startOfWeek } from "date-fns";
 import type {
   AppData,
   BlockedTime,
@@ -203,42 +202,12 @@ export function makeStarterContent(): {
     },
   ];
 
-  // Empty planned-purchase rows — user fills in budget/cost as they go.
-  const startup: StartupItem[] = (
-    [
-      ["Pressure washer", "pressure_washer"],
-      ["Wet/dry vacuum", "interior_tools"],
-      ["Microfiber towels (bulk)", "towels"],
-      ["Chemicals starter pack", "chemicals"],
-      ["Foam cannon", "pressure_washer"],
-      ["Buckets + grit guards", "interior_tools"],
-      ["Brush set", "interior_tools"],
-      ["Trunk organizer", "van_setup"],
-      ["Extension cord", "van_setup"],
-      ["Hose + reel", "hoses"],
-      ["Storage bins", "van_setup"],
-      ["Marketing materials (cards, magnets)", "branding"],
-    ] as const
-  ).map(([name, category]) => ({
-    id: uid(),
-    name,
-    budget: 0,
-    spent: 0,
-    purchased: false,
-    category,
-    priority: "medium" as const,
-    status: "want" as const,
-  }));
+  // Budget tracker starts empty — user adds purchases as they plan them.
+  const startup: StartupItem[] = [];
 
-  // Default M-F day-job blocks for the current week.
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const blocks: BlockedTime[] = Array.from({ length: 5 }, (_, i) => ({
-    id: uid(),
-    start: formatISO(setMinutes(setHours(addDays(weekStart, i), 8), 0)),
-    end: formatISO(setMinutes(setHours(addDays(weekStart, i), 17), 0)),
-    label: "Day job",
-    recurring: "weekly" as const,
-  }));
+  // Calendar starts with no recurring blocks. Set unavailable hours from
+  // Settings → Scheduling rules instead.
+  const blocks: BlockedTime[] = [];
 
   const settings: Settings = {
     theme: "system",

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Toaster } from "sonner";
@@ -6,21 +7,36 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthGuard } from "@/auth/AuthGuard";
 import { LoginPage } from "@/auth/LoginPage";
 import { Layout } from "@/components/layout/Layout";
+// Dashboard is the default landing page — keep it eager-loaded so the first
+// paint is instant. Every other route is lazy so the initial bundle stays small.
 import { DashboardPage } from "@/pages/Dashboard";
-import { CalendarPage } from "@/pages/Calendar";
-import { CustomersPage } from "@/pages/Customers";
-import { CustomerDetailPage } from "@/pages/CustomerDetail";
-import { LeadsPage } from "@/pages/Leads";
-import { TasksPage } from "@/pages/Tasks";
-import { ServicesPage } from "@/pages/Services";
-import { TemplatesPage } from "@/pages/Templates";
-import { RevenuePage } from "@/pages/Revenue";
-import { ExpensesPage } from "@/pages/Expenses";
-import { StartupPage } from "@/pages/Startup";
-import { ChecklistsPage } from "@/pages/Checklists";
-import { SettingsPage } from "@/pages/Settings";
-import { CalculatorPage } from "@/pages/Calculator";
-import { PhotosPage } from "@/pages/Photos";
+
+const CalendarPage = lazy(() => import("@/pages/Calendar").then((m) => ({ default: m.CalendarPage })));
+const CustomersPage = lazy(() => import("@/pages/Customers").then((m) => ({ default: m.CustomersPage })));
+const CustomerDetailPage = lazy(() => import("@/pages/CustomerDetail").then((m) => ({ default: m.CustomerDetailPage })));
+const LeadsPage = lazy(() => import("@/pages/Leads").then((m) => ({ default: m.LeadsPage })));
+const TasksPage = lazy(() => import("@/pages/Tasks").then((m) => ({ default: m.TasksPage })));
+const ServicesPage = lazy(() => import("@/pages/Services").then((m) => ({ default: m.ServicesPage })));
+const TemplatesPage = lazy(() => import("@/pages/Templates").then((m) => ({ default: m.TemplatesPage })));
+const RevenuePage = lazy(() => import("@/pages/Revenue").then((m) => ({ default: m.RevenuePage })));
+const ExpensesPage = lazy(() => import("@/pages/Expenses").then((m) => ({ default: m.ExpensesPage })));
+const StartupPage = lazy(() => import("@/pages/Startup").then((m) => ({ default: m.StartupPage })));
+const ChecklistsPage = lazy(() => import("@/pages/Checklists").then((m) => ({ default: m.ChecklistsPage })));
+const SettingsPage = lazy(() => import("@/pages/Settings").then((m) => ({ default: m.SettingsPage })));
+const CalculatorPage = lazy(() => import("@/pages/Calculator").then((m) => ({ default: m.CalculatorPage })));
+const PhotosPage = lazy(() => import("@/pages/Photos").then((m) => ({ default: m.PhotosPage })));
+
+function PageFallback() {
+  return (
+    <div className="grid place-items-center py-20">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+function lazyRoute(node: React.ReactNode) {
+  return <Suspense fallback={<PageFallback />}>{node}</Suspense>;
+}
 
 export default function App() {
   return (
@@ -47,20 +63,20 @@ export default function App() {
           }
         >
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/customers/:id" element={<CustomerDetailPage />} />
-          <Route path="/leads" element={<LeadsPage />} />
-          <Route path="/tasks" element={<TasksPage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/revenue" element={<RevenuePage />} />
-          <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/startup" element={<StartupPage />} />
-          <Route path="/checklists" element={<ChecklistsPage />} />
-          <Route path="/calculator" element={<CalculatorPage />} />
-          <Route path="/photos" element={<PhotosPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/calendar" element={lazyRoute(<CalendarPage />)} />
+          <Route path="/customers" element={lazyRoute(<CustomersPage />)} />
+          <Route path="/customers/:id" element={lazyRoute(<CustomerDetailPage />)} />
+          <Route path="/leads" element={lazyRoute(<LeadsPage />)} />
+          <Route path="/tasks" element={lazyRoute(<TasksPage />)} />
+          <Route path="/services" element={lazyRoute(<ServicesPage />)} />
+          <Route path="/templates" element={lazyRoute(<TemplatesPage />)} />
+          <Route path="/revenue" element={lazyRoute(<RevenuePage />)} />
+          <Route path="/expenses" element={lazyRoute(<ExpensesPage />)} />
+          <Route path="/startup" element={lazyRoute(<StartupPage />)} />
+          <Route path="/checklists" element={lazyRoute(<ChecklistsPage />)} />
+          <Route path="/calculator" element={lazyRoute(<CalculatorPage />)} />
+          <Route path="/photos" element={lazyRoute(<PhotosPage />)} />
+          <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

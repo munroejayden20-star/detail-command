@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useStore } from "@/store/store";
-import { ProfileAvatar } from "@/pages/Settings";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import {
   LayoutDashboard,
   CalendarDays,

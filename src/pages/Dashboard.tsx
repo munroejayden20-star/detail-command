@@ -305,23 +305,23 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Insights */}
+      {/* 7-day outlook */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle>Weekend snapshot</CardTitle>
+            <CardTitle>Next 7 days</CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              How Saturday & Sunday are filling up
+              How the week is filling up
             </p>
           </div>
           <Button asChild variant="ghost" size="sm">
             <Link to="/calendar" className="gap-1">
-              View week <ArrowRight className="h-3.5 w-3.5" />
+              Open calendar <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
         </CardHeader>
         <CardContent>
-          <WeekendSnapshot />
+          <SevenDayOutlook />
         </CardContent>
       </Card>
 
@@ -370,42 +370,41 @@ function ConfirmRow({
   );
 }
 
-function WeekendSnapshot() {
+function SevenDayOutlook() {
   const { data } = useStore();
   const today = new Date();
-  const dayOfWeek = today.getDay();
-  const daysUntilSat = (6 - dayOfWeek + 7) % 7;
-  const sat = new Date(today);
-  sat.setDate(today.getDate() + daysUntilSat);
-  const sun = new Date(sat);
-  sun.setDate(sat.getDate() + 1);
-
-  const satAppts = appointmentsOnDay(data, sat);
-  const sunAppts = appointmentsOnDay(data, sun);
   const max = data.settings.maxJobsPerDay || 3;
 
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const appts = appointmentsOnDay(data, d);
+    const revenue = appts.reduce(
+      (s, a) => s + (a.finalPrice ?? a.estimatedPrice),
+      0
+    );
+    return { date: d, appts, revenue };
+  });
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {[
-        { label: "Saturday", date: sat, appts: satAppts },
-        { label: "Sunday", date: sun, appts: sunAppts },
-      ].map(({ label, date, appts }) => {
+    <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+      {days.map(({ date, appts, revenue }, i) => {
         const filled = appts.length;
         const pct = Math.min(100, (filled / max) * 100);
+        const isToday = i === 0;
         return (
-          <div key={label} className="rounded-xl border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold">{label}</p>
-                <p className="text-xs text-muted-foreground">
-                  {format(date, "MMM d")}
-                </p>
-              </div>
-              <Badge variant={filled >= max ? "soft" : "outline"}>
-                {filled}/{max} slots
-              </Badge>
-            </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            key={date.toISOString()}
+            className={cn(
+              "rounded-lg border p-3",
+              isToday && "border-primary/40 bg-primary/5"
+            )}
+          >
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              {isToday ? "Today" : format(date, "EEE")}
+            </p>
+            <p className="text-sm font-semibold">{format(date, "MMM d")}</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
@@ -413,18 +412,20 @@ function WeekendSnapshot() {
                     ? "bg-emerald-500"
                     : filled > 0
                     ? "bg-primary"
-                    : "bg-muted-foreground/30"
+                    : "bg-muted-foreground/20"
                 )}
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 inline h-3 w-3" />
-              {formatCurrency(
-                appts.reduce((s, a) => s + (a.finalPrice ?? a.estimatedPrice), 0)
-              )}{" "}
-              estimated
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              {filled}/{max} jobs
             </p>
+            {revenue > 0 ? (
+              <p className="mt-0.5 inline-flex items-center text-[11px] font-medium">
+                <TrendingUp className="mr-0.5 h-3 w-3" />
+                {formatCurrency(revenue)}
+              </p>
+            ) : null}
           </div>
         );
       })}
