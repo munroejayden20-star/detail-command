@@ -11,6 +11,7 @@ import {
   ChevronUp,
   GripVertical,
   X,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStore, makeId } from "@/store/store";
+import { PresetPickerDialog } from "@/components/checklists/PresetPickerDialog";
 import {
   CHECKLIST_CATEGORIES,
   type ChecklistGroup,
@@ -59,6 +61,7 @@ export function ChecklistsPage() {
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [presetPickerOpen, setPresetPickerOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let list = [...data.checklists];
@@ -113,9 +116,14 @@ export function ChecklistsPage() {
         title="Checklists"
         description="Custom checklists for any workflow — pre-job, exterior, restoration, marketing, anything."
         actions={
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" /> New checklist
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setPresetPickerOpen(true)}>
+              <Sparkles className="h-4 w-4" /> Insert preset
+            </Button>
+            <Button onClick={() => setCreating(true)}>
+              <Plus className="h-4 w-4" /> New checklist
+            </Button>
+          </div>
         }
       />
 
@@ -220,6 +228,10 @@ export function ChecklistsPage() {
         onOpenChange={(v) => !v && setEditingId(null)}
         mode="edit"
         group={editing ?? undefined}
+      />
+      <PresetPickerDialog
+        open={presetPickerOpen}
+        onOpenChange={setPresetPickerOpen}
       />
     </div>
   );

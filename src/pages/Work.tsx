@@ -12,6 +12,7 @@ import {
   Car as CarIcon,
   PlayCircle,
   StickyNote,
+  ListChecks,
   X,
   Plus,
 } from "lucide-react";
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { useStore, makeId } from "@/store/store";
 import { PhotoUploader } from "@/components/photos/PhotoUploader";
+import { WorkChecklistDialog } from "@/components/work/WorkChecklistDialog";
 import {
   appointmentsOnDay,
   upcomingAppointments,
@@ -59,6 +61,7 @@ export function WorkPage() {
   }, [todays, upcoming]);
 
   const [noteOpen, setNoteOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   if (!current) {
     return (
@@ -269,7 +272,7 @@ export function WorkPage() {
         />
       </div>
 
-      {/* Note + Payment + map quick row */}
+      {/* Note + Checklists row */}
       <div className="grid grid-cols-2 gap-2">
         <BigButton
           icon={<StickyNote className="h-5 w-5" />}
@@ -278,12 +281,37 @@ export function WorkPage() {
           onClick={() => setNoteOpen(true)}
         />
         <BigButton
+          icon={<ListChecks className="h-5 w-5" />}
+          label="Checklists"
+          subtle={(() => {
+            const linked = data.checklists.filter(
+              (c) =>
+                c.appointmentId === current.id ||
+                c.customerId === current.customerId
+            );
+            if (linked.length === 0)
+              return `${data.checklists.length} available`;
+            const total = linked.reduce((s, l) => s + l.items.length, 0);
+            const done = linked.reduce(
+              (s, l) => s + l.items.filter((i) => i.done).length,
+              0
+            );
+            return `${done}/${total} on this job`;
+          })()}
+          tone="default"
+          onClick={() => setChecklistOpen(true)}
+        />
+      </div>
+
+      {/* Payment quick row */}
+      <div>
+        <BigButton
           icon={<Wallet className="h-5 w-5" />}
           label={
             current.paymentStatus === "paid"
               ? "Paid ✓"
               : current.paymentStatus === "deposit"
-              ? "Deposit"
+              ? "Deposit · tap to mark paid"
               : "Mark paid"
           }
           tone={current.paymentStatus === "paid" ? "emerald" : "default"}
@@ -340,6 +368,12 @@ export function WorkPage() {
         open={noteOpen}
         onOpenChange={setNoteOpen}
         appointment={current}
+      />
+      <WorkChecklistDialog
+        open={checklistOpen}
+        onOpenChange={setChecklistOpen}
+        appointmentId={current.id}
+        customerId={current.customerId}
       />
     </div>
   );
