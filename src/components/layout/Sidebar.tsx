@@ -15,6 +15,7 @@ import {
   ListChecks,
   Calculator,
   Image as ImageIcon,
+  Hammer,
   Settings as SettingsIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/work", label: "Work Mode", icon: Hammer },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/leads", label: "Leads", icon: UserPlus },

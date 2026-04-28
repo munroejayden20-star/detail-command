@@ -394,6 +394,8 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
+      <NotificationSettings />
+
       <Card>
         <CardHeader>
           <CardTitle>Data</CardTitle>
@@ -451,6 +453,146 @@ export function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function NotificationSettings() {
+  const { data, dispatch } = useStore();
+  const s = data.settings;
+
+  function update<K extends keyof typeof s>(key: K, value: (typeof s)[K]) {
+    dispatch({ type: "updateSettings", patch: { [key]: value } as any });
+  }
+
+  function sendTest() {
+    dispatch({
+      type: "addNotification",
+      notification: {
+        id: `test_${Date.now()}`,
+        type: "info",
+        title: "Test notification",
+        message: "Notifications are working. This is just a test.",
+        read: false,
+        createdAt: new Date().toISOString(),
+      },
+    });
+    toast.success("Test notification sent");
+  }
+
+  const enabled = s.notificationsEnabled ?? true;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Notifications</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <label className="flex items-center justify-between rounded-lg border p-3 text-sm">
+          <div>
+            <p className="font-medium">Enable notifications</p>
+            <p className="text-xs text-muted-foreground">
+              Master switch. When off, no in-app notifications fire.
+            </p>
+          </div>
+          <Switch
+            checked={enabled}
+            onCheckedChange={(v) => update("notificationsEnabled", v)}
+          />
+        </label>
+
+        <div
+          className={cn(
+            "grid gap-2 sm:grid-cols-2",
+            !enabled && "pointer-events-none opacity-50"
+          )}
+        >
+          <ToggleRow
+            label="Appointment reminders"
+            checked={s.notifyAppointments ?? true}
+            onChange={(v) => update("notifyAppointments", v)}
+          />
+          <ToggleRow
+            label="Payment & invoice alerts"
+            checked={s.notifyPayments ?? true}
+            onChange={(v) => update("notifyPayments", v)}
+          />
+          <ToggleRow
+            label="Follow-up reminders"
+            checked={s.notifyFollowUps ?? true}
+            onChange={(v) => update("notifyFollowUps", v)}
+          />
+          <ToggleRow
+            label="Review reminders"
+            checked={s.notifyReviews ?? true}
+            onChange={(v) => update("notifyReviews", v)}
+          />
+          <ToggleRow
+            label="Weather warnings"
+            checked={s.notifyWeather ?? true}
+            onChange={(v) => update("notifyWeather", v)}
+          />
+          <ToggleRow
+            label="App updates"
+            checked={s.notifyUpdates ?? true}
+            onChange={(v) => update("notifyUpdates", v)}
+          />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Reminder timing (minutes before job)</Label>
+            <select
+              value={s.reminderMinutes ?? 60}
+              onChange={(e) =>
+                update("reminderMinutes", Number(e.target.value))
+              }
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              disabled={!enabled}
+            >
+              <option value={15}>15 minutes before</option>
+              <option value={30}>30 minutes before</option>
+              <option value={60}>1 hour before</option>
+              <option value={120}>2 hours before</option>
+              <option value={1440}>1 day before</option>
+            </select>
+          </div>
+          <div className="flex items-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={sendTest}
+              disabled={!enabled}
+            >
+              Send test notification
+            </Button>
+          </div>
+        </div>
+
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-200">
+          These notifications fire while the app is open. Push notifications
+          that wake your phone when the app is closed will be added in a
+          future update — they need a small server piece (Supabase Edge
+          Function) to be set up first.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between rounded-lg border p-3 text-sm">
+      <span className="font-medium">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </label>
   );
 }
 

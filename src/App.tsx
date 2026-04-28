@@ -25,6 +25,7 @@ const ChecklistsPage = lazy(() => import("@/pages/Checklists").then((m) => ({ de
 const SettingsPage = lazy(() => import("@/pages/Settings").then((m) => ({ default: m.SettingsPage })));
 const CalculatorPage = lazy(() => import("@/pages/Calculator").then((m) => ({ default: m.CalculatorPage })));
 const PhotosPage = lazy(() => import("@/pages/Photos").then((m) => ({ default: m.PhotosPage })));
+const WorkPage = lazy(() => import("@/pages/Work").then((m) => ({ default: m.WorkPage })));
 
 function PageFallback() {
   return (
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="/checklists" element={lazyRoute(<ChecklistsPage />)} />
           <Route path="/calculator" element={lazyRoute(<CalculatorPage />)} />
           <Route path="/photos" element={lazyRoute(<PhotosPage />)} />
+          <Route path="/work" element={lazyRoute(<WorkPage />)} />
           <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

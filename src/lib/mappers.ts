@@ -12,6 +12,8 @@ import type {
   Settings,
   Photo,
   PhotoType,
+  Notification,
+  NotificationType,
   JobStatus,
   PaymentStatus,
   Priority,
@@ -544,6 +546,35 @@ export function photoFromRow(r: any): Photo {
   };
 }
 
+/* ---------- Notifications ---------- */
+
+export function notificationToRow(n: Notification, userId: string) {
+  return {
+    id: n.id,
+    user_id: userId,
+    type: n.type,
+    title: n.title,
+    message: n.message ?? null,
+    link_url: n.linkUrl ?? null,
+    metadata: n.metadata ?? null,
+    read: !!n.read,
+    created_at: n.createdAt,
+  };
+}
+
+export function notificationFromRow(r: any): Notification {
+  return {
+    id: r.id,
+    type: (r.type ?? "info") as NotificationType,
+    title: r.title,
+    message: r.message ?? undefined,
+    linkUrl: r.link_url ?? undefined,
+    metadata: r.metadata ?? undefined,
+    read: !!r.read,
+    createdAt: r.created_at,
+  };
+}
+
 /* ---------- Settings ---------- */
 
 export function settingsToRow(s: Settings, userId: string) {
@@ -565,6 +596,14 @@ export function settingsToRow(s: Settings, userId: string) {
     accent_color: s.accentColor ?? null,
     avatar_url: s.avatarUrl ?? null,
     logo_url: s.logoUrl ?? null,
+    notifications_enabled: s.notificationsEnabled ?? true,
+    notify_appointments: s.notifyAppointments ?? true,
+    notify_payments: s.notifyPayments ?? true,
+    notify_follow_ups: s.notifyFollowUps ?? true,
+    notify_reviews: s.notifyReviews ?? true,
+    notify_weather: s.notifyWeather ?? true,
+    notify_updates: s.notifyUpdates ?? true,
+    reminder_minutes: s.reminderMinutes ?? 60,
   };
 }
 
@@ -586,6 +625,14 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.accentColor !== undefined) out.accent_color = p.accentColor ?? null;
   if (p.avatarUrl !== undefined) out.avatar_url = p.avatarUrl ?? null;
   if (p.logoUrl !== undefined) out.logo_url = p.logoUrl ?? null;
+  if (p.notificationsEnabled !== undefined) out.notifications_enabled = !!p.notificationsEnabled;
+  if (p.notifyAppointments !== undefined) out.notify_appointments = !!p.notifyAppointments;
+  if (p.notifyPayments !== undefined) out.notify_payments = !!p.notifyPayments;
+  if (p.notifyFollowUps !== undefined) out.notify_follow_ups = !!p.notifyFollowUps;
+  if (p.notifyReviews !== undefined) out.notify_reviews = !!p.notifyReviews;
+  if (p.notifyWeather !== undefined) out.notify_weather = !!p.notifyWeather;
+  if (p.notifyUpdates !== undefined) out.notify_updates = !!p.notifyUpdates;
+  if (p.reminderMinutes !== undefined) out.reminder_minutes = p.reminderMinutes;
   return out;
 }
 
@@ -607,5 +654,13 @@ export function settingsFromRow(r: any): Settings {
     accentColor: r.accent_color ?? undefined,
     avatarUrl: r.avatar_url ?? undefined,
     logoUrl: r.logo_url ?? undefined,
+    notificationsEnabled: r.notifications_enabled ?? true,
+    notifyAppointments: r.notify_appointments ?? true,
+    notifyPayments: r.notify_payments ?? true,
+    notifyFollowUps: r.notify_follow_ups ?? true,
+    notifyReviews: r.notify_reviews ?? true,
+    notifyWeather: r.notify_weather ?? true,
+    notifyUpdates: r.notify_updates ?? true,
+    reminderMinutes: r.reminder_minutes ?? 60,
   };
 }

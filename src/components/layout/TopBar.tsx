@@ -9,6 +9,7 @@ import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { UserMenu } from "@/auth/UserMenu";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 interface TopBarProps {
   onMenu: () => void;
@@ -104,6 +105,7 @@ export function TopBar({ onMenu }: TopBarProps) {
             <Plus className="h-4 w-4" />
             Appointment
           </Button>
+          <NotificationCenter />
           <Button
             variant="ghost"
             size="icon"

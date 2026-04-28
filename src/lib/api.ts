@@ -36,6 +36,8 @@ import {
   photoFromRow,
   photoPatchToRow,
   photoToRow,
+  notificationFromRow,
+  notificationToRow,
 } from "./mappers";
 import { makeStarterContent, EMPTY_DATA } from "./starter";
 
@@ -58,6 +60,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     checklists,
     blocks,
     photos,
+    notifications,
     settingsRow,
   ] = await Promise.all([
     sb.from("customers").select("*").order("created_at", { ascending: false }),
@@ -71,10 +74,11 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     sb.from("checklist_groups").select("*"),
     sb.from("blocked_times").select("*"),
     sb.from("photos").select("*").order("created_at", { ascending: false }),
+    sb.from("notifications").select("*").order("created_at", { ascending: false }).limit(200),
     sb.from("settings").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
-  const errs = [customers, appointments, leads, tasks, services, expenses, startup, templates, checklists, blocks, photos].filter(
+  const errs = [customers, appointments, leads, tasks, services, expenses, startup, templates, checklists, blocks, photos, notifications].filter(
     (r) => r.error
   );
   if (errs.length) throw errs[0].error;
@@ -93,6 +97,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     checklists: (checklists.data ?? []).map(checklistFromRow),
     blocks: (blocks.data ?? []).map(blockFromRow),
     photos: (photos.data ?? []).map(photoFromRow),
+    notifications: (notifications.data ?? []).map(notificationFromRow),
     settings: settingsRow.data ? settingsFromRow(settingsRow.data) : EMPTY_DATA.settings,
   };
 }
@@ -155,6 +160,7 @@ import type {
   Customer,
   Expense,
   Lead,
+  Notification,
   Photo,
   Service,
   Settings,
@@ -254,6 +260,22 @@ export const api = {
     const sb = sbOrThrow();
     return sb.storage.from("photos").createSignedUrl(path, expiresIn);
   },
+
+  // Notifications
+  insertNotification: (n: Notification, userId: string) =>
+    sbOrThrow().from("notifications").insert(notificationToRow(n, userId)),
+  updateNotificationRead: (id: string, read: boolean) =>
+    sbOrThrow().from("notifications").update({ read }).eq("id", id),
+  markAllNotificationsRead: (userId: string) =>
+    sbOrThrow()
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", userId)
+      .eq("read", false),
+  deleteNotification: (id: string) =>
+    sbOrThrow().from("notifications").delete().eq("id", id),
+  deleteAllNotifications: (userId: string) =>
+    sbOrThrow().from("notifications").delete().eq("user_id", userId),
 
   // Settings
   upsertSettings: (s: Settings, userId: string) =>

@@ -34,7 +34,9 @@ export const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lift sm:rounded-xl max-h-[92vh] overflow-y-auto scrollbar-thin",
+        // Mobile-first: nearly full-screen sheet that fits the viewport.
+        // sm+ screens recover the centered modal look.
+        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1rem)] max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-5 sm:p-6 shadow-lift rounded-xl max-h-[calc(100dvh-2rem)] overflow-y-auto scrollbar-thin",
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-2 data-[state=open]:duration-200 data-[state=open]:ease-out",
         "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-bottom-2 data-[state=closed]:duration-150",
         className

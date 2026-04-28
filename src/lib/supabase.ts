@@ -23,3 +23,8 @@ export function requireSupabase(): SupabaseClient {
   }
   return supabase;
 }
+
+/** Non-throwing accessor for the Supabase client — returns null if unconfigured. */
+export function getSupabase(): SupabaseClient | null {
+  return supabase;
+}

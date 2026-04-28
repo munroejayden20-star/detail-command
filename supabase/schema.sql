@@ -198,6 +198,33 @@ alter table settings
   add column if not exists avatar_url text,
   add column if not exists logo_url text;
 
+-- Phase 5: notification center
+create table if not exists notifications (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type text not null,
+  title text not null,
+  message text,
+  link_url text,
+  metadata jsonb,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists notifications_user_id_idx on notifications(user_id);
+create index if not exists notifications_created_at_idx on notifications(created_at desc);
+create index if not exists notifications_unread_idx on notifications(user_id, read) where read = false;
+
+-- Phase 5: notification preferences (one row per user)
+alter table settings
+  add column if not exists notifications_enabled boolean not null default true,
+  add column if not exists notify_appointments boolean not null default true,
+  add column if not exists notify_payments boolean not null default true,
+  add column if not exists notify_follow_ups boolean not null default true,
+  add column if not exists notify_reviews boolean not null default true,
+  add column if not exists notify_weather boolean not null default true,
+  add column if not exists notify_updates boolean not null default true,
+  add column if not exists reminder_minutes integer not null default 60;
+
 -- Phase 4: photos metadata
 create table if not exists photos (
   id text primary key,
@@ -231,6 +258,7 @@ alter table templates enable row level security;
 alter table checklist_groups enable row level security;
 alter table blocked_times enable row level security;
 alter table photos enable row level security;
+alter table notifications enable row level security;
 alter table settings enable row level security;
 
 -- Helper to (re)create the four CRUD policies for a table
@@ -239,7 +267,7 @@ declare
   t text;
   tables text[] := array[
     'customers','appointments','leads','tasks','services',
-    'expenses','startup_items','templates','checklist_groups','blocked_times','photos'
+    'expenses','startup_items','templates','checklist_groups','blocked_times','photos','notifications'
   ];
 begin
   foreach t in array tables loop
@@ -263,6 +291,19 @@ create policy "users select own settings" on settings for select using (auth.uid
 create policy "users insert own settings" on settings for insert with check (auth.uid() = user_id);
 create policy "users update own settings" on settings for update using (auth.uid() = user_id);
 create policy "users delete own settings" on settings for delete using (auth.uid() = user_id);
+
+-- ---------- Realtime publication (Phase 5) ----------
+-- Enable realtime cross-device sync on notifications. Idempotent —
+-- skip silently if the table is already in the publication.
+do $$
+begin
+  perform 1
+  from pg_publication_tables
+  where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'notifications';
+  if not found then
+    execute 'alter publication supabase_realtime add table notifications';
+  end if;
+end$$;
 
 -- ---------- Storage bucket for photos (Phase 4) ----------
 

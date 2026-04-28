@@ -15,6 +15,7 @@ import {
   ListChecks,
   Calculator,
   Image as ImageIcon,
+  Hammer,
   Settings as SettingsIcon,
   X,
   Plus,
@@ -31,12 +32,13 @@ type NavItem = {
 
 const PRIMARY: NavItem[] = [
   { to: "/", label: "Home", icon: LayoutDashboard, end: true },
+  { to: "/work", label: "Work", icon: Hammer },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/customers", label: "Customers", icon: Users },
-  { to: "/tasks", label: "Tasks", icon: CheckSquare },
 ];
 
 const MORE: NavItem[] = [
+  { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/services", label: "Services", icon: Sparkles },
   { to: "/calculator", label: "Calculator", icon: Calculator },

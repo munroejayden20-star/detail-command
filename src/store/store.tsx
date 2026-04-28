@@ -14,6 +14,7 @@ import type {
   Customer,
   Expense,
   Lead,
+  Notification,
   Photo,
   Service,
   Settings,
@@ -65,6 +66,12 @@ type Action =
   | { type: "addPhoto"; photo: Photo }
   | { type: "updatePhoto"; id: string; patch: Partial<Photo> }
   | { type: "deletePhoto"; id: string }
+  | { type: "addNotification"; notification: Notification }
+  | { type: "markNotificationRead"; id: string; read: boolean }
+  | { type: "markAllNotificationsRead" }
+  | { type: "deleteNotification"; id: string }
+  | { type: "deleteAllNotifications" }
+  | { type: "upsertNotificationFromRealtime"; notification: Notification }
   | { type: "updateSettings"; patch: Partial<Settings> };
 
 function reducer(state: AppData, action: Action): AppData {
@@ -190,6 +197,44 @@ function reducer(state: AppData, action: Action): AppData {
     case "deleteBlock":
       return { ...state, blocks: state.blocks.filter((b) => b.id !== action.id) };
 
+    case "addNotification":
+      return { ...state, notifications: [action.notification, ...(state.notifications ?? [])] };
+    case "markNotificationRead":
+      return {
+        ...state,
+        notifications: (state.notifications ?? []).map((n) =>
+          n.id === action.id ? { ...n, read: action.read } : n
+        ),
+      };
+    case "markAllNotificationsRead":
+      return {
+        ...state,
+        notifications: (state.notifications ?? []).map((n) =>
+          n.read ? n : { ...n, read: true }
+        ),
+      };
+    case "deleteNotification":
+      return {
+        ...state,
+        notifications: (state.notifications ?? []).filter((n) => n.id !== action.id),
+      };
+    case "deleteAllNotifications":
+      return { ...state, notifications: [] };
+    case "upsertNotificationFromRealtime": {
+      const existing = (state.notifications ?? []).findIndex(
+        (n) => n.id === action.notification.id
+      );
+      if (existing >= 0) {
+        const next = [...(state.notifications ?? [])];
+        next[existing] = action.notification;
+        return { ...state, notifications: next };
+      }
+      return {
+        ...state,
+        notifications: [action.notification, ...(state.notifications ?? [])],
+      };
+    }
+
     case "addPhoto":
       return { ...state, photos: [action.photo, ...(state.photos ?? [])] };
     case "updatePhoto":
@@ -314,6 +359,66 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [userId, loaded, load]);
+
+  // Realtime subscription on notifications. Inserts/updates/deletes from
+  // other devices stream in live.
+  useEffect(() => {
+    if (!userId) return;
+    const sb = (window as any).__supabase ?? null;
+    // Lazy import the supabase client without creating a hard dep cycle —
+    // it's already a singleton via lib/supabase.
+    let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
+    import("@/lib/supabase").then(({ getSupabase }) => {
+      if (cancelled) return;
+      const client = getSupabase();
+      if (!client) return;
+      const channel = client
+        .channel(`notif:${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+          (payload: any) => {
+            // notificationFromRow lives in mappers
+            import("@/lib/mappers").then(({ notificationFromRow }) => {
+              baseDispatch({
+                type: "upsertNotificationFromRealtime",
+                notification: notificationFromRow(payload.new),
+              });
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+          (payload: any) => {
+            import("@/lib/mappers").then(({ notificationFromRow }) => {
+              baseDispatch({
+                type: "upsertNotificationFromRealtime",
+                notification: notificationFromRow(payload.new),
+              });
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+          (payload: any) => {
+            const id = payload.old?.id;
+            if (id) baseDispatch({ type: "deleteNotification", id });
+          }
+        )
+        .subscribe();
+      unsubscribe = () => {
+        client.removeChannel(channel);
+      };
+    });
+    void sb;
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [userId]);
 
   const reset = useCallback(() => {
     if (userId) clearCache(userId);
@@ -512,6 +617,35 @@ async function syncAction(action: Action, userId: string): Promise<void> {
       if (r.error) throw r.error;
       return;
     }
+
+    case "addNotification": {
+      const r = await api.insertNotification(action.notification, userId);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "markNotificationRead": {
+      const r = await api.updateNotificationRead(action.id, action.read);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "markAllNotificationsRead": {
+      const r = await api.markAllNotificationsRead(userId);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "deleteNotification": {
+      const r = await api.deleteNotification(action.id);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "deleteAllNotifications": {
+      const r = await api.deleteAllNotifications(userId);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "upsertNotificationFromRealtime":
+      // Realtime-sourced — already on the server, no sync needed.
+      return;
 
     case "addPhoto": {
       const r = await api.insertPhoto(action.photo, userId);

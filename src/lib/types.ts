@@ -353,6 +353,87 @@ export interface Settings {
   avatarUrl?: string;
   /** Optional logo (data URL or remote URL). Defaults to /logo.svg. */
   logoUrl?: string;
+  /** Notification preferences */
+  notificationsEnabled?: boolean;
+  notifyAppointments?: boolean;
+  notifyPayments?: boolean;
+  notifyFollowUps?: boolean;
+  notifyReviews?: boolean;
+  notifyWeather?: boolean;
+  notifyUpdates?: boolean;
+  /** Minutes before an appointment to fire the "soon" notification */
+  reminderMinutes?: number;
+}
+
+export type NotificationType =
+  | "appointment_soon"
+  | "appointment_today"
+  | "appointment_tomorrow"
+  | "appointment_needs_confirm"
+  | "appointment_completed"
+  | "appointment_missing_payment"
+  | "follow_up_due"
+  | "review_due"
+  | "maintenance_due"
+  | "task_due"
+  | "low_supply"
+  | "weather_warning"
+  | "deposit_received"
+  | "invoice_paid"
+  | "invoice_overdue"
+  | "missing_before_photos"
+  | "missing_after_photos"
+  | "checklist_incomplete"
+  | "app_update_available"
+  | "app_update_completed"
+  | "info";
+
+export const NOTIFICATION_TYPE_META: Record<
+  NotificationType,
+  { label: string; icon: string; tone: string; group: NotificationGroup }
+> = {
+  appointment_soon: { label: "Appointment soon", icon: "Clock", tone: "primary", group: "appointments" },
+  appointment_today: { label: "Today's appointment", icon: "CalendarDays", tone: "primary", group: "appointments" },
+  appointment_tomorrow: { label: "Tomorrow's appointment", icon: "CalendarDays", tone: "primary", group: "appointments" },
+  appointment_needs_confirm: { label: "Needs confirmation", icon: "AlertCircle", tone: "amber", group: "appointments" },
+  appointment_completed: { label: "Appointment completed", icon: "CheckCircle2", tone: "emerald", group: "appointments" },
+  appointment_missing_payment: { label: "Missing payment", icon: "DollarSign", tone: "amber", group: "payments" },
+  follow_up_due: { label: "Follow-up due", icon: "Bell", tone: "violet", group: "followups" },
+  review_due: { label: "Review request", icon: "Star", tone: "amber", group: "reviews" },
+  maintenance_due: { label: "Maintenance due", icon: "Repeat", tone: "primary", group: "followups" },
+  task_due: { label: "Task due", icon: "CheckSquare", tone: "primary", group: "tasks" },
+  low_supply: { label: "Low supply", icon: "Wrench", tone: "amber", group: "tasks" },
+  weather_warning: { label: "Weather warning", icon: "CloudRain", tone: "amber", group: "weather" },
+  deposit_received: { label: "Deposit received", icon: "DollarSign", tone: "emerald", group: "payments" },
+  invoice_paid: { label: "Invoice paid", icon: "DollarSign", tone: "emerald", group: "payments" },
+  invoice_overdue: { label: "Invoice overdue", icon: "AlertCircle", tone: "rose", group: "payments" },
+  missing_before_photos: { label: "Missing before photos", icon: "ImageOff", tone: "amber", group: "appointments" },
+  missing_after_photos: { label: "Missing after photos", icon: "ImageOff", tone: "amber", group: "appointments" },
+  checklist_incomplete: { label: "Checklist incomplete", icon: "ListChecks", tone: "amber", group: "appointments" },
+  app_update_available: { label: "Update available", icon: "Download", tone: "primary", group: "updates" },
+  app_update_completed: { label: "App updated", icon: "CheckCircle2", tone: "emerald", group: "updates" },
+  info: { label: "Notification", icon: "Bell", tone: "slate", group: "info" },
+};
+
+export type NotificationGroup =
+  | "appointments"
+  | "payments"
+  | "followups"
+  | "reviews"
+  | "tasks"
+  | "weather"
+  | "updates"
+  | "info";
+
+export interface Notification {
+  id: ID;
+  type: NotificationType;
+  title: string;
+  message?: string;
+  linkUrl?: string;
+  metadata?: Record<string, unknown>;
+  read: boolean;
+  createdAt: string;
 }
 
 export interface AppData {
@@ -368,5 +449,6 @@ export interface AppData {
   checklists: ChecklistGroup[];
   blocks: BlockedTime[];
   photos: Photo[];
+  notifications: Notification[];
   settings: Settings;
 }

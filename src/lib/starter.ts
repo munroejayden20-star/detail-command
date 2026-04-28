@@ -45,6 +45,22 @@ export function makeStarterContent(): {
   };
 }
 
+/**
+ * Default notification preferences for a new account or any user whose
+ * settings row predates Phase 5. Used as a fallback wherever we read
+ * notify_* fields off the settings.
+ */
+export const DEFAULT_NOTIFICATION_PREFS = {
+  notificationsEnabled: true,
+  notifyAppointments: true,
+  notifyPayments: true,
+  notifyFollowUps: true,
+  notifyReviews: true,
+  notifyWeather: true,
+  notifyUpdates: true,
+  reminderMinutes: 60,
+} as const;
+
 
 /** Empty top-level shape (no records of any kind) — used pre-auth and as
  *  the initial value for the reducer. */
@@ -61,6 +77,7 @@ export const EMPTY_DATA: AppData = {
   checklists: [],
   blocks: [],
   photos: [],
+  notifications: [],
   settings: {
     theme: "system",
     bufferMinutes: 30,

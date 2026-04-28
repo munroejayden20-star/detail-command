@@ -110,3 +110,35 @@
 .status-bar-completed { @apply bg-violet-500; }
 .status-bar-follow-up { @apply bg-orange-500; }
 .status-bar-canceled { @apply bg-rose-500; }
+
+/* ---------- Phase 5 mobile-portrait polish ---------- */
+
+/* Global horizontal-overflow guard. A wide table or absolute element
+   shouldn't be able to make the whole document scroll sideways. */
+html, body, #root {
+  overflow-x: hidden;
+}
+
+/* iOS auto-zooms inputs whose font-size is < 16px. Force 16px on small
+   screens so the camera-mounted phone never zooms when you tap a field. */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  input[type="search"],
+  input[type="password"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Prevent rubber-band scroll behind sticky headers on iOS */
+html {
+  overscroll-behavior-y: contain;
+}
