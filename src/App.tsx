@@ -6,6 +6,7 @@ import { StoreProvider, useStore } from "@/store/store";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthGuard } from "@/auth/AuthGuard";
 import { LoginPage } from "@/auth/LoginPage";
+import { AuthCallback } from "@/auth/AuthCallback";
 import { Layout } from "@/components/layout/Layout";
 // Dashboard is the default landing page — keep it eager-loaded so the first
 // paint is instant. Every other route is lazy so the initial bundle stays small.
@@ -52,6 +53,8 @@ export default function App() {
       />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/auth/confirm" element={<AuthCallback />} />
         <Route
           element={
             <AuthGuard>
