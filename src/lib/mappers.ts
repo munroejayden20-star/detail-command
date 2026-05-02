@@ -33,6 +33,7 @@ export function customerToRow(c: Customer, userId: string) {
     phone: c.phone,
     email: c.email ?? null,
     address: c.address ?? null,
+    preferred_contact: c.preferredContact ?? null,
     vehicles: c.vehicles ?? [],
     notes: c.notes ?? null,
     is_repeat: !!c.isRepeat,
@@ -51,6 +52,7 @@ export function customerPatchToRow(p: Partial<Customer>): Record<string, unknown
   if (p.notes !== undefined) out.notes = p.notes ?? null;
   if (p.isRepeat !== undefined) out.is_repeat = !!p.isRepeat;
   if (p.isMonthlyMaintenance !== undefined) out.is_monthly_maintenance = !!p.isMonthlyMaintenance;
+  if (p.preferredContact !== undefined) out.preferred_contact = p.preferredContact ?? null;
   return out;
 }
 
@@ -61,6 +63,7 @@ export function customerFromRow(r: any): Customer {
     phone: r.phone,
     email: r.email ?? undefined,
     address: r.address ?? undefined,
+    preferredContact: r.preferred_contact ?? undefined,
     vehicles: r.vehicles ?? [],
     notes: r.notes ?? undefined,
     isRepeat: !!r.is_repeat,
@@ -100,6 +103,8 @@ export function appointmentToRow(a: Appointment, userId: string) {
     after_photos: a.afterPhotos ?? [],
     reminder_sent: !!a.reminderSent,
     travel_time_notes: a.travelTimeNotes ?? null,
+    source: a.source ?? "Dashboard",
+    booking_photo_urls: a.bookingPhotoUrls ?? [],
     created_at: a.createdAt,
   };
 }
@@ -131,6 +136,8 @@ export function appointmentPatchToRow(p: Partial<Appointment>): Record<string, u
   if (p.afterPhotos !== undefined) out.after_photos = p.afterPhotos ?? [];
   if (p.reminderSent !== undefined) out.reminder_sent = !!p.reminderSent;
   if (p.travelTimeNotes !== undefined) out.travel_time_notes = p.travelTimeNotes ?? null;
+  if (p.source !== undefined) out.source = p.source ?? "Dashboard";
+  if (p.bookingPhotoUrls !== undefined) out.booking_photo_urls = p.bookingPhotoUrls ?? [];
   return out;
 }
 
@@ -162,6 +169,8 @@ export function appointmentFromRow(r: any): Appointment {
     afterPhotos: r.after_photos ?? [],
     reminderSent: !!r.reminder_sent,
     travelTimeNotes: r.travel_time_notes ?? undefined,
+    source: r.source ?? "Dashboard",
+    bookingPhotoUrls: r.booking_photo_urls ?? [],
     createdAt: r.created_at,
   };
 }

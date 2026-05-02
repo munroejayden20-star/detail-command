@@ -511,59 +511,68 @@ export function SettingsPage() {
         </SettingsSection>
       ) : null}
 
-      {/* ── 5. Booking Page (coming soon) ─────────────────── */}
+      {/* ── 5. Booking Page ───────────────────────────────── */}
       {matches("booking", "book", "deposit", "slug", "auto", "confirm") ? (
         <SettingsSection
           id="booking"
           title="Booking Page"
           description="Public booking page for customers to request appointments."
           icon={Star}
-          badge="Coming soon"
+          badge={s.bookingPageEnabled ? "Live" : undefined}
         >
-          <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-6 text-center space-y-2">
-            <Star className="h-8 w-8 mx-auto text-muted-foreground/40" />
-            <p className="font-medium text-sm">Public booking page is coming soon</p>
-            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              A shareable link where customers can request appointments, view your services, and pay a deposit — all without a back-and-forth.
-            </p>
-          </div>
-          <div className="space-y-2 opacity-50 pointer-events-none">
-            <ToggleRow
-              label="Enable booking page"
-              hint="Allow customers to request appointments online."
-              checked={s.bookingPageEnabled ?? false}
-              onChange={(v) => update("bookingPageEnabled", v)}
-            />
+          <ToggleRow
+            label="Enable booking page"
+            hint="Allow customers to request appointments at your-site.com/book."
+            checked={s.bookingPageEnabled ?? false}
+            onChange={(v) => update("bookingPageEnabled", v)}
+          />
+
+          {s.bookingPageEnabled ? (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Booking page is live</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Share <span className="font-mono">/book</span> with customers to start receiving requests.
+                </p>
+              </div>
+              <a
+                href="/book"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0"
+              >
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+                  <ExternalLink className="h-3 w-3" />
+                  Preview
+                </Button>
+              </a>
+            </div>
+          ) : null}
+
+          <div className={cn("space-y-2", !s.bookingPageEnabled && "opacity-50 pointer-events-none")}>
             <ToggleRow
               label="Auto-confirm bookings"
-              hint="Incoming requests go straight to Confirmed status."
+              hint="Incoming requests go straight to Confirmed. Leave off to review each request first."
               checked={s.autoConfirmBookings ?? false}
               onChange={(v) => update("autoConfirmBookings", v)}
             />
             <ToggleRow
               label="Require deposit"
+              hint="Deposit collection requires Stripe setup (coming soon)."
               checked={s.depositRequired ?? false}
               onChange={(v) => update("depositRequired", v)}
+              disabled
             />
-            <Field label="Deposit amount ($)">
-              <Input
-                type="number"
-                min="0"
-                value={s.depositAmount ?? ""}
-                onChange={(e) =>
-                  update("depositAmount", e.target.value ? Number(e.target.value) : undefined)
-                }
-                placeholder="50"
-              />
-            </Field>
-            <Field label="Booking page URL slug" hint="yoursite.com/book/your-slug">
-              <Input
-                value={s.bookingPageSlug ?? ""}
-                onChange={(e) => update("bookingPageSlug", e.target.value || undefined)}
-                placeholder="my-detail-co"
-              />
-            </Field>
           </div>
+
+          <Field label="Default quote disclaimer" hint="Shown at the bottom of the booking review step.">
+            <Textarea
+              rows={2}
+              value={s.defaultQuoteDisclaimer ?? ""}
+              onChange={(e) => update("defaultQuoteDisclaimer", e.target.value || undefined)}
+              placeholder="Estimated price may vary based on actual vehicle condition. Final price confirmed on-site."
+            />
+          </Field>
         </SettingsSection>
       ) : null}
 

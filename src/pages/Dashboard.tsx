@@ -29,6 +29,7 @@ import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
 import { ReachOutDialog, type ReachOutContact } from "@/components/contact/ReachOutDialog";
+import { BookingRequests } from "@/components/dashboard/BookingRequests";
 import { useStore } from "@/store/store";
 import { vehicleStr } from "@/lib/utils";
 import {
@@ -147,6 +148,9 @@ export function DashboardPage() {
           icon={<CheckSquare className="h-4 w-4" />}
         />
       </div>
+
+      {/* Booking requests */}
+      <BookingRequests onReachOut={(contact) => setReachContact(contact)} />
 
       {/* Two-column grid */}
       <div className="grid gap-6 lg:grid-cols-3">

@@ -174,6 +174,7 @@ export function CalendarPage() {
 
 function Legend() {
   const items: { value: JobStatus; label: string }[] = [
+    { value: "pending_approval", label: "Pending Approval" },
     { value: "inquiry", label: "Inquiry" },
     { value: "scheduled", label: "Scheduled" },
     { value: "confirmed", label: "Confirmed" },

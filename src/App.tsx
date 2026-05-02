@@ -12,6 +12,7 @@ import { Layout } from "@/components/layout/Layout";
 // paint is instant. Every other route is lazy so the initial bundle stays small.
 import { DashboardPage } from "@/pages/Dashboard";
 
+const BookingPage = lazy(() => import("@/pages/BookingPage").then((m) => ({ default: m.BookingPage })));
 const CalendarPage = lazy(() => import("@/pages/Calendar").then((m) => ({ default: m.CalendarPage })));
 const CustomersPage = lazy(() => import("@/pages/Customers").then((m) => ({ default: m.CustomersPage })));
 const CustomerDetailPage = lazy(() => import("@/pages/CustomerDetail").then((m) => ({ default: m.CustomerDetailPage })));
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/confirm" element={<AuthCallback />} />
+        <Route path="/book" element={lazyRoute(<BookingPage />)} />
         <Route
           element={
             <AuthGuard>

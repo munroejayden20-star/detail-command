@@ -1,6 +1,7 @@
 export type ID = string;
 
 export type JobStatus =
+  | "pending_approval"
   | "inquiry"
   | "scheduled"
   | "confirmed"
@@ -10,6 +11,7 @@ export type JobStatus =
   | "canceled";
 
 export const JOB_STATUSES: { value: JobStatus; label: string; tone: string }[] = [
+  { value: "pending_approval", label: "Pending Approval", tone: "status-pending-approval" },
   { value: "inquiry", label: "Inquiry", tone: "status-inquiry" },
   { value: "scheduled", label: "Scheduled", tone: "status-scheduled" },
   { value: "confirmed", label: "Confirmed", tone: "status-confirmed" },
@@ -49,6 +51,7 @@ export interface Vehicle {
   make: string;
   model: string;
   color: string;
+  size?: string;
   conditionNotes?: string;
 }
 
@@ -58,6 +61,7 @@ export interface Customer {
   phone: string;
   email?: string;
   address?: string;
+  preferredContact?: string;
   vehicles: Vehicle[];
   notes?: string;
   isRepeat?: boolean;
@@ -102,6 +106,8 @@ export interface Appointment {
   afterPhotos?: string[];
   reminderSent?: boolean;
   travelTimeNotes?: string;
+  source?: string;
+  bookingPhotoUrls?: string[];
   createdAt: string;
 }
 
@@ -391,6 +397,7 @@ export interface Settings {
 }
 
 export type NotificationType =
+  | "new_booking_request"
   | "appointment_soon"
   | "appointment_today"
   | "appointment_tomorrow"
@@ -417,6 +424,7 @@ export const NOTIFICATION_TYPE_META: Record<
   NotificationType,
   { label: string; icon: string; tone: string; group: NotificationGroup }
 > = {
+  new_booking_request: { label: "New booking request", icon: "CalendarPlus", tone: "primary", group: "appointments" },
   appointment_soon: { label: "Appointment soon", icon: "Clock", tone: "primary", group: "appointments" },
   appointment_today: { label: "Today's appointment", icon: "CalendarDays", tone: "primary", group: "appointments" },
   appointment_tomorrow: { label: "Tomorrow's appointment", icon: "CalendarDays", tone: "primary", group: "appointments" },
