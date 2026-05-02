@@ -7,6 +7,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 import { useUpdateChecker } from "@/hooks/useUpdateChecker";
 import { UpdateBanner } from "@/components/updates/UpdateBanner";
+import { MigrationBanner } from "@/components/migration/MigrationBanner";
 
 export function Layout() {
   const [open, setOpen] = useState(false);
@@ -20,6 +21,7 @@ export function Layout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar onMenu={() => setOpen((o) => !o)} />
         <UpdateBanner />
+        <MigrationBanner />
         <main className="flex-1 overflow-y-auto scrollbar-thin">
           <div
             className="mx-auto w-full max-w-7xl px-4 pb-24 pt-5 md:px-6 md:pb-8 md:pt-8"

@@ -292,17 +292,26 @@ create policy "users insert own settings" on settings for insert with check (aut
 create policy "users update own settings" on settings for update using (auth.uid() = user_id);
 create policy "users delete own settings" on settings for delete using (auth.uid() = user_id);
 
--- ---------- Realtime publication (Phase 5) ----------
--- Enable realtime cross-device sync on notifications. Idempotent —
--- skip silently if the table is already in the publication.
+-- ---------- Realtime publication (cross-device sync) ----------
+-- Enable realtime on all user-owned tables so changes from one device
+-- stream live to others. Idempotent — skips tables already published.
 do $$
+declare
+  t text;
+  tables text[] := array[
+    'customers','appointments','leads','tasks','services',
+    'expenses','startup_items','templates','checklist_groups',
+    'blocked_times','photos','notifications','settings'
+  ];
 begin
-  perform 1
-  from pg_publication_tables
-  where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'notifications';
-  if not found then
-    execute 'alter publication supabase_realtime add table notifications';
-  end if;
+  foreach t in array tables loop
+    perform 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t;
+    if not found then
+      execute format('alter publication supabase_realtime add table %I', t);
+    end if;
+  end loop;
 end$$;
 
 -- ---------- Storage bucket for photos (Phase 4) ----------

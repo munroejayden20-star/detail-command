@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { toast } from "sonner";
 import type {
   AppData,
   Appointment,
@@ -302,6 +303,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!uid) return;
     syncAction(action, uid).catch((err) => {
       console.error("[sync]", action.type, err);
+      toast.error("Sync failed — change may not appear on other devices", {
+        description: err?.message ?? String(err),
+      });
     });
   }, []);
 
@@ -323,17 +327,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       baseDispatch({ type: "set", data: fresh });
       setLoaded(true);
     } catch (e) {
-      console.error(e);
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load your data from Supabase. Check your connection and try again."
-      );
-      // Fall back to cache if we have one
+      const msg = e instanceof Error
+        ? e.message
+        : "Failed to load your data from Supabase. Check your connection and try again.";
+      console.error("[store] load failed:", msg, e);
+      setError(msg);
+      // Show cache but mark it as stale so user knows
       const cached = loadCachedData(userId);
       if (cached) {
         baseDispatch({ type: "set", data: cached });
         setLoaded(true);
+        toast.warning("Showing cached data — couldn't reach Supabase", {
+          description: msg,
+        });
+      } else {
+        toast.error("Could not load data from Supabase", {
+          description: msg,
+        });
       }
     } finally {
       setLoading(false);
@@ -351,35 +361,73 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [data, userId, loaded]);
 
-  // Refetch on tab focus to pick up cross-device changes
+  // Refetch on tab focus OR visibility change (mobile browsers use visibilitychange)
   useEffect(() => {
-    function onFocus() {
+    function refetch() {
       if (userId && loaded) load();
     }
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    function onVisibility() {
+      if (document.visibilityState === "visible") refetch();
+    }
+    window.addEventListener("focus", refetch);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", refetch);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [userId, loaded, load]);
 
-  // Realtime subscription on notifications. Inserts/updates/deletes from
-  // other devices stream in live.
+  // Realtime subscriptions — sync changes from other devices live.
+  // Covers all core business tables so cross-device edits appear instantly.
   useEffect(() => {
     if (!userId) return;
-    const sb = (window as any).__supabase ?? null;
-    // Lazy import the supabase client without creating a hard dep cycle —
-    // it's already a singleton via lib/supabase.
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
+
     import("@/lib/supabase").then(({ getSupabase }) => {
       if (cancelled) return;
       const client = getSupabase();
       if (!client) return;
-      const channel = client
-        .channel(`notif:${userId}`)
+
+      const channel = client.channel(`sync:${userId}`);
+
+      // For core tables, any INSERT/UPDATE/DELETE triggers a full refetch.
+      // This is simple and guarantees consistency across devices without
+      // needing per-table fromRow logic for every possible partial update.
+      const coreTables = [
+        "customers",
+        "appointments",
+        "leads",
+        "tasks",
+        "services",
+        "expenses",
+        "startup_items",
+        "templates",
+        "checklist_groups",
+        "blocked_times",
+        "photos",
+        "settings",
+      ];
+
+      for (const table of coreTables) {
+        channel.on(
+          "postgres_changes",
+          { event: "*", schema: "public", table, filter: `user_id=eq.${userId}` },
+          () => {
+            // Debounce: only refetch if we're visible (avoids hammering while backgrounded)
+            if (document.visibilityState === "visible") {
+              load();
+            }
+          }
+        );
+      }
+
+      // Notifications get granular handling so the bell updates instantly
+      channel
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
           (payload: any) => {
-            // notificationFromRow lives in mappers
             import("@/lib/mappers").then(({ notificationFromRow }) => {
               baseDispatch({
                 type: "upsertNotificationFromRealtime",
@@ -407,18 +455,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             const id = payload.old?.id;
             if (id) baseDispatch({ type: "deleteNotification", id });
           }
-        )
-        .subscribe();
+        );
+
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log("[realtime] connected — cross-device sync active");
+        }
+        if (status === "CHANNEL_ERROR") {
+          console.warn("[realtime] channel error — will retry automatically");
+        }
+      });
+
       unsubscribe = () => {
         client.removeChannel(channel);
       };
     });
-    void sb;
+
     return () => {
       cancelled = true;
       unsubscribe?.();
     };
-  }, [userId]);
+  }, [userId, load]);
 
   const reset = useCallback(() => {
     if (userId) clearCache(userId);
