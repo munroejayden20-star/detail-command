@@ -48,6 +48,23 @@ import { makeStarterContent, EMPTY_DATA } from "./starter";
 export async function fetchAllForUser(userId: string): Promise<AppData> {
   const sb = requireSupabase();
 
+  // Helper: query a table, return empty array if the table doesn't exist yet
+  // (Supabase returns code "42P01" for missing relations). This lets the app
+  // load even if the user hasn't applied all schema migrations.
+  type QResult = { data: any[] | null; error: any };
+  async function safeQuery(promise: PromiseLike<QResult>): Promise<QResult> {
+    const r = await promise;
+    if (r.error) {
+      const code = r.error?.code;
+      const msg = r.error?.message ?? "";
+      if (code === "42P01" || code === "PGRST200" || code === "PGRST204" || msg.includes("does not exist") || msg.includes("is not found")) {
+        console.warn("[api] table missing, returning empty:", msg);
+        return { data: [], error: null };
+      }
+    }
+    return r;
+  }
+
   const [
     customers,
     appointments,
@@ -63,26 +80,51 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     notifications,
     settingsRow,
   ] = await Promise.all([
-    sb.from("customers").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-    sb.from("appointments").select("*").eq("user_id", userId).order("start_at", { ascending: true }),
-    sb.from("leads").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-    sb.from("tasks").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-    sb.from("services").select("*").eq("user_id", userId),
-    sb.from("expenses").select("*").eq("user_id", userId).order("date", { ascending: false }),
-    sb.from("startup_items").select("*").eq("user_id", userId),
-    sb.from("templates").select("*").eq("user_id", userId),
-    sb.from("checklist_groups").select("*").eq("user_id", userId),
-    sb.from("blocked_times").select("*").eq("user_id", userId),
-    sb.from("photos").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-    sb.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(200),
+    safeQuery(sb.from("customers").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
+    safeQuery(sb.from("appointments").select("*").eq("user_id", userId).order("start_at", { ascending: true })),
+    safeQuery(sb.from("leads").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
+    safeQuery(sb.from("tasks").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
+    safeQuery(sb.from("services").select("*").eq("user_id", userId)),
+    safeQuery(sb.from("expenses").select("*").eq("user_id", userId).order("date", { ascending: false })),
+    safeQuery(sb.from("startup_items").select("*").eq("user_id", userId)),
+    safeQuery(sb.from("templates").select("*").eq("user_id", userId)),
+    safeQuery(sb.from("checklist_groups").select("*").eq("user_id", userId)),
+    safeQuery(sb.from("blocked_times").select("*").eq("user_id", userId)),
+    safeQuery(sb.from("photos").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
+    safeQuery(sb.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(200)),
     sb.from("settings").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
-  const errs = [customers, appointments, leads, tasks, services, expenses, startup, templates, checklists, blocks, photos, notifications].filter(
-    (r) => r.error
-  );
-  if (errs.length) throw errs[0].error;
-  if (settingsRow.error) throw settingsRow.error;
+  // Only throw on errors that aren't missing-table errors (those were handled above)
+  const results = [
+    { name: "customers", ...customers },
+    { name: "appointments", ...appointments },
+    { name: "leads", ...leads },
+    { name: "tasks", ...tasks },
+    { name: "services", ...services },
+    { name: "expenses", ...expenses },
+    { name: "startup_items", ...startup },
+    { name: "templates", ...templates },
+    { name: "checklist_groups", ...checklists },
+    { name: "blocked_times", ...blocks },
+    { name: "photos", ...photos },
+    { name: "notifications", ...notifications },
+  ];
+  const errs = results.filter((r) => r.error);
+  if (errs.length) {
+    console.error("[api] fetchAllForUser errors:", errs.map((e) => ({ table: e.name, error: e.error })));
+    throw new Error(`Failed to load ${errs[0].name}: ${errs[0].error?.message ?? "unknown error"}`);
+  }
+  // Settings table missing is OK — we'll use defaults
+  if (settingsRow.error) {
+    const code = settingsRow.error?.code;
+    const msg = settingsRow.error?.message ?? "";
+    if (code === "42P01" || code === "PGRST200" || code === "PGRST204" || msg.includes("does not exist") || msg.includes("is not found")) {
+      console.warn("[api] settings table missing, using defaults");
+    } else {
+      throw settingsRow.error;
+    }
+  }
 
   return {
     version: 2,
@@ -112,31 +154,64 @@ export async function userHasAnyData(userId: string): Promise<boolean> {
     .from("services")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId);
-  if (error) throw error;
+  if (error) {
+    // If services table doesn't exist, treat as "no data"
+    const msg = error?.message ?? "";
+    if (error.code === "42P01" || error.code === "PGRST200" || error.code === "PGRST204" || msg.includes("does not exist") || msg.includes("is not found")) {
+      return false;
+    }
+    throw error;
+  }
   return (count ?? 0) > 0;
 }
 
 /**
  * Insert the starter content for a brand-new account.
  * Idempotent: only seeds if the user has no services yet.
+ * If tables are missing (schema not applied), skips seeding gracefully.
  */
 export async function seedStarterForUser(userId: string): Promise<AppData> {
   const sb = requireSupabase();
-  const already = await userHasAnyData(userId);
+
+  let already = false;
+  try {
+    already = await userHasAnyData(userId);
+  } catch (e) {
+    console.warn("[api] Could not check existing data, skipping seed:", e);
+    return fetchAllForUser(userId);
+  }
+
   if (already) return fetchAllForUser(userId);
 
   const starter = makeStarterContent();
 
-  const inserts = await Promise.all([
-    sb.from("services").insert(starter.services.map((s) => serviceToRow(s, userId))),
-    sb.from("templates").insert(starter.templates.map((t) => templateToRow(t, userId))),
-    sb.from("checklist_groups").insert(starter.checklists.map((c) => checklistToRow(c, userId))),
-    sb.from("startup_items").insert(starter.startup.map((i) => startupToRow(i, userId))),
-    sb.from("blocked_times").insert(starter.blocks.map((b) => blockToRow(b, userId))),
-    sb.from("settings").upsert(settingsToRow(starter.settings, userId), { onConflict: "user_id" }),
-  ]);
+  // Starter arrays are empty (blank-slate) so there's nothing to insert unless
+  // settings row — but try anyway in case starter evolves
+  try {
+    const inserts = await Promise.all([
+      starter.services.length ? sb.from("services").insert(starter.services.map((s) => serviceToRow(s, userId))) : { error: null },
+      starter.templates.length ? sb.from("templates").insert(starter.templates.map((t) => templateToRow(t, userId))) : { error: null },
+      starter.checklists.length ? sb.from("checklist_groups").insert(starter.checklists.map((c) => checklistToRow(c, userId))) : { error: null },
+      starter.startup.length ? sb.from("startup_items").insert(starter.startup.map((i) => startupToRow(i, userId))) : { error: null },
+      starter.blocks.length ? sb.from("blocked_times").insert(starter.blocks.map((b) => blockToRow(b, userId))) : { error: null },
+      sb.from("settings").upsert(settingsToRow(starter.settings, userId), { onConflict: "user_id" }),
+    ]);
 
-  for (const r of inserts) if (r.error) throw r.error;
+    for (const r of inserts) {
+      if (r.error) {
+        const msg = r.error?.message ?? "";
+        // Skip missing-table errors during seeding
+        if (r.error.code === "42P01" || r.error.code === "PGRST200" || r.error.code === "PGRST204" || msg.includes("does not exist") || msg.includes("is not found")) {
+          console.warn("[api] seed: table missing, skipping:", msg);
+          continue;
+        }
+        throw r.error;
+      }
+    }
+  } catch (e) {
+    console.warn("[api] seed failed (non-fatal), loading what exists:", e);
+  }
+
   return fetchAllForUser(userId);
 }
 
