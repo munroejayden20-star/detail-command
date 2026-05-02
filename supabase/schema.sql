@@ -225,6 +225,26 @@ alter table settings
   add column if not exists notify_updates boolean not null default true,
   add column if not exists reminder_minutes integer not null default 60;
 
+-- Settings overhaul: new profile, scheduling, defaults, and booking columns
+alter table settings
+  add column if not exists google_review_link text,
+  add column if not exists service_area_radius integer,
+  add column if not exists weekend_availability boolean not null default true,
+  add column if not exists workday_start text not null default '08:00',
+  add column if not exists workday_end text not null default '18:00',
+  add column if not exists default_appointment_duration integer not null default 90,
+  add column if not exists default_tax_rate numeric,
+  add column if not exists default_travel_fee numeric,
+  add column if not exists default_quote_disclaimer text,
+  add column if not exists default_confirmation_message text,
+  add column if not exists default_follow_up_days integer not null default 2,
+  add column if not exists default_review_request_message text,
+  add column if not exists booking_page_enabled boolean not null default false,
+  add column if not exists booking_page_slug text,
+  add column if not exists auto_confirm_bookings boolean not null default false,
+  add column if not exists deposit_required boolean not null default false,
+  add column if not exists deposit_amount numeric;
+
 -- Phase 4: photos metadata
 create table if not exists photos (
   id text primary key,

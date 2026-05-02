@@ -18,10 +18,8 @@ const CustomerDetailPage = lazy(() => import("@/pages/CustomerDetail").then((m) 
 const LeadsPage = lazy(() => import("@/pages/Leads").then((m) => ({ default: m.LeadsPage })));
 const TasksPage = lazy(() => import("@/pages/Tasks").then((m) => ({ default: m.TasksPage })));
 const ServicesPage = lazy(() => import("@/pages/Services").then((m) => ({ default: m.ServicesPage })));
-const TemplatesPage = lazy(() => import("@/pages/Templates").then((m) => ({ default: m.TemplatesPage })));
 const RevenuePage = lazy(() => import("@/pages/Revenue").then((m) => ({ default: m.RevenuePage })));
 const ExpensesPage = lazy(() => import("@/pages/Expenses").then((m) => ({ default: m.ExpensesPage })));
-const StartupPage = lazy(() => import("@/pages/Startup").then((m) => ({ default: m.StartupPage })));
 const ChecklistsPage = lazy(() => import("@/pages/Checklists").then((m) => ({ default: m.ChecklistsPage })));
 const SettingsPage = lazy(() => import("@/pages/Settings").then((m) => ({ default: m.SettingsPage })));
 const CalculatorPage = lazy(() => import("@/pages/Calculator").then((m) => ({ default: m.CalculatorPage })));
@@ -73,10 +71,11 @@ export default function App() {
           <Route path="/leads" element={lazyRoute(<LeadsPage />)} />
           <Route path="/tasks" element={lazyRoute(<TasksPage />)} />
           <Route path="/services" element={lazyRoute(<ServicesPage />)} />
-          <Route path="/templates" element={lazyRoute(<TemplatesPage />)} />
           <Route path="/revenue" element={lazyRoute(<RevenuePage />)} />
           <Route path="/expenses" element={lazyRoute(<ExpensesPage />)} />
-          <Route path="/startup" element={lazyRoute(<StartupPage />)} />
+          {/* /templates and /startup removed — redirecting to home */}
+          <Route path="/templates" element={<Navigate to="/" replace />} />
+          <Route path="/startup" element={<Navigate to="/" replace />} />
           <Route path="/checklists" element={lazyRoute(<ChecklistsPage />)} />
           <Route path="/calculator" element={lazyRoute(<CalculatorPage />)} />
           <Route path="/photos" element={lazyRoute(<PhotosPage />)} />

@@ -334,26 +334,49 @@ export interface Photo {
 }
 
 export interface Settings {
+  // ── Appearance ──────────────────────────────────────────────────────────
   theme: "light" | "dark" | "system";
-  bufferMinutes: number;
-  maxJobsPerDay: number;
-  weekdayEvenings: boolean;
-  weekdayUnavailableStart: string; // HH:mm
-  weekdayUnavailableEnd: string;
-  startupGoal: number;
+  accentColor?: string;
+
+  // ── Profile & Business ───────────────────────────────────────────────────
   businessName: string;
   ownerName: string;
   contactPhone: string;
   email?: string;
   serviceArea?: string;
+  serviceAreaRadius?: number;       // miles
   businessDescription?: string;
-  /** Tailwind brand color name or HEX — used as accent in UI accents. */
-  accentColor?: string;
-  /** Optional avatar (data URL or remote URL). For now set as URL string. */
+  googleReviewLink?: string;
   avatarUrl?: string;
-  /** Optional logo (data URL or remote URL). Defaults to /logo.svg. */
   logoUrl?: string;
-  /** Notification preferences */
+
+  // ── Scheduling ───────────────────────────────────────────────────────────
+  bufferMinutes: number;
+  maxJobsPerDay: number;
+  weekdayEvenings: boolean;
+  weekdayUnavailableStart: string;  // HH:mm  (unavailable block start on weekdays)
+  weekdayUnavailableEnd: string;    // HH:mm  (unavailable block end on weekdays)
+  weekendAvailability: boolean;
+  workdayStart: string;             // HH:mm  (when work day starts)
+  workdayEnd: string;               // HH:mm  (when work day ends)
+  defaultAppointmentDuration: number; // minutes
+
+  // ── Defaults & Messaging ─────────────────────────────────────────────────
+  defaultTaxRate?: number;          // percentage, e.g. 8.5
+  defaultTravelFee?: number;        // dollars
+  defaultQuoteDisclaimer?: string;
+  defaultConfirmationMessage?: string;
+  defaultFollowUpDays?: number;     // days after completion to follow up
+  defaultReviewRequestMessage?: string;
+
+  // ── Booking Page (future feature) ────────────────────────────────────────
+  bookingPageEnabled?: boolean;
+  bookingPageSlug?: string;
+  autoConfirmBookings?: boolean;
+  depositRequired?: boolean;
+  depositAmount?: number;
+
+  // ── Notifications ────────────────────────────────────────────────────────
   notificationsEnabled?: boolean;
   notifyAppointments?: boolean;
   notifyPayments?: boolean;
@@ -361,8 +384,10 @@ export interface Settings {
   notifyReviews?: boolean;
   notifyWeather?: boolean;
   notifyUpdates?: boolean;
-  /** Minutes before an appointment to fire the "soon" notification */
   reminderMinutes?: number;
+
+  // ── Legacy (kept for backward-compat, no longer shown in UI) ─────────────
+  startupGoal: number;
 }
 
 export type NotificationType =

@@ -8,10 +8,8 @@ import {
   MoreHorizontal,
   UserPlus,
   Sparkles,
-  MessageSquareText,
   TrendingUp,
   Receipt,
-  Wrench,
   ListChecks,
   Calculator,
   Image as ImageIcon,
@@ -43,11 +41,9 @@ const MORE: NavItem[] = [
   { to: "/services", label: "Services", icon: Sparkles },
   { to: "/calculator", label: "Calculator", icon: Calculator },
   { to: "/photos", label: "Photos", icon: ImageIcon },
-  { to: "/templates", label: "Templates", icon: MessageSquareText },
+  { to: "/checklists", label: "Checklists", icon: ListChecks },
   { to: "/revenue", label: "Revenue", icon: TrendingUp },
   { to: "/expenses", label: "Expenses", icon: Receipt },
-  { to: "/startup", label: "Budget", icon: Wrench },
-  { to: "/checklists", label: "Checklists", icon: ListChecks },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 

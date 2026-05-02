@@ -592,10 +592,27 @@ export function settingsToRow(s: Settings, userId: string) {
     contact_phone: s.contactPhone,
     email: s.email ?? null,
     service_area: s.serviceArea ?? null,
+    service_area_radius: s.serviceAreaRadius ?? null,
     business_description: s.businessDescription ?? null,
+    google_review_link: s.googleReviewLink ?? null,
     accent_color: s.accentColor ?? null,
     avatar_url: s.avatarUrl ?? null,
     logo_url: s.logoUrl ?? null,
+    weekend_availability: s.weekendAvailability ?? true,
+    workday_start: s.workdayStart ?? "08:00",
+    workday_end: s.workdayEnd ?? "18:00",
+    default_appointment_duration: s.defaultAppointmentDuration ?? 90,
+    default_tax_rate: s.defaultTaxRate ?? null,
+    default_travel_fee: s.defaultTravelFee ?? null,
+    default_quote_disclaimer: s.defaultQuoteDisclaimer ?? null,
+    default_confirmation_message: s.defaultConfirmationMessage ?? null,
+    default_follow_up_days: s.defaultFollowUpDays ?? 2,
+    default_review_request_message: s.defaultReviewRequestMessage ?? null,
+    booking_page_enabled: s.bookingPageEnabled ?? false,
+    booking_page_slug: s.bookingPageSlug ?? null,
+    auto_confirm_bookings: s.autoConfirmBookings ?? false,
+    deposit_required: s.depositRequired ?? false,
+    deposit_amount: s.depositAmount ?? null,
     notifications_enabled: s.notificationsEnabled ?? true,
     notify_appointments: s.notifyAppointments ?? true,
     notify_payments: s.notifyPayments ?? true,
@@ -621,10 +638,27 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.contactPhone !== undefined) out.contact_phone = p.contactPhone;
   if (p.email !== undefined) out.email = p.email ?? null;
   if (p.serviceArea !== undefined) out.service_area = p.serviceArea ?? null;
+  if (p.serviceAreaRadius !== undefined) out.service_area_radius = p.serviceAreaRadius ?? null;
   if (p.businessDescription !== undefined) out.business_description = p.businessDescription ?? null;
+  if (p.googleReviewLink !== undefined) out.google_review_link = p.googleReviewLink ?? null;
   if (p.accentColor !== undefined) out.accent_color = p.accentColor ?? null;
   if (p.avatarUrl !== undefined) out.avatar_url = p.avatarUrl ?? null;
   if (p.logoUrl !== undefined) out.logo_url = p.logoUrl ?? null;
+  if (p.weekendAvailability !== undefined) out.weekend_availability = !!p.weekendAvailability;
+  if (p.workdayStart !== undefined) out.workday_start = p.workdayStart;
+  if (p.workdayEnd !== undefined) out.workday_end = p.workdayEnd;
+  if (p.defaultAppointmentDuration !== undefined) out.default_appointment_duration = p.defaultAppointmentDuration;
+  if (p.defaultTaxRate !== undefined) out.default_tax_rate = p.defaultTaxRate ?? null;
+  if (p.defaultTravelFee !== undefined) out.default_travel_fee = p.defaultTravelFee ?? null;
+  if (p.defaultQuoteDisclaimer !== undefined) out.default_quote_disclaimer = p.defaultQuoteDisclaimer ?? null;
+  if (p.defaultConfirmationMessage !== undefined) out.default_confirmation_message = p.defaultConfirmationMessage ?? null;
+  if (p.defaultFollowUpDays !== undefined) out.default_follow_up_days = p.defaultFollowUpDays;
+  if (p.defaultReviewRequestMessage !== undefined) out.default_review_request_message = p.defaultReviewRequestMessage ?? null;
+  if (p.bookingPageEnabled !== undefined) out.booking_page_enabled = !!p.bookingPageEnabled;
+  if (p.bookingPageSlug !== undefined) out.booking_page_slug = p.bookingPageSlug ?? null;
+  if (p.autoConfirmBookings !== undefined) out.auto_confirm_bookings = !!p.autoConfirmBookings;
+  if (p.depositRequired !== undefined) out.deposit_required = !!p.depositRequired;
+  if (p.depositAmount !== undefined) out.deposit_amount = p.depositAmount ?? null;
   if (p.notificationsEnabled !== undefined) out.notifications_enabled = !!p.notificationsEnabled;
   if (p.notifyAppointments !== undefined) out.notify_appointments = !!p.notifyAppointments;
   if (p.notifyPayments !== undefined) out.notify_payments = !!p.notifyPayments;
@@ -641,7 +675,7 @@ export function settingsFromRow(r: any): Settings {
     theme: (r.theme ?? "system") as Settings["theme"],
     bufferMinutes: Number(r.buffer_minutes ?? 30),
     maxJobsPerDay: Number(r.max_jobs_per_day ?? 3),
-    weekdayEvenings: !!r.weekday_evenings,
+    weekdayEvenings: r.weekday_evenings ?? true,
     weekdayUnavailableStart: r.weekday_unavailable_start ?? "08:00",
     weekdayUnavailableEnd: r.weekday_unavailable_end ?? "17:00",
     startupGoal: Number(r.startup_goal ?? 2000),
@@ -650,10 +684,27 @@ export function settingsFromRow(r: any): Settings {
     contactPhone: r.contact_phone ?? "",
     email: r.email ?? undefined,
     serviceArea: r.service_area ?? undefined,
+    serviceAreaRadius: r.service_area_radius != null ? Number(r.service_area_radius) : undefined,
     businessDescription: r.business_description ?? undefined,
+    googleReviewLink: r.google_review_link ?? undefined,
     accentColor: r.accent_color ?? undefined,
     avatarUrl: r.avatar_url ?? undefined,
     logoUrl: r.logo_url ?? undefined,
+    weekendAvailability: r.weekend_availability ?? true,
+    workdayStart: r.workday_start ?? "08:00",
+    workdayEnd: r.workday_end ?? "18:00",
+    defaultAppointmentDuration: Number(r.default_appointment_duration ?? 90),
+    defaultTaxRate: r.default_tax_rate != null ? Number(r.default_tax_rate) : undefined,
+    defaultTravelFee: r.default_travel_fee != null ? Number(r.default_travel_fee) : undefined,
+    defaultQuoteDisclaimer: r.default_quote_disclaimer ?? undefined,
+    defaultConfirmationMessage: r.default_confirmation_message ?? undefined,
+    defaultFollowUpDays: Number(r.default_follow_up_days ?? 2),
+    defaultReviewRequestMessage: r.default_review_request_message ?? undefined,
+    bookingPageEnabled: r.booking_page_enabled ?? false,
+    bookingPageSlug: r.booking_page_slug ?? undefined,
+    autoConfirmBookings: r.auto_confirm_bookings ?? false,
+    depositRequired: r.deposit_required ?? false,
+    depositAmount: r.deposit_amount != null ? Number(r.deposit_amount) : undefined,
     notificationsEnabled: r.notifications_enabled ?? true,
     notifyAppointments: r.notify_appointments ?? true,
     notifyPayments: r.notify_payments ?? true,
