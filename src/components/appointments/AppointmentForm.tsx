@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { addMinutes, formatISO, parseISO } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -542,6 +542,43 @@ export function AppointmentForm({ appointment, initialDate, onDone, onDelete }: 
           </div>
         </div>
       </section>
+
+      {/* Booking Photos — read-only, submitted by customer via /book */}
+      {form.bookingPhotoUrls && form.bookingPhotoUrls.length > 0 && (
+        <>
+          <Separator />
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">Booking Photos</h3>
+              <span className="text-xs text-muted-foreground">
+                ({form.bookingPhotoUrls.length} submitted by customer)
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {form.bookingPhotoUrls.map((url, i) => (
+                <a
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block aspect-square rounded-lg overflow-hidden border border-border hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src={url}
+                    alt={`Booking photo ${i + 1}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </a>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Photos uploaded by the customer during their online booking request. Click to open full size.
+            </p>
+          </section>
+        </>
+      )}
 
       <div className="flex items-center justify-between gap-2 pt-2">
         {appointment && onDelete ? (

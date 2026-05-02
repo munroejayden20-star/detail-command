@@ -21,6 +21,14 @@ export function PhotoImage({ storagePath, alt = "", className, onClick }: Props)
     let cancelled = false;
     setError(false);
     setUrl(null);
+
+    // Booking photos from the public bucket are stored as full https:// URLs.
+    // Use them directly instead of trying to sign them against the private bucket.
+    if (storagePath.startsWith("https://") || storagePath.startsWith("http://")) {
+      setUrl(storagePath);
+      return;
+    }
+
     getSignedPhotoUrl(storagePath).then((u) => {
       if (cancelled) return;
       if (!u) setError(true);

@@ -870,15 +870,23 @@ export function BookingPage() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      // Upload photos first
+      // Upload photos — failures are non-fatal but logged so they can be debugged
       const photoUrls: string[] = [];
+      let photoFailCount = 0;
       for (const file of form.photoFiles) {
         try {
           const url = await uploadBookingPhoto(file);
           photoUrls.push(url);
-        } catch {
-          // Non-fatal: skip failed photo uploads
+        } catch (uploadErr) {
+          photoFailCount++;
+          console.error("[booking] Photo upload failed:", file.name, uploadErr);
         }
+      }
+      if (photoFailCount > 0) {
+        console.warn(
+          `[booking] ${photoFailCount} of ${form.photoFiles.length} photo(s) failed to upload. ` +
+          "Continuing with booking submission. Check booking-uploads bucket policies."
+        );
       }
 
       await submitPublicBooking({
@@ -910,6 +918,7 @@ export function BookingPage() {
       });
       setSubmitted(true);
     } catch (e: any) {
+      console.error("[booking] Submission failed:", e);
       setSubmitError(e?.message ?? "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);

@@ -245,6 +245,14 @@ alter table settings
   add column if not exists deposit_required boolean not null default false,
   add column if not exists deposit_amount numeric;
 
+-- Phase 5c: public booking page columns
+alter table appointments
+  add column if not exists source text not null default 'dashboard',
+  add column if not exists booking_photo_urls jsonb not null default '[]'::jsonb;
+
+alter table customers
+  add column if not exists preferred_contact text;
+
 -- Phase 4: photos metadata
 create table if not exists photos (
   id text primary key,
