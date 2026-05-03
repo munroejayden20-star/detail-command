@@ -8,6 +8,13 @@ export interface PublicService {
   priceHigh: number;
   durationMinutes: number;
   isAddon: boolean;
+  discount?: {
+    active: boolean;
+    type: "percent" | "fixed";
+    value: number;
+    label?: string;
+    expiry?: string;
+  };
 }
 
 export interface PublicBookingFaq {

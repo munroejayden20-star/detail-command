@@ -269,8 +269,28 @@ function fmtPrice(low: number, high: number) {
   return `$${low}–$${high}`;
 }
 
+function activeDiscount(s: PublicService) {
+  const d = s.discount;
+  if (!d?.active || !d.value) return null;
+  if (d.expiry && new Date(d.expiry) < new Date()) return null;
+  return d;
+}
+
+function applyDiscount(price: number, d: NonNullable<PublicService["discount"]>) {
+  if (d.type === "percent") return Math.round(price * (1 - d.value / 100));
+  return Math.max(0, price - d.value);
+}
+
+function discBadgeText(d: NonNullable<PublicService["discount"]>) {
+  if (d.label) return d.label;
+  return d.type === "percent" ? `${d.value}% OFF` : `$${d.value} OFF`;
+}
+
 function midPrice(s: PublicService) {
-  return Math.round((s.priceLow + s.priceHigh) / 2);
+  const mid = Math.round((s.priceLow + s.priceHigh) / 2);
+  const d = activeDiscount(s);
+  if (!d) return mid;
+  return applyDiscount(mid, d);
 }
 
 function fmtDuration(minutes: number) {
@@ -323,6 +343,10 @@ function ServiceCard({
   selected: boolean;
   onClick: () => void;
 }) {
+  const disc = activeDiscount(service);
+  const discLow = disc ? applyDiscount(service.priceLow, disc) : null;
+  const discHigh = disc ? applyDiscount(service.priceHigh, disc) : null;
+
   return (
     <button
       type="button"
@@ -333,6 +357,18 @@ function ServiceCard({
           : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
       }`}
     >
+      {disc && (
+        <div className="mb-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
+            🔥 {discBadgeText(disc)}
+            {disc.expiry && (
+              <span className="font-normal opacity-80">
+                {" "}· ends {new Date(disc.expiry).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </span>
+            )}
+          </span>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-white text-sm">{service.name}</p>
@@ -342,7 +378,18 @@ function ServiceCard({
           <p className="text-xs text-zinc-500 mt-1">Est. {fmtDuration(service.durationMinutes)}</p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="font-bold text-white text-sm">{fmtPrice(service.priceLow, service.priceHigh)}</p>
+          {disc ? (
+            <>
+              <p className="text-xs text-zinc-500 line-through leading-none">
+                {fmtPrice(service.priceLow, service.priceHigh)}
+              </p>
+              <p className="font-bold text-amber-400 text-sm mt-0.5">
+                {fmtPrice(discLow!, discHigh!)}
+              </p>
+            </>
+          ) : (
+            <p className="font-bold text-white text-sm">{fmtPrice(service.priceLow, service.priceHigh)}</p>
+          )}
           {selected ? (
             <span className="text-[10px] text-red-400 font-medium">Selected ✓</span>
           ) : null}
@@ -1368,8 +1415,36 @@ function ServicesShowcase({
   onSelect: (serviceId: string) => void;
 }) {
   const packages = services.filter((s) => !s.isAddon);
+  const deals = packages.filter((s) => activeDiscount(s) !== null);
+
   return (
     <section id="services" className="border-b border-zinc-800 bg-zinc-950 scroll-mt-20">
+      {/* Active deals banner */}
+      {deals.length > 0 && (
+        <div className="border-b border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+            <span className="text-amber-400 text-sm font-bold flex items-center gap-1.5">
+              🔥 Limited-Time Deals
+            </span>
+            {deals.map((s) => {
+              const d = activeDiscount(s)!;
+              return (
+                <span key={s.id} className="text-xs text-zinc-300">
+                  <span className="font-semibold text-white">{s.name}</span>
+                  {" — "}
+                  <span className="text-amber-400 font-bold">{discBadgeText(d)}</span>
+                  {d.expiry && (
+                    <span className="text-zinc-500 ml-1">
+                      · ends {new Date(d.expiry).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-4 py-16 md:py-20">
         <SectionTitle
           eyebrow="Services"
@@ -1431,15 +1506,42 @@ function ServiceShowcaseCard({
   }, [s.description]);
 
   return (
-    <article className="group relative rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 md:p-7 hover:border-red-600/50 transition-all flex flex-col">
+    <article className={`group relative rounded-2xl border bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 md:p-7 transition-all flex flex-col ${activeDiscount(s) ? "border-amber-500/40 hover:border-amber-500/70" : "border-zinc-800 hover:border-red-600/50"}`}>
+      {/* Discount ribbon */}
+      {activeDiscount(s) && (
+        <div className="absolute -top-px left-6 rounded-b-lg bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-white">
+            🔥 {discBadgeText(activeDiscount(s)!)}
+          </span>
+        </div>
+      )}
+
       {/* Service icon area */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="h-12 w-12 rounded-xl bg-red-600/15 border border-red-600/40 flex items-center justify-center">
-          <Sparkles className="h-5 w-5 text-red-400" />
+      <div className={`flex items-start justify-between gap-4 ${activeDiscount(s) ? "mt-5" : ""}`}>
+        <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${activeDiscount(s) ? "bg-amber-500/15 border border-amber-500/40" : "bg-red-600/15 border border-red-600/40"}`}>
+          <Sparkles className={`h-5 w-5 ${activeDiscount(s) ? "text-amber-400" : "text-red-400"}`} />
         </div>
         <div className="text-right">
-          <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">Starting at</p>
-          <p className="text-2xl font-extrabold text-white leading-none mt-1">${s.priceLow}</p>
+          {activeDiscount(s) ? (
+            <>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold line-through">
+                ${s.priceLow}
+              </p>
+              <p className="text-2xl font-extrabold text-amber-400 leading-none mt-0.5">
+                ${applyDiscount(s.priceLow, activeDiscount(s)!)}
+              </p>
+              {activeDiscount(s)!.expiry && (
+                <p className="text-[10px] text-zinc-500 mt-0.5">
+                  ends {new Date(activeDiscount(s)!.expiry!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">Starting at</p>
+              <p className="text-2xl font-extrabold text-white leading-none mt-1">${s.priceLow}</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -1486,9 +1588,13 @@ function ServiceShowcaseCard({
       <button
         type="button"
         onClick={() => onSelect(s.id)}
-        className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:border-red-500 hover:bg-red-600 transition-all"
+        className={`mt-6 inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold text-white transition-all ${
+          activeDiscount(s)
+            ? "border-amber-500/50 bg-amber-500/10 hover:bg-amber-500 hover:border-amber-500"
+            : "border-zinc-700 bg-zinc-900 hover:border-red-500 hover:bg-red-600"
+        }`}
       >
-        Select This Service
+        {activeDiscount(s) ? "Book This Deal" : "Select This Service"}
         <ArrowRight className="h-3.5 w-3.5" />
       </button>
     </article>

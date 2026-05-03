@@ -85,6 +85,14 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface ServiceDiscount {
+  active: boolean;
+  type: "percent" | "fixed";
+  value: number;
+  label?: string;
+  expiry?: string;
+}
+
 export interface Service {
   id: ID;
   name: string;
@@ -93,6 +101,7 @@ export interface Service {
   priceHigh: number;
   durationMinutes: number;
   isAddon?: boolean;
+  discount?: ServiceDiscount;
 }
 
 export interface Appointment {

@@ -325,6 +325,7 @@ export function serviceToRow(s: Service, userId: string) {
     price_high: s.priceHigh,
     duration_minutes: s.durationMinutes,
     is_addon: !!s.isAddon,
+    discount: s.discount ?? null,
   };
 }
 
@@ -336,6 +337,7 @@ export function servicePatchToRow(p: Partial<Service>): Record<string, unknown> 
   if (p.priceHigh !== undefined) out.price_high = p.priceHigh;
   if (p.durationMinutes !== undefined) out.duration_minutes = p.durationMinutes;
   if (p.isAddon !== undefined) out.is_addon = !!p.isAddon;
+  if (p.discount !== undefined) out.discount = p.discount ?? null;
   return out;
 }
 
@@ -348,6 +350,7 @@ export function serviceFromRow(r: any): Service {
     priceHigh: Number(r.price_high ?? 0),
     durationMinutes: Number(r.duration_minutes ?? 60),
     isAddon: !!r.is_addon,
+    discount: r.discount ?? undefined,
   };
 }
 
