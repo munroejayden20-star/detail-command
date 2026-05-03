@@ -2013,7 +2013,7 @@ function BookingFormSection({
           centered
         />
 
-        <div className="mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+        <div id="booking-card" className="mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden scroll-mt-24">
           {/* Progress strip */}
           <div className="px-5 md:px-7 py-4 border-b border-zinc-800 bg-zinc-950/60">
             <div className="flex items-center gap-3 mb-2.5">
@@ -2209,12 +2209,12 @@ export function BookingPage() {
       .finally(() => setInfoLoading(false));
   }, []);
 
-  // Scroll to the top of the booking form on every step change
+  // Scroll to the top of the booking form card on every step change
   useEffect(() => {
-    const el = document.getElementById("book");
+    if (step === 1) return;
+    const el = document.getElementById("booking-card");
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - 16;
-    window.scrollTo({ top: y, behavior: "smooth" });
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [step]);
 
   // Once we know the business name + logo, swap the page title and favicon
