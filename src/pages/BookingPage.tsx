@@ -128,12 +128,17 @@ function timeSlotsForDate(dateStr: string): { value: string; label: string }[] {
   const d = new Date(parts[0], parts[1] - 1, parts[2]);
   const dow = d.getDay(); // 0 Sun, 6 Sat
   const isWeekend = dow === 0 || dow === 6;
+  // Weekdays: earliest slot is 5:30 PM (Jayden's day-job ends just before 5).
+  // Weekends: full day, 7:00 AM – 7:00 PM.
   const startHour = isWeekend ? 7 : 17;
+  const startMinute = isWeekend ? 0 : 30;
   const endHour = isWeekend ? 19 : 21; // exclusive upper bound
 
   const slots: { value: string; label: string }[] = [];
   for (let h = startHour; h < endHour; h++) {
     for (const m of [0, 30]) {
+      // Skip the first half-slot when start minute is 30 (so weekdays don't include 5:00).
+      if (h === startHour && m < startMinute) continue;
       const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
       const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
       const ampm = h < 12 ? "AM" : "PM";
@@ -151,7 +156,28 @@ function availabilityHintForDate(dateStr: string): string {
   const dow = d.getDay();
   return dow === 0 || dow === 6
     ? "Available 7:00 AM – 7:00 PM (weekend hours)"
-    : "Available 5:00 PM – 9:00 PM (weekday evenings)";
+    : "Available 5:30 PM – 9:00 PM (weekday evenings)";
+}
+
+/**
+ * Slot is "booked" if any existing appointment's [start, end] window overlaps
+ * with this 30-minute slot. All times compared as LA-local wall-clock strings
+ * (`YYYY-MM-DDTHH:mm`) so timezone math stays out of JS — the RPC formats
+ * appointment intervals in America/Los_Angeles.
+ */
+function isSlotBooked(
+  dateStr: string,
+  slotValue: string,
+  bookedSlots: { start: string; end: string }[]
+): boolean {
+  if (!dateStr || !slotValue || bookedSlots.length === 0) return false;
+  const slotStart = `${dateStr}T${slotValue}`;
+  const [h, m] = slotValue.split(":").map(Number);
+  const totalEndMin = h * 60 + m + 30;
+  const eh = Math.floor(totalEndMin / 60);
+  const em = totalEndMin % 60;
+  const slotEnd = `${dateStr}T${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
+  return bookedSlots.some((b) => b.start < slotEnd && b.end > slotStart);
 }
 
 const CONTACT_OPTIONS = [
@@ -645,9 +671,11 @@ function Step3Vehicle({
 function Step4DateTime({
   form,
   set,
+  bookedSlots,
 }: {
   form: FormState;
   set: (patch: Partial<FormState>) => void;
+  bookedSlots: { start: string; end: string }[];
 }) {
   const today = new Date().toISOString().split("T")[0];
   const slots = timeSlotsForDate(form.preferredDate);
@@ -667,9 +695,12 @@ function Step4DateTime({
           value={form.preferredDate}
           onChange={(e) => {
             const newSlots = timeSlotsForDate(e.target.value);
-            const stillValid = newSlots.some((s) => s.value === form.preferredTime);
+            const newDate = e.target.value;
+            const stillValid =
+              newSlots.some((s) => s.value === form.preferredTime) &&
+              !isSlotBooked(newDate, form.preferredTime, bookedSlots);
             set({
-              preferredDate: e.target.value,
+              preferredDate: newDate,
               preferredTime: stillValid ? form.preferredTime : "",
             });
           }}
@@ -687,20 +718,34 @@ function Step4DateTime({
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
-            {slots.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => set({ preferredTime: opt.value })}
-                className={`rounded-lg border py-2 px-2 text-xs font-medium transition-all ${
-                  form.preferredTime === opt.value
-                    ? "border-red-500 bg-red-500/10 text-white"
-                    : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+            {slots.map((opt) => {
+              const booked = isSlotBooked(form.preferredDate, opt.value, bookedSlots);
+              const selected = form.preferredTime === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={booked}
+                  onClick={() => set({ preferredTime: opt.value })}
+                  className={`relative rounded-lg border py-2 px-2 text-xs font-medium transition-all ${
+                    booked
+                      ? "border-zinc-800 bg-zinc-900/40 text-zinc-600 cursor-not-allowed line-through decoration-zinc-700"
+                      : selected
+                      ? "border-red-500 bg-red-500/10 text-white"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+                  }`}
+                  aria-disabled={booked}
+                  title={booked ? "This time is already booked" : undefined}
+                >
+                  {opt.label}
+                  {booked ? (
+                    <span className="absolute -top-1.5 -right-1.5 rounded-full bg-zinc-700 text-[8px] font-bold uppercase tracking-wider text-zinc-200 px-1.5 py-0.5">
+                      Booked
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1793,6 +1838,7 @@ interface BookingFormSectionProps {
   submitting: boolean;
   submitError: string;
   onSubmit: () => void;
+  bookedSlots: { start: string; end: string }[];
 }
 
 function BookingFormSection({
@@ -1807,6 +1853,7 @@ function BookingFormSection({
   submitting,
   submitError,
   onSubmit,
+  bookedSlots,
 }: BookingFormSectionProps) {
   const stepIcons = [Car, Wrench, Car, CalendarDays, User, Zap, ClipboardList];
   const StepIcon = stepIcons[step - 1];
@@ -1843,7 +1890,7 @@ function BookingFormSection({
             {step === 1 && <Step1Service services={services} form={form} set={set} />}
             {step === 2 && <Step2Addons services={services} form={form} set={set} estimatedPrice={estimatedPrice} />}
             {step === 3 && <Step3Vehicle form={form} set={set} />}
-            {step === 4 && <Step4DateTime form={form} set={set} />}
+            {step === 4 && <Step4DateTime form={form} set={set} bookedSlots={bookedSlots} />}
             {step === 5 && <Step5Contact form={form} set={set} />}
             {step === 6 && <Step6Access form={form} set={set} />}
             {step === 7 && (
@@ -2064,6 +2111,7 @@ export function BookingPage() {
   }, [info]);
 
   const services = info?.services ?? [];
+  const bookedSlots = info?.bookedSlots ?? [];
 
   const estimatedPrice = useMemo(() => {
     let total = 0;
@@ -2081,7 +2129,12 @@ export function BookingPage() {
       case 1: return !!form.serviceId;
       case 2: return true;
       case 3: return !!form.vehicleSize;
-      case 4: return !!form.preferredDate && !!form.serviceAddress.trim();
+      case 4: {
+        if (!form.preferredDate || !form.serviceAddress.trim()) return false;
+        // If a time was picked, it must not have become booked.
+        if (form.preferredTime && isSlotBooked(form.preferredDate, form.preferredTime, bookedSlots)) return false;
+        return true;
+      }
       case 5: return !!form.name.trim() && !!form.phone.trim();
       case 6: return true;
       case 7: return true;
@@ -2217,6 +2270,7 @@ export function BookingPage() {
           submitting={submitting}
           submitError={submitError}
           onSubmit={handleSubmit}
+          bookedSlots={bookedSlots}
         />
 
         <FAQSection faqs={settings.faqs} />

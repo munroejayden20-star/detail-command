@@ -21,8 +21,17 @@ export interface PublicFeaturedPhoto {
   caption?: string;
 }
 
+/** A non-canceled future appointment — start/end as LA-local wall-clock
+ *  strings (`YYYY-MM-DDTHH:mm`). Used to grey out conflicting slots on the
+ *  booking page. No customer info exposed. */
+export interface PublicBookedSlot {
+  start: string;
+  end: string;
+}
+
 export interface PublicBookingInfo {
   services: PublicService[];
+  bookedSlots?: PublicBookedSlot[];
   settings: {
     businessName: string;
     serviceArea?: string;

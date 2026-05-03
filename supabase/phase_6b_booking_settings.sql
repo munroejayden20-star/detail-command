@@ -57,6 +57,7 @@ DECLARE
   v_settings    record;
   v_services    jsonb;
   v_featured    jsonb;
+  v_booked      jsonb;
 BEGIN
   SELECT id INTO v_owner_id FROM auth.users ORDER BY created_at ASC LIMIT 1;
   IF v_owner_id IS NULL THEN
@@ -109,8 +110,31 @@ BEGIN
    AND p.user_id = v_owner_id
    AND p.storage_path LIKE 'http%';
 
+  -- Booked time slots — start/end of every non-canceled future appointment in
+  -- the next 90 days, formatted as LA-local wall-clock strings so the booking
+  -- page can compare against the slots the customer is picking. NO customer
+  -- info or appointment IDs are exposed — anon callers only learn that "this
+  -- time has an appointment", which is the same info they'd see attempting to
+  -- book it anyway.
+  SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'start', to_char(start_at AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD"T"HH24:MI'),
+        'end',   to_char(end_at   AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD"T"HH24:MI')
+      )
+    ),
+    '[]'::jsonb
+  )
+  INTO v_booked
+  FROM appointments
+  WHERE user_id = v_owner_id
+    AND status NOT IN ('canceled', 'completed')
+    AND start_at >= NOW() - INTERVAL '1 hour'
+    AND start_at <= NOW() + INTERVAL '90 days';
+
   RETURN jsonb_build_object(
     'services', COALESCE(v_services, '[]'::jsonb),
+    'bookedSlots', v_booked,
     'settings', jsonb_build_object(
       'businessName',           v_settings.business_name,
       'serviceArea',            v_settings.service_area,
