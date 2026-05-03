@@ -166,13 +166,28 @@ export async function createDepositCheckout(payload: BookingPayload): Promise<De
   const { data, error } = await supabase.functions.invoke("stripe-checkout", {
     body: payload,
   });
+  // supabase-js wraps non-2xx into FunctionsHttpError. The actual response body
+  // (with our `debug` field) lives on `error.context` as a Response; we have to
+  // read it as JSON to surface the real message.
   if (error) {
-    // supabase-js wraps non-2xx into FunctionsHttpError — surface its message.
-    const fnErr = (error as { context?: { error?: string } } | null);
-    throw new Error(fnErr?.context?.error || error.message || "Could not start payment");
+    let body: { error?: string; debug?: string } = {};
+    const ctx = (error as { context?: unknown }).context;
+    try {
+      if (ctx instanceof Response) {
+        body = await ctx.clone().json();
+      } else if (typeof ctx === "object" && ctx !== null) {
+        body = ctx as typeof body;
+      }
+    } catch {
+      // body parse failed — fall through with empty
+    }
+    const msg =
+      body.debug || body.error || error.message || "Could not start payment";
+    console.error("[booking] stripe-checkout error", { error, body });
+    throw new Error(msg);
   }
   if (!data || !data.checkoutUrl) {
-    throw new Error(data?.error || "Could not start payment");
+    throw new Error(data?.debug || data?.error || "Could not start payment");
   }
   return data as DepositCheckoutResult;
 }

@@ -62,6 +62,25 @@ function makeId(): string {
 }
 
 Deno.serve(async (req) => {
+  try {
+    return await handle(req);
+  } catch (e) {
+    console.error("[stripe-checkout] unhandled", e);
+    return new Response(
+      JSON.stringify({
+        error: "Server error",
+        debug: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+        stack: e instanceof Error ? e.stack?.split("\n").slice(0, 4).join(" | ") : undefined,
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+});
+
+async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return corsPreflight();
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -124,10 +143,16 @@ Deno.serve(async (req) => {
 
   if (ownerErr || !ownerRow) {
     console.error("[stripe-checkout] no settings row", ownerErr);
-    return new Response(JSON.stringify({ error: "Service unavailable" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Service unavailable",
+        debug: ownerErr?.message ?? "settings row missing",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 
   if (!ownerRow.booking_page_enabled) {
@@ -184,7 +209,10 @@ Deno.serve(async (req) => {
   if (rpcError || !rpcData?.appointmentId) {
     console.error("[stripe-checkout] submit_public_booking failed", rpcError, rpcData);
     return new Response(
-      JSON.stringify({ error: rpcData?.error || "Could not create booking" }),
+      JSON.stringify({
+        error: rpcData?.error || "Could not create booking",
+        debug: rpcError?.message ?? rpcData?.error ?? "unknown",
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
@@ -217,10 +245,16 @@ Deno.serve(async (req) => {
   });
   if (payErr) {
     console.error("[stripe-checkout] payment insert failed", payErr);
-    return new Response(JSON.stringify({ error: "Could not initialize payment" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Could not initialize payment",
+        debug: payErr.message,
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 
   // ── Create Stripe Checkout Session ────────────────────────────────────────
@@ -268,10 +302,16 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("[stripe-checkout] Stripe session create failed", e);
-    return new Response(JSON.stringify({ error: "Could not start payment" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Could not start payment",
+        debug: e instanceof Error ? e.message : String(e),
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 
   // ── Persist the session ID on payment + appointment ───────────────────────
@@ -311,4 +351,4 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     },
   );
-});
+}
