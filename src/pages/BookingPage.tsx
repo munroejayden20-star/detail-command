@@ -2209,6 +2209,14 @@ export function BookingPage() {
       .finally(() => setInfoLoading(false));
   }, []);
 
+  // Scroll to the top of the booking form on every step change
+  useEffect(() => {
+    const el = document.getElementById("book");
+    if (!el) return;
+    const y = el.getBoundingClientRect().top + window.scrollY - 16;
+    window.scrollTo({ top: y, behavior: "smooth" });
+  }, [step]);
+
   // Once we know the business name + logo, swap the page title and favicon
   // so the browser tab shows the right brand. Cleans up when the user
   // navigates away from /book.
