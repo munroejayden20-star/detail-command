@@ -32,6 +32,7 @@ export function TaskQuickAdd({ open, onOpenChange }: TaskQuickAddProps) {
   const [category, setCategory] = useState<TaskCategory>("general");
   const [priority, setPriority] = useState<Priority>("medium");
   const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState(""); // optional HH:mm
   const [recurring, setRecurring] = useState<"none" | "daily" | "weekly" | "monthly">("none");
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function TaskQuickAdd({ open, onOpenChange }: TaskQuickAddProps) {
       setCategory("general");
       setPriority("medium");
       setDueDate("");
+      setDueTime("");
       setRecurring("none");
     }
   }, [open]);
@@ -47,6 +49,14 @@ export function TaskQuickAdd({ open, onOpenChange }: TaskQuickAddProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    // Store the date input value directly. parseISO("YYYY-MM-DD") returns local
+    // midnight, which avoids the UTC shift that made "May 2" look overdue on
+    // May 1 evening in Pacific time. If a time is set, store as local
+    // YYYY-MM-DDTHH:mm so parseISO interprets it in the user's timezone.
+    let storedDue: string | undefined;
+    if (dueDate) {
+      storedDue = dueTime ? `${dueDate}T${dueTime}` : dueDate;
+    }
     dispatch({
       type: "addTask",
       task: {
@@ -54,7 +64,7 @@ export function TaskQuickAdd({ open, onOpenChange }: TaskQuickAddProps) {
         title: title.trim(),
         category,
         priority,
-        dueDate: dueDate ? formatISO(new Date(dueDate)) : undefined,
+        dueDate: storedDue,
         completed: false,
         recurring,
         createdAt: formatISO(new Date()),
@@ -120,6 +130,16 @@ export function TaskQuickAdd({ open, onOpenChange }: TaskQuickAddProps) {
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="dt">Due time <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                id="dt"
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                disabled={!dueDate}
               />
             </div>
             <div className="space-y-1.5">

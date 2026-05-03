@@ -43,7 +43,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { PhotoImage } from "@/components/photos/PhotoImage";
-import { useStore } from "@/store/store";
+import { useStore, makeId } from "@/store/store";
+import { uploadBookingPhoto } from "@/lib/booking-api";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/auth/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -1100,8 +1101,11 @@ function FeaturedPhotosPicker({
   selectedIds: string[];
   onChange: (ids: string[]) => void;
 }) {
-  const { data } = useStore();
+  const { data, dispatch } = useStore();
   const photos = data.photos ?? [];
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   function isPublic(storagePath: string) {
     return storagePath.startsWith("http://") || storagePath.startsWith("https://");
@@ -1127,6 +1131,47 @@ function FeaturedPhotosPicker({
     onChange(next);
   }
 
+  /** Upload one or more files to the public booking-uploads bucket, create
+   *  Photo metadata for each, and auto-add them to the featured selection. */
+  async function handleFiles(files: FileList | File[]) {
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (list.length === 0) {
+      toast.error("Pick image files only.");
+      return;
+    }
+    setUploading(true);
+    const newIds: string[] = [];
+    try {
+      for (const file of list) {
+        try {
+          const url = await uploadBookingPhoto(file);
+          const id = makeId();
+          dispatch({
+            type: "addPhoto",
+            photo: {
+              id,
+              storagePath: url,
+              type: "marketing",
+              tags: ["booking-featured"],
+              notes: "Booking page featured image",
+              createdAt: new Date().toISOString(),
+            },
+          });
+          newIds.push(id);
+        } catch (err) {
+          console.error("Upload failed:", file.name, err);
+          toast.error(`Failed to upload ${file.name}`);
+        }
+      }
+      if (newIds.length) {
+        onChange([...selectedIds, ...newIds]);
+        toast.success(`Uploaded ${newIds.length} photo${newIds.length === 1 ? "" : "s"}`);
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const eligibleCount = photos.filter((p) => isPublic(p.storagePath)).length;
 
   return (
@@ -1136,10 +1181,58 @@ function FeaturedPhotosPicker({
           Featured photos
         </p>
         <p className="text-[11px] text-muted-foreground mt-1">
-          Replace the placeholder Before/After gallery on /book. Click to add or remove. Reorder with the arrows.
-          Only photos already stored as public URLs render — others are flagged.
+          Drop images here or click to upload — they'll appear on /book in the gallery. You can also pick from existing photos below.
         </p>
       </div>
+
+      {/* Big drop zone */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          if (e.target.files?.length) handleFiles(e.target.files);
+          e.currentTarget.value = "";
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
+        }}
+        disabled={uploading}
+        className={cn(
+          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-sm transition-all",
+          uploading
+            ? "border-primary bg-primary/5 cursor-wait"
+            : dragOver
+            ? "border-primary bg-primary/10"
+            : "border-border bg-muted/30 hover:border-foreground/40 hover:bg-muted/50"
+        )}
+      >
+        {uploading ? (
+          <>
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="font-medium">Uploading…</p>
+          </>
+        ) : (
+          <>
+            <CloudUpload className="h-6 w-6 text-muted-foreground" />
+            <p className="font-medium">Click to upload or drag-drop images</p>
+            <p className="text-[11px] text-muted-foreground">JPG, PNG, WebP · multiple supported</p>
+          </>
+        )}
+      </button>
 
       {/* Selected (in order) */}
       {selectedPhotos.length > 0 ? (

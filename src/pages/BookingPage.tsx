@@ -109,13 +109,50 @@ const CONDITION_OPTIONS = [
   { value: "heavy", label: "Heavy", hint: "Heavily soiled or neglected" },
 ];
 
-const TIME_OPTIONS = [
-  { value: "08:00", label: "Morning (8am)" },
-  { value: "10:00", label: "Mid-Morning (10am)" },
-  { value: "12:00", label: "Noon (12pm)" },
-  { value: "14:00", label: "Afternoon (2pm)" },
-  { value: "16:00", label: "Late Afternoon (4pm)" },
-];
+/**
+ * Available booking windows — based on Jayden's day-job hours.
+ *   Mon–Fri (1–5): evenings only, 5:00 PM – 9:00 PM
+ *   Sat–Sun (0,6): full day, 7:00 AM – 7:00 PM
+ *
+ * Slots are 30-minute increments. The picker computes options from the
+ * selected date so customers never see a slot that's actually unavailable.
+ * If no date is picked yet, we show a friendly nudge instead of a default
+ * list (which would mislead them about which times work).
+ */
+function timeSlotsForDate(dateStr: string): { value: string; label: string }[] {
+  if (!dateStr) return [];
+  // parseISO of "YYYY-MM-DD" returns local midnight, so getDay() is the
+  // customer's local day-of-week — matches what they expect to see.
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length !== 3) return [];
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  const dow = d.getDay(); // 0 Sun, 6 Sat
+  const isWeekend = dow === 0 || dow === 6;
+  const startHour = isWeekend ? 7 : 17;
+  const endHour = isWeekend ? 19 : 21; // exclusive upper bound
+
+  const slots: { value: string; label: string }[] = [];
+  for (let h = startHour; h < endHour; h++) {
+    for (const m of [0, 30]) {
+      const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const ampm = h < 12 ? "AM" : "PM";
+      const label = `${hour12}:${String(m).padStart(2, "0")} ${ampm}`;
+      slots.push({ value, label });
+    }
+  }
+  return slots;
+}
+
+function availabilityHintForDate(dateStr: string): string {
+  if (!dateStr) return "Pick a date to see open times.";
+  const parts = dateStr.split("-").map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  const dow = d.getDay();
+  return dow === 0 || dow === 6
+    ? "Available 7:00 AM – 7:00 PM (weekend hours)"
+    : "Available 5:00 PM – 9:00 PM (weekday evenings)";
+}
 
 const CONTACT_OPTIONS = [
   { value: "text", label: "Text message" },
@@ -613,11 +650,13 @@ function Step4DateTime({
   set: (patch: Partial<FormState>) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
+  const slots = timeSlotsForDate(form.preferredDate);
+  const hint = availabilityHintForDate(form.preferredDate);
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-xl font-bold text-white">When and where?</h3>
-        <p className="text-sm text-zinc-400 mt-1">Request a preferred time. I'll confirm availability when I reach out.</p>
+        <p className="text-sm text-zinc-400 mt-1">Pick a date and any open time slot. I'll confirm when I reach out.</p>
       </div>
 
       <InputField label="Preferred date" required>
@@ -626,28 +665,44 @@ function Step4DateTime({
           className={inputCls}
           min={today}
           value={form.preferredDate}
-          onChange={(e) => set({ preferredDate: e.target.value })}
+          onChange={(e) => {
+            const newSlots = timeSlotsForDate(e.target.value);
+            const stillValid = newSlots.some((s) => s.value === form.preferredTime);
+            set({
+              preferredDate: e.target.value,
+              preferredTime: stillValid ? form.preferredTime : "",
+            });
+          }}
         />
       </InputField>
 
       <div>
-        <SectionLabel>Preferred time</SectionLabel>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {TIME_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => set({ preferredTime: opt.value })}
-              className={`rounded-xl border py-2.5 px-3 text-sm font-medium transition-all ${
-                form.preferredTime === opt.value
-                  ? "border-red-500 bg-red-500/10 text-white"
-                  : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex items-baseline justify-between mb-2">
+          <SectionLabel>Preferred time</SectionLabel>
+          <span className="text-[10px] text-zinc-500">{hint}</span>
         </div>
+        {slots.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900 p-4 text-center text-xs text-zinc-500">
+            Pick a date first to see available times.
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
+            {slots.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => set({ preferredTime: opt.value })}
+                className={`rounded-lg border py-2 px-2 text-xs font-medium transition-all ${
+                  form.preferredTime === opt.value
+                    ? "border-red-500 bg-red-500/10 text-white"
+                    : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <InputField label="Service address" required hint="Where should I come? Your home, office, or another location.">
@@ -840,7 +895,7 @@ function Step7Review({
   const selectedService = services.find((s) => s.id === form.serviceId);
   const selectedAddons = services.filter((s) => form.addonIds.includes(s.id));
   const selectedSize = VEHICLE_SIZES.find((s) => s.value === form.vehicleSize);
-  const selectedTime = TIME_OPTIONS.find((t) => t.value === form.preferredTime);
+  const selectedTime = timeSlotsForDate(form.preferredDate).find((t) => t.value === form.preferredTime);
 
   function Row({ label, value }: { label: string; value?: string | React.ReactNode }) {
     if (!value) return null;

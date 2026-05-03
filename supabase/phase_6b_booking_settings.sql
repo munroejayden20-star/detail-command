@@ -130,6 +130,12 @@ $$;
 
 GRANT EXECUTE ON FUNCTION get_public_booking_info() TO anon;
 
+-- ---------- 3. Business name rename: Detail Command → JMDetailing ----------
+-- Idempotent — only updates rows whose business_name is the old default.
+UPDATE settings
+SET business_name = 'JMDetailing'
+WHERE business_name = 'Detail Command';
+
 -- ==========================================================================
 -- Note about photo URLs
 -- ==========================================================================

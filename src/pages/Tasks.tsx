@@ -1,6 +1,23 @@
 import { useState, useMemo } from "react";
-import { format, parseISO, isPast, isToday } from "date-fns";
+import { format, parseISO, isToday, isAfter, startOfDay } from "date-fns";
 import { Plus, Trash2, Repeat as RepeatIcon, Search } from "lucide-react";
+
+/** Has the due moment passed? For date-only values ("2026-05-02") a task is
+ *  only "overdue" once today's calendar day is AFTER the due day in local time
+ *  — picking May 2 should NOT show overdue at 6 PM on May 1. For datetime
+ *  values ("2026-05-02T15:30") it's overdue once the wall-clock minute passes. */
+function hasTime(dueDate: string) {
+  return dueDate.length > 10; // "YYYY-MM-DD" is 10 chars
+}
+function isTaskOverdue(dueDate: string): boolean {
+  const due = parseISO(dueDate);
+  if (hasTime(dueDate)) return isAfter(new Date(), due);
+  return isAfter(startOfDay(new Date()), startOfDay(due));
+}
+function formatTaskDue(dueDate: string): string {
+  const due = parseISO(dueDate);
+  return hasTime(dueDate) ? format(due, "MMM d · h:mm a") : format(due, "MMM d");
+}
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,10 +67,10 @@ export function TasksPage() {
   const counts = useMemo(() => {
     const open = data.tasks.filter((t) => !t.completed).length;
     const overdue = data.tasks.filter(
-      (t) => !t.completed && t.dueDate && isPast(parseISO(t.dueDate)) && !isToday(parseISO(t.dueDate))
+      (t) => !t.completed && t.dueDate && isTaskOverdue(t.dueDate)
     ).length;
     const today = data.tasks.filter(
-      (t) => !t.completed && t.dueDate && isToday(parseISO(t.dueDate))
+      (t) => !t.completed && t.dueDate && isToday(parseISO(t.dueDate)) && !isTaskOverdue(t.dueDate)
     ).length;
     return { open, overdue, today };
   }, [data.tasks]);
@@ -192,8 +209,8 @@ export function TasksPage() {
 }
 
 function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => void; onDelete: () => void }) {
-  const overdue = !task.completed && task.dueDate && isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate));
-  const dueToday = !task.completed && task.dueDate && isToday(parseISO(task.dueDate));
+  const overdue = !task.completed && !!task.dueDate && isTaskOverdue(task.dueDate);
+  const dueToday = !task.completed && !!task.dueDate && isToday(parseISO(task.dueDate)) && !overdue;
   const cat = TASK_CATEGORIES.find((c) => c.value === task.category);
 
   return (
@@ -220,7 +237,13 @@ function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
               overdue && "text-rose-600 font-medium dark:text-rose-300",
               dueToday && "text-amber-600 font-medium dark:text-amber-300"
             )}>
-              {dueToday ? "Today" : overdue ? `Overdue · ${format(parseISO(task.dueDate), "MMM d")}` : format(parseISO(task.dueDate), "MMM d")}
+              {overdue
+                ? `Overdue · ${formatTaskDue(task.dueDate)}`
+                : dueToday
+                ? hasTime(task.dueDate)
+                  ? `Today · ${format(parseISO(task.dueDate), "h:mm a")}`
+                  : "Today"
+                : formatTaskDue(task.dueDate)}
             </span>
           ) : null}
           {task.recurring && task.recurring !== "none" ? (

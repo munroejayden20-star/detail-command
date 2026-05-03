@@ -702,7 +702,7 @@ export function settingsFromRow(r: any): Settings {
     weekdayUnavailableStart: r.weekday_unavailable_start ?? "08:00",
     weekdayUnavailableEnd: r.weekday_unavailable_end ?? "17:00",
     startupGoal: Number(r.startup_goal ?? 2000),
-    businessName: r.business_name ?? "Detail Command",
+    businessName: r.business_name ?? "JMDetailing",
     ownerName: r.owner_name ?? "",
     contactPhone: r.contact_phone ?? "",
     email: r.email ?? undefined,

@@ -184,7 +184,7 @@ create table if not exists settings (
   weekday_unavailable_start text not null default '08:00',
   weekday_unavailable_end text not null default '17:00',
   startup_goal numeric not null default 2000,
-  business_name text not null default 'Detail Command',
+  business_name text not null default 'JMDetailing',
   owner_name text not null default '',
   contact_phone text not null default ''
 );
