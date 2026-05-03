@@ -84,7 +84,7 @@ BEGIN
   INTO v_booked
   FROM appointments
   WHERE user_id = v_owner_id
-    AND status NOT IN ('canceled', 'completed')
+    AND status IN ('scheduled', 'confirmed', 'in_progress')
     AND start_at >= NOW() - INTERVAL '1 hour'
     AND start_at <= NOW() + INTERVAL '90 days';
 
