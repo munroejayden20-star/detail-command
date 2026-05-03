@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
+  DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,17 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
 
   const photoUrls: string[] = appt.bookingPhotoUrls ?? [];
 
+  const depositAmount =
+    appt.depositAmountCents != null ? appt.depositAmountCents / 100 : 0;
+  const depositPaid =
+    appt.depositPaid ||
+    !!appt.depositPaidAt ||
+    appt.paymentStatus === "deposit_paid" ||
+    appt.paymentStatus === "deposit" ||
+    appt.paymentStatus === "paid";
+  const showDepositPaid = depositPaid && depositAmount > 0;
+  const balanceDue = Math.max(0, (appt.estimatedPrice ?? 0) - depositAmount);
+
   return (
     <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 overflow-hidden">
       {/* Header row */}
@@ -50,6 +62,12 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
               {appt.source === "Public Booking Page" && (
                 <Badge variant="outline" className="text-[10px] h-4 px-1.5 shrink-0 border-blue-500/40 text-blue-400">
                   Online
+                </Badge>
+              )}
+              {showDepositPaid && (
+                <Badge className="text-[10px] h-4 px-1.5 shrink-0 bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
+                  <DollarSign className="h-2.5 w-2.5" />
+                  Deposit Paid {formatCurrency(depositAmount)}
                 </Badge>
               )}
             </div>
@@ -87,7 +105,7 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
         </div>
 
         {/* Service + price */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">
               {services.map((s) => s.name).join(", ") || "No service selected"}
@@ -96,7 +114,15 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
               <p className="text-xs text-muted-foreground truncate">+ {addons.map((a) => a.name).join(", ")}</p>
             )}
           </div>
-          <p className="text-sm font-bold shrink-0 ml-2">{formatCurrency(appt.estimatedPrice)}</p>
+          <div className="shrink-0 ml-2 text-right">
+            <p className="text-sm font-bold">{formatCurrency(appt.estimatedPrice)}</p>
+            {showDepositPaid && (
+              <div className="mt-0.5 text-[11px] leading-tight">
+                <p className="text-emerald-600">−{formatCurrency(depositAmount)} deposit</p>
+                <p className="font-semibold text-foreground">Bal {formatCurrency(balanceDue)}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Utility access */}

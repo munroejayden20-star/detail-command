@@ -61,6 +61,14 @@ export function CalculatorPage() {
   const packages = data.services.filter((s) => !s.isAddon);
   const addons = data.services.filter((s) => s.isAddon);
 
+  const settings = data.settings;
+  const depositConfigured =
+    !!settings.bookingDepositsEnabled &&
+    !!settings.bookingDepositAmountCents &&
+    settings.bookingDepositAmountCents > 0;
+  const depositAmount = (settings.bookingDepositAmountCents ?? 0) / 100;
+  const depositAppliesToTotal = settings.bookingDepositAppliesToTotal !== false;
+
   const [packageId, setPackageId] = useState<string>(packages[0]?.id ?? "");
   const [vehicleSize, setVehicleSize] = useState<VehicleSize>("sedan");
   const [condition, setCondition] = useState<Condition>("normal");
@@ -72,6 +80,7 @@ export function CalculatorPage() {
   const [taxRate, setTaxRate] = useState<number>(0);
   const [customerId, setCustomerId] = useState<string>("");
   const [reachOpen, setReachOpen] = useState(false);
+  const [applyDeposit, setApplyDeposit] = useState<boolean>(depositConfigured);
 
   const pkg = packages.find((p) => p.id === packageId);
   const vehMeta = VEHICLE_SIZES.find((v) => v.value === vehicleSize)!;
@@ -96,6 +105,12 @@ export function CalculatorPage() {
       .reduce((s, n) => s + n, 0);
     const estMinutes = Math.round(baseMinutes * condMeta.timeMult) + addonMinutes;
 
+    const depositActive = applyDeposit && depositConfigured;
+    const deposit = depositActive ? depositAmount : 0;
+    const balanceDue = depositActive && depositAppliesToTotal
+      ? Math.max(0, total - deposit)
+      : total;
+
     return {
       base,
       vehicleAdj,
@@ -105,8 +120,11 @@ export function CalculatorPage() {
       tax,
       total,
       estMinutes,
+      depositActive,
+      deposit,
+      balanceDue,
     };
-  }, [pkg, vehMeta, condMeta, addonIds, addons, travelFee, discount, customCharge, taxRate]);
+  }, [pkg, vehMeta, condMeta, addonIds, addons, travelFee, discount, customCharge, taxRate, applyDeposit, depositConfigured, depositAmount, depositAppliesToTotal]);
 
   function toggleAddon(id: string) {
     const next = new Set(addonIds);
@@ -126,6 +144,7 @@ export function CalculatorPage() {
     setCustomLabel("");
     setTaxRate(0);
     setCustomerId("");
+    setApplyDeposit(depositConfigured);
   }
 
   const summary = useMemo(() => {
@@ -138,16 +157,30 @@ export function CalculatorPage() {
       .filter(Boolean)
       .join(", ");
     const hours = (calc.estMinutes / 60).toFixed(1);
-    return [
+    const lines = [
       `Based on your ${sizeLabel} in ${condLabel} condition, I'd recommend the ${pkg.name}.`,
       `Estimated total: ${formatCurrency(calc.total)}${
         addonNames ? ` (includes ${addonNames})` : ""
       }.`,
+    ];
+    if (calc.depositActive && calc.deposit > 0) {
+      if (depositAppliesToTotal) {
+        lines.push(
+          `A ${formatCurrency(calc.deposit)} deposit is paid online to reserve your spot — applied to your total. Balance due at job: ${formatCurrency(calc.balanceDue)}.`,
+        );
+      } else {
+        lines.push(
+          `A ${formatCurrency(calc.deposit)} non-refundable deposit is paid online to reserve your spot.`,
+        );
+      }
+    }
+    lines.push(
       `Service includes: ${includes}.`,
       `Estimated time: ~${hours} hr.`,
       `Final price may vary if the vehicle condition is heavier than expected.`,
-    ].join("\n");
-  }, [pkg, vehMeta, condMeta, addonIds, addons, calc]);
+    );
+    return lines.join("\n");
+  }, [pkg, vehMeta, condMeta, addonIds, addons, calc, depositAppliesToTotal]);
 
   async function copySummary() {
     try {
@@ -339,6 +372,24 @@ export function CalculatorPage() {
                   onChange={setTaxRate}
                   step={0.1}
                 />
+                {depositConfigured ? (
+                  <label className="sm:col-span-2 flex cursor-pointer items-start gap-3 rounded-lg border bg-card p-3 hover:border-primary/40">
+                    <Checkbox
+                      checked={applyDeposit}
+                      onCheckedChange={(v) => setApplyDeposit(!!v)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">
+                        Online deposit applies ({formatCurrency(depositAmount)})
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {depositAppliesToTotal
+                          ? "Subtracts the deposit from the balance due at the job."
+                          : "Shows the deposit as a separate non-refundable booking fee."}
+                      </p>
+                    </div>
+                  </label>
+                ) : null}
               </CardContent>
             </Card>
           </div>
@@ -375,6 +426,31 @@ export function CalculatorPage() {
                     {calc.estMinutes} min)
                   </p>
                 </div>
+                {calc.depositActive && calc.deposit > 0 ? (
+                  <div className="space-y-1 pt-1">
+                    <Row
+                      label="Online deposit (paid)"
+                      value={depositAppliesToTotal ? -calc.deposit : calc.deposit}
+                      muted
+                    />
+                    {depositAppliesToTotal ? (
+                      <div className="rounded-lg bg-emerald-500/10 px-3 py-2 border border-emerald-500/30">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                            Balance due at job
+                          </span>
+                          <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400">
+                            {formatCurrency(calc.balanceDue)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        Deposit is a separate non-refundable booking fee — not deducted from the total.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
 
