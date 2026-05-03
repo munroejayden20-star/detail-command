@@ -1,6 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, Component } from "react";
+import type { ReactNode, ErrorInfo } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Toaster } from "sonner";
 import { StoreProvider, useStore } from "@/store/store";
 import { AuthProvider } from "@/auth/AuthProvider";
@@ -37,8 +38,56 @@ function PageFallback() {
   );
 }
 
-function lazyRoute(node: React.ReactNode) {
-  return <Suspense fallback={<PageFallback />}>{node}</Suspense>;
+// Catches lazy-chunk 404s that happen when the app is cached across a deployment.
+// Shows a reload prompt instead of a blank screen.
+class ChunkErrorBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err: Error, _info: ErrorInfo) {
+    // Only auto-reload for chunk-load failures (not other render errors)
+    const isChunkError =
+      err.message?.includes("Failed to fetch dynamically imported module") ||
+      err.message?.includes("Importing a module script failed") ||
+      err.message?.includes("Loading chunk") ||
+      err.name === "ChunkLoadError";
+    if (isChunkError) {
+      window.location.reload();
+    }
+  }
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="grid place-items-center py-20 px-6">
+          <div className="text-center max-w-sm">
+            <p className="font-semibold">App updated — reload to continue</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              A new version was deployed. Reload the page to get the latest.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              <RefreshCw className="h-4 w-4" /> Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function lazyRoute(node: ReactNode) {
+  return (
+    <ChunkErrorBoundary>
+      <Suspense fallback={<PageFallback />}>{node}</Suspense>
+    </ChunkErrorBoundary>
+  );
 }
 
 export default function App() {
