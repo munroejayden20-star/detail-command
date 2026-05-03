@@ -385,6 +385,7 @@ export interface Settings {
   // Phase 6B — landing page customization (all optional, fall back to defaults)
   bookingHeroHeadline?: string;
   bookingHeroSubheadline?: string;
+  bookingHeroImageUrl?: string;
   bookingWaterPowerText?: string;
   bookingFeaturedPhotoIds?: string[];
   bookingPhone?: string;

@@ -624,6 +624,7 @@ export function settingsToRow(s: Settings, userId: string) {
     deposit_amount: s.depositAmount ?? null,
     booking_hero_headline: s.bookingHeroHeadline ?? null,
     booking_hero_subheadline: s.bookingHeroSubheadline ?? null,
+    booking_hero_image_url: s.bookingHeroImageUrl ?? null,
     booking_water_power_text: s.bookingWaterPowerText ?? null,
     booking_featured_photo_ids: s.bookingFeaturedPhotoIds ?? [],
     booking_phone: s.bookingPhone ?? null,
@@ -677,6 +678,7 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.depositAmount !== undefined) out.deposit_amount = p.depositAmount ?? null;
   if (p.bookingHeroHeadline !== undefined) out.booking_hero_headline = p.bookingHeroHeadline ?? null;
   if (p.bookingHeroSubheadline !== undefined) out.booking_hero_subheadline = p.bookingHeroSubheadline ?? null;
+  if (p.bookingHeroImageUrl !== undefined) out.booking_hero_image_url = p.bookingHeroImageUrl ?? null;
   if (p.bookingWaterPowerText !== undefined) out.booking_water_power_text = p.bookingWaterPowerText ?? null;
   if (p.bookingFeaturedPhotoIds !== undefined) out.booking_featured_photo_ids = p.bookingFeaturedPhotoIds ?? [];
   if (p.bookingPhone !== undefined) out.booking_phone = p.bookingPhone ?? null;
@@ -730,6 +732,7 @@ export function settingsFromRow(r: any): Settings {
     depositAmount: r.deposit_amount != null ? Number(r.deposit_amount) : undefined,
     bookingHeroHeadline: r.booking_hero_headline ?? undefined,
     bookingHeroSubheadline: r.booking_hero_subheadline ?? undefined,
+    bookingHeroImageUrl: r.booking_hero_image_url ?? undefined,
     bookingWaterPowerText: r.booking_water_power_text ?? undefined,
     bookingFeaturedPhotoIds: r.booking_featured_photo_ids ?? [],
     bookingPhone: r.booking_phone ?? undefined,

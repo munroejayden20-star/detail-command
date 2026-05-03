@@ -28,6 +28,7 @@ ALTER TABLE settings
 ALTER TABLE settings
   ADD COLUMN IF NOT EXISTS booking_hero_headline TEXT,
   ADD COLUMN IF NOT EXISTS booking_hero_subheadline TEXT,
+  ADD COLUMN IF NOT EXISTS booking_hero_image_url TEXT,
   ADD COLUMN IF NOT EXISTS booking_water_power_text TEXT,
   ADD COLUMN IF NOT EXISTS booking_featured_photo_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS booking_phone TEXT,
@@ -117,6 +118,7 @@ BEGIN
       'defaultQuoteDisclaimer', v_settings.default_quote_disclaimer,
       'heroHeadline',           v_settings.booking_hero_headline,
       'heroSubheadline',        v_settings.booking_hero_subheadline,
+      'heroImageUrl',           v_settings.booking_hero_image_url,
       'waterPowerText',         v_settings.booking_water_power_text,
       'bookingPhone',           COALESCE(v_settings.booking_phone, v_settings.contact_phone),
       'bookingEmail',           COALESCE(v_settings.booking_email, v_settings.email),

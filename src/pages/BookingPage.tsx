@@ -1086,6 +1086,7 @@ function Hero({
   serviceArea,
   heroHeadline,
   heroSubheadline,
+  heroImageUrl,
   logoUrl,
   onBookClick,
   onServicesClick,
@@ -1094,6 +1095,7 @@ function Hero({
   serviceArea?: string;
   heroHeadline?: string;
   heroSubheadline?: string;
+  heroImageUrl?: string;
   logoUrl?: string;
   onBookClick: () => void;
   onServicesClick: () => void;
@@ -1170,23 +1172,41 @@ function Hero({
           {/* Hero image area */}
           <div className="relative">
             <div className="aspect-[4/3] rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 overflow-hidden relative shadow-2xl shadow-black/40">
-              {/* Subtle scan lines / pattern overlay */}
-              <div
-                className="absolute inset-0 opacity-30"
-                aria-hidden="true"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(135deg, transparent 49%, rgba(239,68,68,0.08) 50%, transparent 51%), linear-gradient(45deg, transparent 49%, rgba(255,255,255,0.04) 50%, transparent 51%)",
-                  backgroundSize: "40px 40px, 40px 40px",
-                }}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 p-8 text-center">
-                <Car className="h-16 w-16 mb-3 text-zinc-700" />
-                <p className="text-sm font-medium text-zinc-500">Hero image placeholder</p>
-                <p className="text-xs text-zinc-600 mt-1">
-                  Pick featured photos in Settings → Booking Page to add real work here
-                </p>
-              </div>
+              {heroImageUrl ? (
+                <>
+                  <img
+                    src={heroImageUrl}
+                    alt={`${businessName} mobile detailing`}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="eager"
+                  />
+                  {/* Subtle gradient so any text overlay would still read */}
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
+                    aria-hidden="true"
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Subtle scan lines / pattern overlay */}
+                  <div
+                    className="absolute inset-0 opacity-30"
+                    aria-hidden="true"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(135deg, transparent 49%, rgba(239,68,68,0.08) 50%, transparent 51%), linear-gradient(45deg, transparent 49%, rgba(255,255,255,0.04) 50%, transparent 51%)",
+                      backgroundSize: "40px 40px, 40px 40px",
+                    }}
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 p-8 text-center">
+                    <Car className="h-16 w-16 mb-3 text-zinc-700" />
+                    <p className="text-sm font-medium text-zinc-500">Hero image placeholder</p>
+                    <p className="text-xs text-zinc-600 mt-1">
+                      Upload one in Settings → Booking Page → Hero image
+                    </p>
+                  </div>
+                </>
+              )}
               {/* Decorative corner accents */}
               <div className="absolute top-3 left-3 h-2 w-2 rounded-full bg-red-500/60" aria-hidden="true" />
               <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-red-500/60" aria-hidden="true" />
@@ -2062,6 +2082,7 @@ export function BookingPage() {
           serviceArea={settings.serviceArea}
           heroHeadline={settings.heroHeadline}
           heroSubheadline={settings.heroSubheadline}
+          heroImageUrl={settings.heroImageUrl}
           logoUrl={settings.logoUrl}
           onBookClick={jumpToBook}
           onServicesClick={() => scrollToId("services")}

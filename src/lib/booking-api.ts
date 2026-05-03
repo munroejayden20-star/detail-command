@@ -31,6 +31,7 @@ export interface PublicBookingInfo {
     // Phase 6B — landing page customization
     heroHeadline?: string;
     heroSubheadline?: string;
+    heroImageUrl?: string;
     waterPowerText?: string;
     bookingPhone?: string;
     bookingEmail?: string;

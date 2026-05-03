@@ -608,6 +608,11 @@ export function SettingsPage() {
             />
           </Field>
 
+          <HeroImageUploader
+            value={s.bookingHeroImageUrl}
+            onChange={(url) => update("bookingHeroImageUrl", url)}
+          />
+
           <Field label="Water & power section text" hint="Replaces the default 'What I need from you' paragraph.">
             <Textarea
               rows={4}
@@ -1087,6 +1092,128 @@ function DangerZone() {
           {totalRows === 0 ? "Already empty" : `Reset all data`}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Phase 6B: Hero image uploader (single image)
+───────────────────────────────────────────── */
+function HeroImageUploader({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (url: string | undefined) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Pick an image file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await uploadBookingPhoto(file);
+      onChange(url);
+      toast.success("Hero image updated");
+    } catch (e) {
+      console.error("Hero upload failed:", e);
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hero image</p>
+      <p className="text-[11px] text-muted-foreground">
+        The big image at the top-right of /book. A real photo of your work makes a huge difference.
+      </p>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.currentTarget.value = "";
+        }}
+      />
+
+      {value ? (
+        <div className="rounded-xl border bg-muted/30 p-3 space-y-3">
+          <div className="aspect-[4/3] w-full rounded-lg overflow-hidden border">
+            <img src={value} alt="Hero" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              Replace image
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10"
+              onClick={() => onChange(undefined)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Remove
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) handleFile(f);
+          }}
+          disabled={uploading}
+          className={cn(
+            "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-sm transition-all",
+            uploading
+              ? "border-primary bg-primary/5 cursor-wait"
+              : dragOver
+              ? "border-primary bg-primary/10"
+              : "border-border bg-muted/30 hover:border-foreground/40 hover:bg-muted/50"
+          )}
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <p className="font-medium">Uploading…</p>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+              <p className="font-medium">Click or drop an image to set the hero photo</p>
+              <p className="text-[11px] text-muted-foreground">JPG, PNG, WebP — landscape works best (4:3)</p>
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
