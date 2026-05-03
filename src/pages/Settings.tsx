@@ -608,9 +608,22 @@ export function SettingsPage() {
             />
           </Field>
 
-          <HeroImageUploader
+          <SingleImageUploader
+            label="Logo / favicon"
+            hint="Small square image — appears next to your business name on /book and as the browser tab icon. Used in nav, footer, and as the favicon."
+            value={s.logoUrl}
+            onChange={(url) => update("logoUrl", url)}
+            aspectRatio="square"
+            recommendation="Square works best. PNG with transparent background looks cleanest."
+          />
+
+          <SingleImageUploader
+            label="Hero image"
+            hint="Big image at the top-right of /book. A real photo of your work makes a huge difference."
             value={s.bookingHeroImageUrl}
             onChange={(url) => update("bookingHeroImageUrl", url)}
+            aspectRatio="4/3"
+            recommendation="Landscape (4:3) works best."
           />
 
           <Field label="Water & power section text" hint="Replaces the default 'What I need from you' paragraph.">
@@ -1097,18 +1110,28 @@ function DangerZone() {
 }
 
 /* ─────────────────────────────────────────────
-   Phase 6B: Hero image uploader (single image)
+   Phase 6B: Reusable single-image uploader
+   Used for the booking-page hero image AND the booking-page logo/favicon.
 ───────────────────────────────────────────── */
-function HeroImageUploader({
+function SingleImageUploader({
+  label,
+  hint,
   value,
   onChange,
+  aspectRatio = "4/3",
+  recommendation,
 }: {
+  label: string;
+  hint?: string;
   value?: string;
   onChange: (url: string | undefined) => void;
+  aspectRatio?: "square" | "4/3";
+  recommendation?: string;
 }) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const aspectClass = aspectRatio === "square" ? "aspect-square w-32" : "aspect-[4/3] w-full";
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -1119,9 +1142,9 @@ function HeroImageUploader({
     try {
       const url = await uploadBookingPhoto(file);
       onChange(url);
-      toast.success("Hero image updated");
+      toast.success(`${label} updated`);
     } catch (e) {
-      console.error("Hero upload failed:", e);
+      console.error("Upload failed:", e);
       toast.error("Upload failed");
     } finally {
       setUploading(false);
@@ -1130,10 +1153,8 @@ function HeroImageUploader({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hero image</p>
-      <p className="text-[11px] text-muted-foreground">
-        The big image at the top-right of /book. A real photo of your work makes a huge difference.
-      </p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
 
       <input
         ref={fileRef}
@@ -1149,10 +1170,10 @@ function HeroImageUploader({
 
       {value ? (
         <div className="rounded-xl border bg-muted/30 p-3 space-y-3">
-          <div className="aspect-[4/3] w-full rounded-lg overflow-hidden border">
-            <img src={value} alt="Hero" className="w-full h-full object-cover" />
+          <div className={cn("rounded-lg overflow-hidden border", aspectClass)}>
+            <img src={value} alt={label} className="w-full h-full object-cover" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               type="button"
               variant="outline"
@@ -1192,7 +1213,7 @@ function HeroImageUploader({
           }}
           disabled={uploading}
           className={cn(
-            "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-sm transition-all",
+            "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-sm transition-all",
             uploading
               ? "border-primary bg-primary/5 cursor-wait"
               : dragOver
@@ -1208,8 +1229,10 @@ function HeroImageUploader({
           ) : (
             <>
               <ImageIcon className="h-6 w-6 text-muted-foreground" />
-              <p className="font-medium">Click or drop an image to set the hero photo</p>
-              <p className="text-[11px] text-muted-foreground">JPG, PNG, WebP — landscape works best (4:3)</p>
+              <p className="font-medium">Click or drop an image</p>
+              {recommendation ? (
+                <p className="text-[11px] text-muted-foreground">{recommendation}</p>
+              ) : null}
             </>
           )}
         </button>

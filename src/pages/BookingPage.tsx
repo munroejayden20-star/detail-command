@@ -1636,11 +1636,13 @@ function Footer({
   serviceArea,
   phone,
   email,
+  logoUrl,
 }: {
   businessName: string;
   serviceArea?: string;
   phone?: string;
   email?: string;
+  logoUrl?: string;
 }) {
   return (
     <footer className="border-t border-zinc-800 bg-zinc-950">
@@ -1648,9 +1650,13 @@ function Footer({
         <div className="grid md:grid-cols-3 gap-6 items-start">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-lg bg-red-600 flex items-center justify-center">
-                <Car className="h-5 w-5 text-white" />
-              </div>
+              {logoUrl ? (
+                <img src={logoUrl} alt="" className="h-9 w-9 rounded-lg object-cover" />
+              ) : (
+                <div className="h-9 w-9 rounded-lg bg-red-600 flex items-center justify-center">
+                  <Car className="h-5 w-5 text-white" />
+                </div>
+              )}
               <span className="text-base font-bold text-white">{businessName}</span>
             </div>
             {serviceArea ? (
@@ -1943,6 +1949,43 @@ export function BookingPage() {
       .finally(() => setInfoLoading(false));
   }, []);
 
+  // Once we know the business name + logo, swap the page title and favicon
+  // so the browser tab shows the right brand. Cleans up when the user
+  // navigates away from /book.
+  useEffect(() => {
+    if (!info?.settings) return;
+    const prevTitle = document.title;
+    document.title = `${info.settings.businessName} — Book a Detail`;
+
+    const head = document.head;
+    const logoUrl = info.settings.logoUrl;
+    let oldHrefs: { node: HTMLLinkElement; href: string }[] = [];
+    let added: HTMLLinkElement[] = [];
+
+    if (logoUrl) {
+      // Update any existing icon links and add a fresh one for safety.
+      const existing = head.querySelectorAll<HTMLLinkElement>('link[rel*="icon"]');
+      existing.forEach((node) => {
+        oldHrefs.push({ node, href: node.href });
+        node.href = logoUrl;
+      });
+      if (existing.length === 0) {
+        const link = document.createElement("link");
+        link.rel = "icon";
+        link.href = logoUrl;
+        head.appendChild(link);
+        added.push(link);
+      }
+    }
+    return () => {
+      document.title = prevTitle;
+      oldHrefs.forEach(({ node, href }) => {
+        node.href = href;
+      });
+      added.forEach((node) => node.remove());
+    };
+  }, [info?.settings.businessName, info?.settings.logoUrl]);
+
   // Track whether the booking form is visible to suppress the mobile CTA
   useEffect(() => {
     const el = document.getElementById("book");
@@ -2124,6 +2167,7 @@ export function BookingPage() {
         serviceArea={settings.serviceArea}
         phone={settings.bookingPhone}
         email={settings.bookingEmail}
+        logoUrl={settings.logoUrl}
       />
 
       <MobileBookCTA onClick={jumpToBook} hidden={inFormSection} />
