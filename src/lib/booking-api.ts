@@ -29,9 +29,21 @@ export interface PublicBookedSlot {
   end: string;
 }
 
+export interface PublicDepositInfo {
+  enabled: boolean;
+  required: boolean;
+  amountCents: number;
+  allowWithoutDeposit: boolean;
+  appliesToTotal: boolean;
+  refundPolicy?: string;
+  disclaimer?: string;
+  autoConfirmAfterDeposit: boolean;
+}
+
 export interface PublicBookingInfo {
   services: PublicService[];
   bookedSlots?: PublicBookedSlot[];
+  deposit?: PublicDepositInfo;
   settings: {
     businessName: string;
     serviceArea?: string;
@@ -130,4 +142,60 @@ export async function uploadBookingPhoto(file: File): Promise<string> {
   if (error) throw error;
   const { data: urlData } = supabase.storage.from("booking-uploads").getPublicUrl(data.path);
   return urlData.publicUrl;
+}
+
+/* ─────────────────────────────────────────────
+   Phase 7: Stripe deposit checkout
+───────────────────────────────────────────── */
+
+export interface DepositCheckoutResult {
+  checkoutUrl: string;
+  paymentId: string;
+  sessionId: string;
+  appointmentId: string;
+}
+
+/**
+ * Submits the booking AND creates a Stripe Checkout Session in one server-side
+ * call. The client then redirects window.location to checkoutUrl. The deposit
+ * amount comes from owner settings — the server is the source of truth, the
+ * client cannot influence it.
+ */
+export async function createDepositCheckout(payload: BookingPayload): Promise<DepositCheckoutResult> {
+  if (!supabase) throw new Error("Supabase not configured");
+  const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+    body: payload,
+  });
+  if (error) {
+    // supabase-js wraps non-2xx into FunctionsHttpError — surface its message.
+    const fnErr = (error as { context?: { error?: string } } | null);
+    throw new Error(fnErr?.context?.error || error.message || "Could not start payment");
+  }
+  if (!data || !data.checkoutUrl) {
+    throw new Error(data?.error || "Could not start payment");
+  }
+  return data as DepositCheckoutResult;
+}
+
+export interface PublicPaymentStatus {
+  status: "pending" | "paid" | "failed" | "canceled" | "expired" | "refunded" | "partially_refunded";
+  amountCents: number;
+  currency: string;
+  paidAt?: string;
+  businessName?: string;
+  bookingStatus?: string;
+  preferredDate?: string;
+}
+
+/**
+ * Polled by the /booking/success page until the webhook has updated the
+ * payment row. Anon-callable; only returns minimal status info for the
+ * specific session_id the customer was just handed by Stripe.
+ */
+export async function getPaymentStatusBySession(sessionId: string): Promise<PublicPaymentStatus> {
+  if (!supabase) throw new Error("Supabase not configured");
+  const { data, error } = await supabase.rpc("get_public_payment_status", { p_session_id: sessionId });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data as PublicPaymentStatus;
 }

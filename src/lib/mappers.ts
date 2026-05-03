@@ -105,6 +105,12 @@ export function appointmentToRow(a: Appointment, userId: string) {
     travel_time_notes: a.travelTimeNotes ?? null,
     source: a.source ?? "Dashboard",
     booking_photo_urls: a.bookingPhotoUrls ?? [],
+    deposit_required: !!a.depositRequired,
+    deposit_amount_cents: a.depositAmountCents ?? null,
+    deposit_paid_at: a.depositPaidAt ?? null,
+    deposit_payment_id: a.depositPaymentId ?? null,
+    final_price_cents: a.finalPriceCents ?? null,
+    stripe_checkout_session_id: a.stripeCheckoutSessionId ?? null,
     created_at: a.createdAt,
   };
 }
@@ -138,6 +144,12 @@ export function appointmentPatchToRow(p: Partial<Appointment>): Record<string, u
   if (p.travelTimeNotes !== undefined) out.travel_time_notes = p.travelTimeNotes ?? null;
   if (p.source !== undefined) out.source = p.source ?? "Dashboard";
   if (p.bookingPhotoUrls !== undefined) out.booking_photo_urls = p.bookingPhotoUrls ?? [];
+  if (p.depositRequired !== undefined) out.deposit_required = !!p.depositRequired;
+  if (p.depositAmountCents !== undefined) out.deposit_amount_cents = p.depositAmountCents ?? null;
+  if (p.depositPaidAt !== undefined) out.deposit_paid_at = p.depositPaidAt ?? null;
+  if (p.depositPaymentId !== undefined) out.deposit_payment_id = p.depositPaymentId ?? null;
+  if (p.finalPriceCents !== undefined) out.final_price_cents = p.finalPriceCents ?? null;
+  if (p.stripeCheckoutSessionId !== undefined) out.stripe_checkout_session_id = p.stripeCheckoutSessionId ?? null;
   return out;
 }
 
@@ -171,7 +183,38 @@ export function appointmentFromRow(r: any): Appointment {
     travelTimeNotes: r.travel_time_notes ?? undefined,
     source: r.source ?? "Dashboard",
     bookingPhotoUrls: r.booking_photo_urls ?? [],
+    depositRequired: !!r.deposit_required,
+    depositAmountCents: r.deposit_amount_cents != null ? Number(r.deposit_amount_cents) : undefined,
+    depositPaidAt: r.deposit_paid_at ?? undefined,
+    depositPaymentId: r.deposit_payment_id ?? undefined,
+    finalPriceCents: r.final_price_cents != null ? Number(r.final_price_cents) : undefined,
+    stripeCheckoutSessionId: r.stripe_checkout_session_id ?? undefined,
     createdAt: r.created_at,
+  };
+}
+
+/* ---------- Phase 7: payments ---------- */
+
+export function paymentFromRow(r: any): import("./types").Payment {
+  return {
+    id: r.id,
+    appointmentId: r.appointment_id ?? undefined,
+    customerId: r.customer_id ?? undefined,
+    stripeCheckoutSessionId: r.stripe_checkout_session_id ?? undefined,
+    stripePaymentIntentId: r.stripe_payment_intent_id ?? undefined,
+    stripeCustomerId: r.stripe_customer_id ?? undefined,
+    amountCents: Number(r.amount_cents ?? 0),
+    currency: r.currency ?? "usd",
+    paymentType: (r.payment_type ?? "deposit") as import("./types").PaymentRecordType,
+    status: (r.status ?? "pending") as import("./types").PaymentRecordStatus,
+    paidAt: r.paid_at ?? undefined,
+    refundedAt: r.refunded_at ?? undefined,
+    amountRefundedCents: Number(r.amount_refunded_cents ?? 0),
+    receiptUrl: r.receipt_url ?? undefined,
+    failureReason: r.failure_reason ?? undefined,
+    metadata: r.metadata ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at ?? r.created_at,
   };
 }
 
@@ -630,6 +673,14 @@ export function settingsToRow(s: Settings, userId: string) {
     booking_phone: s.bookingPhone ?? null,
     booking_email: s.bookingEmail ?? null,
     booking_faqs: s.bookingFaqs ?? null,
+    booking_deposits_enabled: s.bookingDepositsEnabled ?? false,
+    booking_deposit_amount_cents: s.bookingDepositAmountCents ?? 3000,
+    booking_deposit_required: s.bookingDepositRequired ?? false,
+    booking_auto_confirm_after_deposit: s.bookingAutoConfirmAfterDeposit ?? false,
+    booking_deposit_refund_policy: s.bookingDepositRefundPolicy ?? null,
+    booking_deposit_disclaimer: s.bookingDepositDisclaimer ?? null,
+    booking_allow_without_deposit: s.bookingAllowWithoutDeposit ?? false,
+    booking_deposit_applies_to_total: s.bookingDepositAppliesToTotal ?? true,
     notifications_enabled: s.notificationsEnabled ?? true,
     notify_appointments: s.notifyAppointments ?? true,
     notify_payments: s.notifyPayments ?? true,
@@ -684,6 +735,14 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.bookingPhone !== undefined) out.booking_phone = p.bookingPhone ?? null;
   if (p.bookingEmail !== undefined) out.booking_email = p.bookingEmail ?? null;
   if (p.bookingFaqs !== undefined) out.booking_faqs = p.bookingFaqs ?? null;
+  if (p.bookingDepositsEnabled !== undefined) out.booking_deposits_enabled = !!p.bookingDepositsEnabled;
+  if (p.bookingDepositAmountCents !== undefined) out.booking_deposit_amount_cents = p.bookingDepositAmountCents;
+  if (p.bookingDepositRequired !== undefined) out.booking_deposit_required = !!p.bookingDepositRequired;
+  if (p.bookingAutoConfirmAfterDeposit !== undefined) out.booking_auto_confirm_after_deposit = !!p.bookingAutoConfirmAfterDeposit;
+  if (p.bookingDepositRefundPolicy !== undefined) out.booking_deposit_refund_policy = p.bookingDepositRefundPolicy ?? null;
+  if (p.bookingDepositDisclaimer !== undefined) out.booking_deposit_disclaimer = p.bookingDepositDisclaimer ?? null;
+  if (p.bookingAllowWithoutDeposit !== undefined) out.booking_allow_without_deposit = !!p.bookingAllowWithoutDeposit;
+  if (p.bookingDepositAppliesToTotal !== undefined) out.booking_deposit_applies_to_total = !!p.bookingDepositAppliesToTotal;
   if (p.notificationsEnabled !== undefined) out.notifications_enabled = !!p.notificationsEnabled;
   if (p.notifyAppointments !== undefined) out.notify_appointments = !!p.notifyAppointments;
   if (p.notifyPayments !== undefined) out.notify_payments = !!p.notifyPayments;
@@ -738,6 +797,14 @@ export function settingsFromRow(r: any): Settings {
     bookingPhone: r.booking_phone ?? undefined,
     bookingEmail: r.booking_email ?? undefined,
     bookingFaqs: r.booking_faqs ?? undefined,
+    bookingDepositsEnabled: r.booking_deposits_enabled ?? false,
+    bookingDepositAmountCents: r.booking_deposit_amount_cents != null ? Number(r.booking_deposit_amount_cents) : 3000,
+    bookingDepositRequired: r.booking_deposit_required ?? false,
+    bookingAutoConfirmAfterDeposit: r.booking_auto_confirm_after_deposit ?? false,
+    bookingDepositRefundPolicy: r.booking_deposit_refund_policy ?? undefined,
+    bookingDepositDisclaimer: r.booking_deposit_disclaimer ?? undefined,
+    bookingAllowWithoutDeposit: r.booking_allow_without_deposit ?? false,
+    bookingDepositAppliesToTotal: r.booking_deposit_applies_to_total ?? true,
     notificationsEnabled: r.notifications_enabled ?? true,
     notifyAppointments: r.notify_appointments ?? true,
     notifyPayments: r.notify_payments ?? true,

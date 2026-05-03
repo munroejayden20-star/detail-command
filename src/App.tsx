@@ -13,6 +13,8 @@ import { Layout } from "@/components/layout/Layout";
 import { DashboardPage } from "@/pages/Dashboard";
 
 const BookingPage = lazy(() => import("@/pages/BookingPage").then((m) => ({ default: m.BookingPage })));
+const BookingSuccessPage = lazy(() => import("@/pages/BookingSuccess").then((m) => ({ default: m.BookingSuccessPage })));
+const BookingCancelPage = lazy(() => import("@/pages/BookingCancel").then((m) => ({ default: m.BookingCancelPage })));
 const CalendarPage = lazy(() => import("@/pages/Calendar").then((m) => ({ default: m.CalendarPage })));
 const CustomersPage = lazy(() => import("@/pages/Customers").then((m) => ({ default: m.CustomersPage })));
 const CustomerDetailPage = lazy(() => import("@/pages/CustomerDetail").then((m) => ({ default: m.CustomerDetailPage })));
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/confirm" element={<AuthCallback />} />
         <Route path="/book" element={lazyRoute(<BookingPage />)} />
+        <Route path="/booking/success" element={lazyRoute(<BookingSuccessPage />)} />
+        <Route path="/booking/cancel" element={lazyRoute(<BookingCancelPage />)} />
         <Route
           element={
             <AuthGuard>

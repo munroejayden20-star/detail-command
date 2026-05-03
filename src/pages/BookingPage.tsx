@@ -32,10 +32,12 @@ import {
   getPublicBookingInfo,
   submitPublicBooking,
   uploadBookingPhoto,
+  createDepositCheckout,
   type PublicBookingInfo,
   type PublicService,
   type PublicBookingFaq,
   type PublicFeaturedPhoto,
+  type PublicDepositInfo,
 } from "@/lib/booking-api";
 
 /* ==========================================================================
@@ -931,11 +933,13 @@ function Step7Review({
   services,
   estimatedPrice,
   disclaimer,
+  deposit,
 }: {
   form: FormState;
   services: PublicService[];
   estimatedPrice: number;
   disclaimer?: string;
+  deposit?: PublicDepositInfo;
 }) {
   const selectedService = services.find((s) => s.id === form.serviceId);
   const selectedAddons = services.filter((s) => form.addonIds.includes(s.id));
@@ -998,6 +1002,38 @@ function Step7Review({
           <Row label="Power" value={form.powerAccess ? "Available ✓" : "Not available"} />
         </div>
       </div>
+
+      {deposit?.enabled && deposit.required ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-bold text-white">Deposit required</p>
+            <p className="text-base font-extrabold text-red-300">
+              ${(deposit.amountCents / 100).toFixed(2)}
+            </p>
+          </div>
+          <p className="text-xs text-zinc-300 leading-relaxed">
+            {deposit.disclaimer?.trim() || (
+              deposit.autoConfirmAfterDeposit
+                ? `A $${(deposit.amountCents / 100).toFixed(0)} deposit is required to reserve your appointment. This deposit goes toward your final detail price.`
+                : `A $${(deposit.amountCents / 100).toFixed(0)} deposit is required to reserve your appointment request. This deposit goes toward your final detail price. Your appointment will be reviewed and confirmed after submission. Final pricing may vary based on vehicle condition at inspection.`
+            )}
+          </p>
+          {deposit.appliesToTotal ? (
+            <div className="pt-2 mt-2 border-t border-red-500/20 text-[11px] text-zinc-400 flex items-center justify-between">
+              <span>Estimated remaining at job</span>
+              <span className="text-zinc-200 font-medium">
+                ~${Math.max(0, estimatedPrice - deposit.amountCents / 100).toFixed(0)}
+              </span>
+            </div>
+          ) : null}
+          {deposit.refundPolicy?.trim() ? (
+            <p className="text-[11px] text-zinc-500 leading-relaxed pt-1">
+              <span className="font-semibold text-zinc-400">Refund policy: </span>
+              {deposit.refundPolicy}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <p className="text-xs text-zinc-500 leading-relaxed">
         {disclaimer ?? "Final price may vary based on vehicle condition at inspection. I'll confirm everything before I start."}
@@ -1839,6 +1875,7 @@ interface BookingFormSectionProps {
   submitError: string;
   onSubmit: () => void;
   bookedSlots: { start: string; end: string }[];
+  deposit?: PublicDepositInfo;
 }
 
 function BookingFormSection({
@@ -1854,7 +1891,9 @@ function BookingFormSection({
   submitError,
   onSubmit,
   bookedSlots,
+  deposit,
 }: BookingFormSectionProps) {
+  const depositActive = !!deposit?.enabled && !!deposit.required;
   const stepIcons = [Car, Wrench, Car, CalendarDays, User, Zap, ClipboardList];
   const StepIcon = stepIcons[step - 1];
 
@@ -1899,6 +1938,7 @@ function BookingFormSection({
                 services={services}
                 estimatedPrice={estimatedPrice}
                 disclaimer={disclaimer}
+                deposit={deposit}
               />
             )}
 
@@ -1956,7 +1996,12 @@ function BookingFormSection({
                 {submitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Submitting…
+                    {depositActive ? "Starting payment…" : "Submitting…"}
+                  </>
+                ) : depositActive ? (
+                  <>
+                    Pay Deposit & Request Booking
+                    <CheckCircle2 className="h-4 w-4" />
                   </>
                 ) : (
                   <>
@@ -2112,6 +2157,7 @@ export function BookingPage() {
 
   const services = info?.services ?? [];
   const bookedSlots = info?.bookedSlots ?? [];
+  const deposit = info?.deposit;
 
   const estimatedPrice = useMemo(() => {
     let total = 0;
@@ -2147,6 +2193,7 @@ export function BookingPage() {
     setSubmitting(true);
     setSubmitError("");
     try {
+      // Upload photos first (same flow regardless of deposit path).
       const photoUrls: string[] = [];
       let photoFailCount = 0;
       for (const file of form.photoFiles) {
@@ -2165,7 +2212,7 @@ export function BookingPage() {
         );
       }
 
-      await submitPublicBooking({
+      const payload = {
         customerName: form.name.trim(),
         customerPhone: form.phone.trim(),
         customerEmail: form.email.trim() || undefined,
@@ -2191,7 +2238,25 @@ export function BookingPage() {
         powerAccess: form.powerAccess,
         bookingPhotoUrls: photoUrls,
         honeypot: form.website,
-      });
+      };
+
+      // Branch: deposit required (and enabled) → Stripe Checkout flow.
+      // Otherwise: existing free submission flow.
+      const deposit = info?.deposit;
+      const useDeposit =
+        !!deposit &&
+        deposit.enabled &&
+        deposit.required &&
+        !deposit.allowWithoutDeposit; // when both are set, server still requires deposit
+
+      if (useDeposit) {
+        const result = await createDepositCheckout(payload);
+        // Hard redirect — Stripe owns the URL. We do NOT mark anything paid here.
+        window.location.href = result.checkoutUrl;
+        return; // unreachable, but keeps TS happy
+      }
+
+      await submitPublicBooking(payload);
       setSubmitted(true);
     } catch (e: any) {
       console.error("[booking] Submission failed:", e);
@@ -2271,6 +2336,7 @@ export function BookingPage() {
           submitError={submitError}
           onSubmit={handleSubmit}
           bookedSlots={bookedSlots}
+          deposit={deposit}
         />
 
         <FAQSection faqs={settings.faqs} />

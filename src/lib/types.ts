@@ -44,7 +44,23 @@ export type LeadSource =
   | "other";
 
 export type Priority = "low" | "medium" | "high";
-export type PaymentStatus = "unpaid" | "deposit" | "paid";
+/**
+ * Appointment-level payment status.
+ *
+ * Phase 7 added the deposit-aware values; older rows still use "unpaid",
+ * "deposit", and "paid". The string union deliberately stays open-ended
+ * (appears as `string` in mappers) so DB rows from earlier migrations don't
+ * fail to parse.
+ */
+export type PaymentStatus =
+  | "unpaid"
+  | "deposit"          // legacy
+  | "paid"
+  | "awaiting_deposit" // booking submitted, customer hasn't paid yet
+  | "deposit_paid"
+  | "deposit_failed"
+  | "deposit_expired"
+  | "refunded";
 
 export interface Vehicle {
   year: string;
@@ -108,7 +124,48 @@ export interface Appointment {
   travelTimeNotes?: string;
   source?: string;
   bookingPhotoUrls?: string[];
+  // Phase 7 — deposits
+  depositRequired?: boolean;
+  depositAmountCents?: number;
+  depositPaidAt?: string;
+  depositPaymentId?: ID;
+  finalPriceCents?: number;
+  stripeCheckoutSessionId?: string;
   createdAt: string;
+}
+
+/* ---------- Phase 7: payments ---------- */
+
+export type PaymentRecordStatus =
+  | "pending"
+  | "paid"
+  | "failed"
+  | "canceled"
+  | "expired"
+  | "refunded"
+  | "partially_refunded";
+
+export type PaymentRecordType = "deposit" | "invoice" | "final_payment" | "refund";
+
+export interface Payment {
+  id: ID;
+  appointmentId?: ID;
+  customerId?: ID;
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
+  stripeCustomerId?: string;
+  amountCents: number;
+  currency: string;
+  paymentType: PaymentRecordType;
+  status: PaymentRecordStatus;
+  paidAt?: string;
+  refundedAt?: string;
+  amountRefundedCents: number;
+  receiptUrl?: string;
+  failureReason?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Lead {
@@ -391,6 +448,16 @@ export interface Settings {
   bookingPhone?: string;
   bookingEmail?: string;
   bookingFaqs?: Array<{ q: string; a: string }>;
+
+  // Phase 7 — Stripe deposit configuration
+  bookingDepositsEnabled?: boolean;
+  bookingDepositAmountCents?: number;
+  bookingDepositRequired?: boolean;
+  bookingAutoConfirmAfterDeposit?: boolean;
+  bookingDepositRefundPolicy?: string;
+  bookingDepositDisclaimer?: string;
+  bookingAllowWithoutDeposit?: boolean;
+  bookingDepositAppliesToTotal?: boolean;
 
   // ── Notifications ────────────────────────────────────────────────────────
   notificationsEnabled?: boolean;

@@ -667,6 +667,118 @@ export function SettingsPage() {
         </SettingsSection>
       ) : null}
 
+      {/* ── 5b. Deposits & Payments ─────────────────────────── */}
+      {matches("deposit", "stripe", "payment", "money", "checkout", "refund") ? (
+        <SettingsSection
+          id="deposits"
+          title="Deposits & Payments"
+          description="Stripe deposit collection on booking submissions."
+          icon={Sliders}
+          badge={s.bookingDepositsEnabled ? "Live" : undefined}
+        >
+          <ToggleRow
+            label="Enable deposits"
+            hint="Master switch for the Stripe deposit flow. When off, all bookings are free as before."
+            checked={s.bookingDepositsEnabled ?? false}
+            onChange={(v) => update("bookingDepositsEnabled", v)}
+          />
+
+          {!s.bookingDepositsEnabled ? (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-200">
+              Deposits are off. Bookings submit for free as before. Turn this on once you've set up Stripe + deployed the edge functions (see <span className="font-mono">/supabase/functions</span>).
+            </div>
+          ) : null}
+
+          <div className={cn("space-y-2", !s.bookingDepositsEnabled && "opacity-50 pointer-events-none")}>
+            <ToggleRow
+              label="Require deposit to submit a booking"
+              hint="When on, customers must pay the deposit before their booking is created. When off, the booking page submits like before."
+              checked={s.bookingDepositRequired ?? false}
+              onChange={(v) => update("bookingDepositRequired", v)}
+            />
+            <ToggleRow
+              label="Auto-confirm bookings after deposit paid"
+              hint="When OFF (recommended), paid bookings still need your manual approval. When ON, they jump straight to Confirmed."
+              checked={s.bookingAutoConfirmAfterDeposit ?? false}
+              onChange={(v) => update("bookingAutoConfirmAfterDeposit", v)}
+            />
+            <ToggleRow
+              label="Deposit applies toward final total"
+              hint="Customers see the deposit subtracted from the estimated total. Almost always ON."
+              checked={s.bookingDepositAppliesToTotal ?? true}
+              onChange={(v) => update("bookingDepositAppliesToTotal", v)}
+            />
+            <ToggleRow
+              label="Allow booking without deposit (escape hatch)"
+              hint="If on, customers see a 'submit without deposit' option. Most setups leave this OFF."
+              checked={s.bookingAllowWithoutDeposit ?? false}
+              onChange={(v) => update("bookingAllowWithoutDeposit", v)}
+            />
+          </div>
+
+          <div className={cn("grid gap-4 sm:grid-cols-2", !s.bookingDepositsEnabled && "opacity-50 pointer-events-none")}>
+            <Field label="Deposit amount ($)" hint="Server-authoritative. Customers cannot influence this.">
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={((s.bookingDepositAmountCents ?? 3000) / 100).toString()}
+                onChange={(e) =>
+                  update(
+                    "bookingDepositAmountCents",
+                    Math.max(0, Math.round(Number(e.target.value || 0) * 100))
+                  )
+                }
+                placeholder="30"
+              />
+            </Field>
+          </div>
+
+          <Field
+            label="Disclaimer text on booking review"
+            hint="Shown above the Pay Deposit button. Leave blank for the default."
+          >
+            <Textarea
+              rows={3}
+              value={s.bookingDepositDisclaimer ?? ""}
+              onChange={(e) => update("bookingDepositDisclaimer", e.target.value || undefined)}
+              placeholder={
+                s.bookingAutoConfirmAfterDeposit
+                  ? "A $30 deposit is required to reserve your appointment. This deposit goes toward your final detail price."
+                  : "A $30 deposit is required to reserve your appointment request. This deposit goes toward your final detail price. Your appointment will be reviewed and confirmed after submission. Final pricing may vary based on vehicle condition at inspection."
+              }
+            />
+          </Field>
+
+          <Field label="Refund policy" hint="Shown under the deposit disclaimer on /book.">
+            <Textarea
+              rows={2}
+              value={s.bookingDepositRefundPolicy ?? ""}
+              onChange={(e) => update("bookingDepositRefundPolicy", e.target.value || undefined)}
+              placeholder="Deposits are refundable up to 24 hours before your appointment."
+            />
+          </Field>
+
+          <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 text-[11px] text-blue-700 dark:text-blue-200 leading-relaxed">
+            <p className="font-semibold mb-1">Deployment checklist</p>
+            <ol className="list-decimal list-inside space-y-0.5">
+              <li>Run <span className="font-mono">supabase/phase_7_deposits.sql</span> in Supabase SQL Editor.</li>
+              <li>
+                Set Stripe secrets:{" "}
+                <span className="font-mono">supabase secrets set STRIPE_SECRET_KEY=sk_test_… APP_URL=https://jmdetailing.vercel.app</span>
+              </li>
+              <li>
+                Deploy edge functions:{" "}
+                <span className="font-mono">supabase functions deploy stripe-checkout</span> and{" "}
+                <span className="font-mono">supabase functions deploy stripe-webhook --no-verify-jwt</span>
+              </li>
+              <li>In Stripe dashboard → Developers → Webhooks: add the webhook endpoint URL pointing at your stripe-webhook function. Copy the signing secret and run <span className="font-mono">supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_…</span></li>
+              <li>Test in Stripe test mode using card 4242 4242 4242 4242.</li>
+            </ol>
+          </div>
+        </SettingsSection>
+      ) : null}
+
       {/* ── 6. Notifications ──────────────────────────────── */}
       {matches("notification", "reminder", "alert", "appointment", "payment", "follow", "review", "weather", "update") ? (
         <SettingsSection
