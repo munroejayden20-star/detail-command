@@ -8,7 +8,7 @@ import {
   UserPlus,
   CheckSquare,
   Sparkles,
-  TrendingUp,
+  BarChart2,
   Receipt,
   ListChecks,
   Calculator,
@@ -36,7 +36,7 @@ const NAV: NavItem[] = [
   { to: "/calculator", label: "Quote Calculator", icon: Calculator },
   { to: "/photos", label: "Photos", icon: ImageIcon },
   { to: "/checklists", label: "Checklists", icon: ListChecks },
-  { to: "/revenue", label: "Revenue", icon: TrendingUp },
+  { to: "/revenue", label: "Business Stats", icon: BarChart2 },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];

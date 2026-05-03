@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { NOTIFICATION_TYPE_META } from "@/lib/types";
 import type {
   AppData,
   Appointment,
@@ -455,10 +456,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
           (payload: any) => {
             import("@/lib/mappers").then(({ notificationFromRow }) => {
-              baseDispatch({
-                type: "upsertNotificationFromRealtime",
-                notification: notificationFromRow(payload.new),
-              });
+              const n = notificationFromRow(payload.new);
+              baseDispatch({ type: "upsertNotificationFromRealtime", notification: n });
+              fireNotificationToast(n);
             });
           }
         )
@@ -522,6 +522,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+function fireNotificationToast(n: Notification) {
+  const meta = NOTIFICATION_TYPE_META[n.type];
+  const opts = { description: n.message || undefined, duration: 6000 };
+  if (meta.tone === "emerald") toast.success(n.title, opts);
+  else if (meta.tone === "amber") toast.warning(n.title, opts);
+  else if (meta.tone === "rose") toast.error(n.title, opts);
+  else toast.info(n.title, opts);
 }
 
 /**
