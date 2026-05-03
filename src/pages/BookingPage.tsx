@@ -286,6 +286,62 @@ function discBadgeText(d: NonNullable<PublicService["discount"]>) {
   return d.type === "percent" ? `${d.value}% OFF` : `$${d.value} OFF`;
 }
 
+function getTimeLeft(expiry: string) {
+  const diff = new Date(expiry).getTime() - Date.now();
+  if (diff <= 0) return null;
+  return {
+    days: Math.floor(diff / 86400000),
+    hours: Math.floor((diff % 86400000) / 3600000),
+    minutes: Math.floor((diff % 3600000) / 60000),
+    seconds: Math.floor((diff % 60000) / 1000),
+  };
+}
+
+function CountdownTimer({ expiry, compact = false }: { expiry: string; compact?: boolean }) {
+  const [t, setT] = useState(() => getTimeLeft(expiry));
+  useEffect(() => {
+    const id = setInterval(() => setT(getTimeLeft(expiry)), 1000);
+    return () => clearInterval(id);
+  }, [expiry]);
+  if (!t) return null;
+
+  if (compact) {
+    return (
+      <span className="text-[10px] font-mono font-bold text-amber-400">
+        ⏱{" "}
+        {t.days > 0 ? `${t.days}d ` : ""}
+        {String(t.hours).padStart(2, "0")}:{String(t.minutes).padStart(2, "0")}:{String(t.seconds).padStart(2, "0")}
+        {" "}left
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Ends in</span>
+      <div className="flex items-center gap-1">
+        {t.days > 0 && (
+          <TimeUnit value={t.days} label="d" />
+        )}
+        <TimeUnit value={t.hours} label="h" />
+        <TimeUnit value={t.minutes} label="m" />
+        <TimeUnit value={t.seconds} label="s" />
+      </div>
+    </div>
+  );
+}
+
+function TimeUnit({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex items-baseline gap-0.5">
+      <span className="min-w-[22px] rounded bg-amber-500/20 border border-amber-500/30 px-1 py-0.5 text-center text-xs font-bold font-mono tabular-nums text-amber-400 leading-none">
+        {String(value).padStart(2, "0")}
+      </span>
+      <span className="text-[9px] text-zinc-500">{label}</span>
+    </div>
+  );
+}
+
 function midPrice(s: PublicService) {
   const mid = Math.round((s.priceLow + s.priceHigh) / 2);
   const d = activeDiscount(s);
@@ -358,15 +414,11 @@ function ServiceCard({
       }`}
     >
       {disc && (
-        <div className="mb-2">
+        <div className="mb-2 flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
             🔥 {discBadgeText(disc)}
-            {disc.expiry && (
-              <span className="font-normal opacity-80">
-                {" "}· ends {new Date(disc.expiry).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-            )}
           </span>
+          {disc.expiry && <CountdownTimer expiry={disc.expiry} compact />}
         </div>
       )}
       <div className="flex items-start justify-between gap-3">
@@ -1429,15 +1481,10 @@ function ServicesShowcase({
             {deals.map((s) => {
               const d = activeDiscount(s)!;
               return (
-                <span key={s.id} className="text-xs text-zinc-300">
+                <span key={s.id} className="inline-flex items-center gap-2 text-xs text-zinc-300">
                   <span className="font-semibold text-white">{s.name}</span>
-                  {" — "}
                   <span className="text-amber-400 font-bold">{discBadgeText(d)}</span>
-                  {d.expiry && (
-                    <span className="text-zinc-500 ml-1">
-                      · ends {new Date(d.expiry).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                  )}
+                  {d.expiry && <CountdownTimer expiry={d.expiry} compact />}
                 </span>
               );
             })}
@@ -1531,9 +1578,9 @@ function ServiceShowcaseCard({
                 ${applyDiscount(s.priceLow, activeDiscount(s)!)}
               </p>
               {activeDiscount(s)!.expiry && (
-                <p className="text-[10px] text-zinc-500 mt-0.5">
-                  ends {new Date(activeDiscount(s)!.expiry!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </p>
+                <div className="mt-1.5">
+                  <CountdownTimer expiry={activeDiscount(s)!.expiry!} />
+                </div>
               )}
             </>
           ) : (
