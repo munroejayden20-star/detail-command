@@ -375,12 +375,21 @@ export interface Settings {
   defaultFollowUpDays?: number;     // days after completion to follow up
   defaultReviewRequestMessage?: string;
 
-  // ── Booking Page (future feature) ────────────────────────────────────────
+  // ── Booking Page ─────────────────────────────────────────────────────────
   bookingPageEnabled?: boolean;
   bookingPageSlug?: string;
   autoConfirmBookings?: boolean;
   depositRequired?: boolean;
   depositAmount?: number;
+
+  // Phase 6B — landing page customization (all optional, fall back to defaults)
+  bookingHeroHeadline?: string;
+  bookingHeroSubheadline?: string;
+  bookingWaterPowerText?: string;
+  bookingFeaturedPhotoIds?: string[];
+  bookingPhone?: string;
+  bookingEmail?: string;
+  bookingFaqs?: Array<{ q: string; a: string }>;
 
   // ── Notifications ────────────────────────────────────────────────────────
   notificationsEnabled?: boolean;

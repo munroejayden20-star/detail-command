@@ -27,6 +27,10 @@ import {
   Search,
   ExternalLink,
   ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,6 +42,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { PhotoImage } from "@/components/photos/PhotoImage";
 import { useStore } from "@/store/store";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/auth/AuthProvider";
@@ -512,7 +517,7 @@ export function SettingsPage() {
       ) : null}
 
       {/* ── 5. Booking Page ───────────────────────────────── */}
-      {matches("booking", "book", "deposit", "slug", "auto", "confirm") ? (
+      {matches("booking", "book", "deposit", "slug", "auto", "confirm", "hero", "headline", "subheadline", "water", "power", "faq", "featured", "photos", "phone", "email") ? (
         <SettingsSection
           id="booking"
           title="Booking Page"
@@ -573,6 +578,73 @@ export function SettingsPage() {
               placeholder="Estimated price may vary based on actual vehicle condition. Final price confirmed on-site."
             />
           </Field>
+
+          {/* ── Phase 6B — Landing-page customization ─────────────────── */}
+          <Separator />
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Landing page content</p>
+            <p className="text-[11px] text-muted-foreground">
+              Override the default copy and pick what shows in the photo gallery. Leave a field blank to use the default.
+            </p>
+          </div>
+
+          <Field label="Hero headline" hint="Main heading at the top of the page. Use — (em dash) to make the text after it red.">
+            <Input
+              value={s.bookingHeroHeadline ?? ""}
+              onChange={(e) => update("bookingHeroHeadline", e.target.value || undefined)}
+              placeholder="Premium Mobile Detailing — We Come To You"
+              maxLength={120}
+            />
+          </Field>
+
+          <Field label="Hero subheadline" hint="One-sentence sub-text below the headline.">
+            <Textarea
+              rows={2}
+              value={s.bookingHeroSubheadline ?? ""}
+              onChange={(e) => update("bookingHeroSubheadline", e.target.value || undefined)}
+              placeholder="Professional interior and exterior detailing brought to your driveway. Serving Vancouver / Portland."
+              maxLength={280}
+            />
+          </Field>
+
+          <Field label="Water & power section text" hint="Replaces the default 'What I need from you' paragraph.">
+            <Textarea
+              rows={4}
+              value={s.bookingWaterPowerText ?? ""}
+              onChange={(e) => update("bookingWaterPowerText", e.target.value || undefined)}
+              placeholder="I bring all the detailing tools and products. I just need access to an outdoor water spigot and a standard power outlet — unless we work something out beforehand."
+            />
+          </Field>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Booking page phone" hint="Shown in the footer. Defaults to your contact phone if blank.">
+              <Input
+                value={s.bookingPhone ?? ""}
+                onChange={(e) => update("bookingPhone", e.target.value || undefined)}
+                placeholder="(360) 555-1234"
+              />
+            </Field>
+            <Field label="Booking page email" hint="Shown in the footer. Defaults to your contact email if blank.">
+              <Input
+                type="email"
+                value={s.bookingEmail ?? ""}
+                onChange={(e) => update("bookingEmail", e.target.value || undefined)}
+                placeholder="bookings@example.com"
+              />
+            </Field>
+          </div>
+
+          <Separator />
+          <FeaturedPhotosPicker
+            selectedIds={s.bookingFeaturedPhotoIds ?? []}
+            onChange={(ids) => update("bookingFeaturedPhotoIds", ids)}
+          />
+
+          <Separator />
+          <FaqEditor
+            faqs={s.bookingFaqs ?? []}
+            onChange={(next) => update("bookingFaqs", next.length ? next : undefined)}
+          />
         </SettingsSection>
       ) : null}
 
@@ -1014,6 +1086,259 @@ function DangerZone() {
           {totalRows === 0 ? "Already empty" : `Reset all data`}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Phase 6B: Featured photos picker
+───────────────────────────────────────────── */
+function FeaturedPhotosPicker({
+  selectedIds,
+  onChange,
+}: {
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const { data } = useStore();
+  const photos = data.photos ?? [];
+
+  function isPublic(storagePath: string) {
+    return storagePath.startsWith("http://") || storagePath.startsWith("https://");
+  }
+
+  const selectedPhotos = selectedIds
+    .map((id) => photos.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => !!p);
+
+  function toggle(id: string) {
+    if (selectedIds.includes(id)) {
+      onChange(selectedIds.filter((x) => x !== id));
+    } else {
+      onChange([...selectedIds, id]);
+    }
+  }
+
+  function move(idx: number, dir: -1 | 1) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= selectedIds.length) return;
+    const next = [...selectedIds];
+    [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+    onChange(next);
+  }
+
+  const eligibleCount = photos.filter((p) => isPublic(p.storagePath)).length;
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Featured photos
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Replace the placeholder Before/After gallery on /book. Click to add or remove. Reorder with the arrows.
+          Only photos already stored as public URLs render — others are flagged.
+        </p>
+      </div>
+
+      {/* Selected (in order) */}
+      {selectedPhotos.length > 0 ? (
+        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Selected ({selectedPhotos.length})
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {selectedPhotos.map((p, i) => (
+              <div key={p.id} className="relative shrink-0 w-24">
+                <PhotoImage
+                  storagePath={p.storagePath}
+                  className="aspect-[4/5] w-full rounded-md object-cover border"
+                />
+                <span className="absolute top-1 left-1 rounded bg-black/70 text-white text-[10px] px-1.5 py-0.5 font-bold">
+                  {i + 1}
+                </span>
+                <div className="mt-1 flex items-center justify-between gap-1">
+                  <button
+                    type="button"
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0}
+                    className="h-6 w-6 rounded border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                    aria-label="Move left"
+                  >
+                    <ArrowUp className="h-3 w-3 -rotate-90" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(i, 1)}
+                    disabled={i === selectedPhotos.length - 1}
+                    className="h-6 w-6 rounded border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                    aria-label="Move right"
+                  >
+                    <ArrowDown className="h-3 w-3 -rotate-90" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggle(p.id)}
+                    className="h-6 w-6 rounded border flex items-center justify-center text-destructive hover:bg-destructive/10"
+                    aria-label="Remove"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Available photos grid */}
+      {photos.length === 0 ? (
+        <p className="rounded-lg border border-dashed p-4 text-xs text-center text-muted-foreground">
+          No photos yet. Upload some on the Photos page or via /book to use them as featured.
+        </p>
+      ) : (
+        <div>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            All photos ({photos.length}) — {eligibleCount} eligible for /book
+          </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
+            {photos.map((p) => {
+              const selected = selectedIds.includes(p.id);
+              const pub = isPublic(p.storagePath);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => toggle(p.id)}
+                  className={cn(
+                    "relative aspect-square rounded-md overflow-hidden text-left transition-all",
+                    selected
+                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                      : "border border-border hover:border-foreground/30"
+                  )}
+                  title={pub ? "Public photo — will render on /book" : "Private photo — won't render until bucket is updated"}
+                >
+                  <PhotoImage
+                    storagePath={p.storagePath}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  {selected ? (
+                    <span className="absolute top-1 right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold shadow">
+                      ✓
+                    </span>
+                  ) : null}
+                  {!pub ? (
+                    <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-amber-300 text-center py-0.5 font-medium">
+                      Private
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Phase 6B: FAQ editor
+───────────────────────────────────────────── */
+function FaqEditor({
+  faqs,
+  onChange,
+}: {
+  faqs: Array<{ q: string; a: string }>;
+  onChange: (next: Array<{ q: string; a: string }>) => void;
+}) {
+  function update(idx: number, patch: Partial<{ q: string; a: string }>) {
+    const next = [...faqs];
+    next[idx] = { ...next[idx], ...patch };
+    onChange(next);
+  }
+  function remove(idx: number) {
+    onChange(faqs.filter((_, i) => i !== idx));
+  }
+  function add() {
+    onChange([...faqs, { q: "", a: "" }]);
+  }
+  function move(idx: number, dir: -1 | 1) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= faqs.length) return;
+    const next = [...faqs];
+    [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+    onChange(next);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">FAQ</p>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Override the default questions on /book. Empty list = use defaults.
+        </p>
+      </div>
+
+      {faqs.length === 0 ? (
+        <p className="rounded-lg border border-dashed p-3 text-xs text-center text-muted-foreground">
+          Using default FAQs. Click below to add a custom question.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {faqs.map((f, i) => (
+            <div key={i} className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-medium text-muted-foreground">Question {i + 1}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0}
+                    className="h-7 w-7 rounded border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                    aria-label="Move up"
+                  >
+                    <ArrowUp className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(i, 1)}
+                    disabled={i === faqs.length - 1}
+                    className="h-7 w-7 rounded border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                    aria-label="Move down"
+                  >
+                    <ArrowDown className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(i)}
+                    className="h-7 w-7 rounded border flex items-center justify-center text-destructive hover:bg-destructive/10"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+              <Input
+                value={f.q}
+                onChange={(e) => update(i, { q: e.target.value })}
+                placeholder="Question (e.g. Do you come to me?)"
+              />
+              <Textarea
+                rows={2}
+                value={f.a}
+                onChange={(e) => update(i, { a: e.target.value })}
+                placeholder="Answer…"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Button type="button" variant="outline" size="sm" onClick={add}>
+        <Plus className="h-3.5 w-3.5" />
+        Add question
+      </Button>
     </div>
   );
 }

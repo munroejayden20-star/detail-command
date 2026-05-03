@@ -10,6 +10,17 @@ export interface PublicService {
   isAddon: boolean;
 }
 
+export interface PublicBookingFaq {
+  q: string;
+  a: string;
+}
+
+export interface PublicFeaturedPhoto {
+  id: string;
+  url: string;
+  caption?: string;
+}
+
 export interface PublicBookingInfo {
   services: PublicService[];
   settings: {
@@ -17,6 +28,15 @@ export interface PublicBookingInfo {
     serviceArea?: string;
     bookingPageEnabled: boolean;
     defaultQuoteDisclaimer?: string;
+    // Phase 6B — landing page customization
+    heroHeadline?: string;
+    heroSubheadline?: string;
+    waterPowerText?: string;
+    bookingPhone?: string;
+    bookingEmail?: string;
+    faqs?: PublicBookingFaq[];
+    featuredPhotos?: PublicFeaturedPhoto[];
+    logoUrl?: string;
   };
 }
 

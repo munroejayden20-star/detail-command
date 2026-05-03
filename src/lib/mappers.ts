@@ -622,6 +622,13 @@ export function settingsToRow(s: Settings, userId: string) {
     auto_confirm_bookings: s.autoConfirmBookings ?? false,
     deposit_required: s.depositRequired ?? false,
     deposit_amount: s.depositAmount ?? null,
+    booking_hero_headline: s.bookingHeroHeadline ?? null,
+    booking_hero_subheadline: s.bookingHeroSubheadline ?? null,
+    booking_water_power_text: s.bookingWaterPowerText ?? null,
+    booking_featured_photo_ids: s.bookingFeaturedPhotoIds ?? [],
+    booking_phone: s.bookingPhone ?? null,
+    booking_email: s.bookingEmail ?? null,
+    booking_faqs: s.bookingFaqs ?? null,
     notifications_enabled: s.notificationsEnabled ?? true,
     notify_appointments: s.notifyAppointments ?? true,
     notify_payments: s.notifyPayments ?? true,
@@ -668,6 +675,13 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.autoConfirmBookings !== undefined) out.auto_confirm_bookings = !!p.autoConfirmBookings;
   if (p.depositRequired !== undefined) out.deposit_required = !!p.depositRequired;
   if (p.depositAmount !== undefined) out.deposit_amount = p.depositAmount ?? null;
+  if (p.bookingHeroHeadline !== undefined) out.booking_hero_headline = p.bookingHeroHeadline ?? null;
+  if (p.bookingHeroSubheadline !== undefined) out.booking_hero_subheadline = p.bookingHeroSubheadline ?? null;
+  if (p.bookingWaterPowerText !== undefined) out.booking_water_power_text = p.bookingWaterPowerText ?? null;
+  if (p.bookingFeaturedPhotoIds !== undefined) out.booking_featured_photo_ids = p.bookingFeaturedPhotoIds ?? [];
+  if (p.bookingPhone !== undefined) out.booking_phone = p.bookingPhone ?? null;
+  if (p.bookingEmail !== undefined) out.booking_email = p.bookingEmail ?? null;
+  if (p.bookingFaqs !== undefined) out.booking_faqs = p.bookingFaqs ?? null;
   if (p.notificationsEnabled !== undefined) out.notifications_enabled = !!p.notificationsEnabled;
   if (p.notifyAppointments !== undefined) out.notify_appointments = !!p.notifyAppointments;
   if (p.notifyPayments !== undefined) out.notify_payments = !!p.notifyPayments;
@@ -714,6 +728,13 @@ export function settingsFromRow(r: any): Settings {
     autoConfirmBookings: r.auto_confirm_bookings ?? false,
     depositRequired: r.deposit_required ?? false,
     depositAmount: r.deposit_amount != null ? Number(r.deposit_amount) : undefined,
+    bookingHeroHeadline: r.booking_hero_headline ?? undefined,
+    bookingHeroSubheadline: r.booking_hero_subheadline ?? undefined,
+    bookingWaterPowerText: r.booking_water_power_text ?? undefined,
+    bookingFeaturedPhotoIds: r.booking_featured_photo_ids ?? [],
+    bookingPhone: r.booking_phone ?? undefined,
+    bookingEmail: r.booking_email ?? undefined,
+    bookingFaqs: r.booking_faqs ?? undefined,
     notificationsEnabled: r.notifications_enabled ?? true,
     notifyAppointments: r.notify_appointments ?? true,
     notifyPayments: r.notify_payments ?? true,
