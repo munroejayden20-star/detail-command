@@ -22,8 +22,8 @@
  * IMPORTANT: deploy with --no-verify-jwt because Stripe is unauthenticated:
  *   supabase functions deploy stripe-webhook --no-verify-jwt
  */
-import Stripe from "https://esm.sh/stripe@17.4.0?target=deno&deno-std=0.224.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "npm:stripe@17.4.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const STRIPE_API_VERSION = "2024-12-18.acacia" as const;
 
@@ -57,9 +57,19 @@ Deno.serve(async (req) => {
   }
   const rawBody = await req.text();
 
+  // SubtleCryptoProvider lets Stripe's signature check use Web Crypto (Deno
+  // Edge Runtime) instead of Node's crypto module which isn't available here.
+  const cryptoProvider = Stripe.createSubtleCryptoProvider();
+
   let event: Stripe.Event;
   try {
-    event = await stripe.webhooks.constructEventAsync(rawBody, sig, webhookSecret);
+    event = await stripe.webhooks.constructEventAsync(
+      rawBody,
+      sig,
+      webhookSecret,
+      undefined,
+      cryptoProvider,
+    );
   } catch (e) {
     console.error("[stripe-webhook] bad signature", e instanceof Error ? e.message : e);
     return new Response("Bad signature", { status: 400 });
