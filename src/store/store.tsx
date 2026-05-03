@@ -301,6 +301,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     baseDispatch(action);
     const uid = userIdRef.current;
     if (!uid) return;
+
+    // toggleChecklistItem and resetChecklist mutate the items JSONB array.
+    // Compute the new items from current state (dataRef.current = pre-update,
+    // which is fine because we know exactly what the reducer will produce)
+    // rather than waiting for a React re-render via the fragile _readChecklist hack.
+    if (action.type === "toggleChecklistItem" || action.type === "resetChecklist") {
+      const groupId = action.type === "resetChecklist" ? action.id : action.groupId;
+      const checklist = dataRef.current.checklists.find((c) => c.id === groupId);
+      if (!checklist) return;
+      const newItems = action.type === "resetChecklist"
+        ? checklist.items.map((it) => ({ ...it, done: false }))
+        : checklist.items.map((it) =>
+            it.id === action.itemId ? { ...it, done: !it.done } : it
+          );
+      void (async () => {
+        const r = await api.updateChecklist(groupId, { items: newItems });
+        if (r.error) {
+          console.error("[sync]", action.type, r.error);
+          toast.error("Sync failed — change may not appear on other devices", {
+            description: r.error?.message ?? String(r.error),
+          });
+        }
+      })();
+      return;
+    }
+
     syncAction(action, uid).catch((err) => {
       console.error("[sync]", action.type, err);
       toast.error("Sync failed — change may not appear on other devices", {
@@ -649,20 +675,9 @@ async function syncAction(action: Action, userId: string): Promise<void> {
       return;
     }
     case "toggleChecklistItem":
-    case "resetChecklist": {
-      // These mutate the items JSONB array — read the new items from local state
-      // and push the whole array back. Re-derived from a tiny helper to avoid
-      // racing with the reducer.
-      const id = action.type === "resetChecklist" ? action.id : action.groupId;
-      // Defer one tick so the reducer's update has flushed
-      await new Promise((r) => setTimeout(r, 0));
-      const items = readChecklistItems(id);
-      if (items) {
-        const r = await api.updateChecklist(id, { items });
-        if (r.error) throw r.error;
-      }
+    case "resetChecklist":
+      // Handled inline in dispatch() using dataRef.current — no-op here.
       return;
-    }
 
     case "addBlock": {
       const r = await api.insertBlock(action.block, userId);
@@ -731,23 +746,9 @@ async function syncAction(action: Action, userId: string): Promise<void> {
   }
 }
 
-// Side-channel for syncAction to read latest checklist items after the reducer applies
-// its mutation. Set by StoreProvider on every render via a ref pattern.
-let _readChecklist: ((groupId: string) => ChecklistGroup["items"] | null) | null = null;
-function readChecklistItems(groupId: string) {
-  return _readChecklist ? _readChecklist(groupId) : null;
-}
-export function _setChecklistReader(fn: typeof _readChecklist) {
-  _readChecklist = fn;
-}
-
 export function useStore() {
   const ctx = useContext(StoreContext);
   if (!ctx) throw new Error("useStore must be used within StoreProvider");
-  // Register a reader so syncAction can read the latest items array
-  _setChecklistReader((groupId) => {
-    return ctx.data.checklists.find((c) => c.id === groupId)?.items ?? null;
-  });
   return ctx;
 }
 
