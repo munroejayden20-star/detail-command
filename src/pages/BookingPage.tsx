@@ -1304,51 +1304,113 @@ function ServicesShowcase({
         ) : (
           <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-5">
             {packages.map((s) => (
-              <article
-                key={s.id}
-                className="group relative rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 md:p-7 hover:border-red-600/50 transition-all flex flex-col"
-              >
-                {/* Service icon area */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-red-600/15 border border-red-600/40 flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-red-400" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">Starting at</p>
-                    <p className="text-2xl font-extrabold text-white leading-none mt-1">${s.priceLow}</p>
-                  </div>
-                </div>
-
-                <h3 className="mt-5 text-xl font-bold text-white">{s.name}</h3>
-                {s.description ? (
-                  <p className="mt-2 text-sm text-zinc-400 leading-relaxed line-clamp-3">{s.description}</p>
-                ) : null}
-
-                <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    {fmtDuration(s.durationMinutes)}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Mobile service
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => onSelect(s.id)}
-                  className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:border-red-500 hover:bg-red-600 transition-all"
-                >
-                  Select This Service
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </article>
+              <ServiceShowcaseCard key={s.id} service={s} onSelect={onSelect} />
             ))}
           </div>
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * One service card with an expandable description. Only shows the
+ * "Read more" toggle when the description actually overflows the
+ * 3-line clamp — measured after layout. Re-checks on resize so the
+ * toggle stays accurate when the viewport changes.
+ */
+function ServiceShowcaseCard({
+  service: s,
+  onSelect,
+}: {
+  service: PublicService;
+  onSelect: (serviceId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const descRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    if (!s.description) return;
+    function measure() {
+      const el = descRef.current;
+      if (!el) return;
+      // Only meaningful while clamped — temporarily un-clamp to measure
+      // would cause a flash, so just compare scrollHeight vs clientHeight
+      // in the clamped state. If they differ, content is truncated.
+      const clipped = el.dataset.clamped === "true";
+      if (clipped) {
+        setOverflows(el.scrollHeight - 1 > el.clientHeight);
+      }
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (descRef.current) ro.observe(descRef.current);
+    return () => ro.disconnect();
+  }, [s.description]);
+
+  return (
+    <article className="group relative rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 md:p-7 hover:border-red-600/50 transition-all flex flex-col">
+      {/* Service icon area */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="h-12 w-12 rounded-xl bg-red-600/15 border border-red-600/40 flex items-center justify-center">
+          <Sparkles className="h-5 w-5 text-red-400" />
+        </div>
+        <div className="text-right">
+          <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">Starting at</p>
+          <p className="text-2xl font-extrabold text-white leading-none mt-1">${s.priceLow}</p>
+        </div>
+      </div>
+
+      <h3 className="mt-5 text-xl font-bold text-white">{s.name}</h3>
+      {s.description ? (
+        <>
+          <p
+            ref={descRef}
+            data-clamped={!expanded}
+            className={`mt-2 text-sm text-zinc-400 leading-relaxed whitespace-pre-line transition-all ${
+              expanded ? "" : "line-clamp-3"
+            }`}
+          >
+            {s.description}
+          </p>
+          {overflows ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }}
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors self-start"
+              aria-expanded={expanded}
+            >
+              {expanded ? "Show less" : "Read more"}
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </button>
+          ) : null}
+        </>
+      ) : null}
+
+      <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
+        <span className="inline-flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />
+          {fmtDuration(s.durationMinutes)}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Mobile service
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onSelect(s.id)}
+        className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:border-red-500 hover:bg-red-600 transition-all"
+      >
+        Select This Service
+        <ArrowRight className="h-3.5 w-3.5" />
+      </button>
+    </article>
   );
 }
 
