@@ -16,6 +16,7 @@ import type {
   Customer,
   Expense,
   Lead,
+  MileageEntry,
   Notification,
   Photo,
   Receipt,
@@ -78,6 +79,9 @@ type Action =
   | { type: "addReceipt"; receipt: Receipt }
   | { type: "updateReceipt"; id: string; patch: Partial<Receipt> }
   | { type: "deleteReceipt"; id: string }
+  | { type: "addMileage"; entry: MileageEntry }
+  | { type: "updateMileage"; id: string; patch: Partial<MileageEntry> }
+  | { type: "deleteMileage"; id: string }
   | { type: "updateSettings"; patch: Partial<Settings> };
 
 function reducer(state: AppData, action: Action): AppData {
@@ -271,6 +275,21 @@ function reducer(state: AppData, action: Action): AppData {
         receipts: (state.receipts ?? []).filter((r) => r.id !== action.id),
       };
 
+    case "addMileage":
+      return { ...state, mileageEntries: [action.entry, ...(state.mileageEntries ?? [])] };
+    case "updateMileage":
+      return {
+        ...state,
+        mileageEntries: (state.mileageEntries ?? []).map((m) =>
+          m.id === action.id ? { ...m, ...action.patch, updatedAt: new Date().toISOString() } : m
+        ),
+      };
+    case "deleteMileage":
+      return {
+        ...state,
+        mileageEntries: (state.mileageEntries ?? []).filter((m) => m.id !== action.id),
+      };
+
     case "updateSettings":
       return { ...state, settings: { ...state.settings, ...action.patch } };
 
@@ -453,6 +472,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         "blocked_times",
         "photos",
         "receipts",
+        "mileage_entries",
         "settings",
       ];
 
@@ -776,6 +796,22 @@ async function syncAction(action: Action, userId: string): Promise<void> {
     }
     case "deleteReceipt": {
       const r = await api.deleteReceipt(action.id);
+      if (r.error) throw r.error;
+      return;
+    }
+
+    case "addMileage": {
+      const r = await api.insertMileage(action.entry, userId);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "updateMileage": {
+      const r = await api.updateMileage(action.id, action.patch);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "deleteMileage": {
+      const r = await api.deleteMileage(action.id);
       if (r.error) throw r.error;
       return;
     }

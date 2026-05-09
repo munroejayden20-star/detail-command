@@ -9,7 +9,13 @@ import {
   startOfYear,
   parseISO,
 } from "date-fns";
-import type { Expense, Receipt } from "./types";
+import type { Expense, MileageEntry, Receipt } from "./types";
+
+// IRS standard business mileage rate — update annually when the IRS publishes
+// the new rate (https://www.irs.gov/tax-professionals/standard-mileage-rates).
+// Stored in cents per mile to match the rest of the money math in this app.
+// 2025 rate: 70 cents/mile.
+export const IRS_MILEAGE_RATE_CENTS_PER_MILE = 70;
 
 export type TaxPeriodKey = "this_week" | "this_month" | "this_quarter" | "this_year" | "all" | "custom";
 
@@ -66,6 +72,38 @@ function withinPeriod(iso: string, period: TaxPeriod): boolean {
   return true;
 }
 
+export function isMileageInPeriod(m: MileageEntry, period: TaxPeriod): boolean {
+  return withinPeriod(m.entryDate, period);
+}
+
+export interface MileageAggregates {
+  tripsCount: number;
+  businessMiles: number;
+  personalMiles: number;
+  totalMiles: number;
+  /** Business miles × IRS standard rate. */
+  deductionCents: number;
+  chargingCostCents: number;
+}
+
+export function aggregateMileage(
+  entries: MileageEntry[],
+  period: TaxPeriod
+): MileageAggregates {
+  const inPeriod = (entries ?? []).filter((m) => isMileageInPeriod(m, period));
+  const businessMiles = inPeriod.filter((m) => m.isBusiness).reduce((s, m) => s + Number(m.miles || 0), 0);
+  const personalMiles = inPeriod.filter((m) => !m.isBusiness).reduce((s, m) => s + Number(m.miles || 0), 0);
+  const chargingCostCents = inPeriod.reduce((s, m) => s + (m.chargingCostCents ?? 0), 0);
+  return {
+    tripsCount: inPeriod.length,
+    businessMiles,
+    personalMiles,
+    totalMiles: businessMiles + personalMiles,
+    deductionCents: Math.round(businessMiles * IRS_MILEAGE_RATE_CENTS_PER_MILE),
+    chargingCostCents,
+  };
+}
+
 /* ─────────────────────────────────────────────
    Aggregations
 ───────────────────────────────────────────── */
@@ -76,7 +114,9 @@ export interface TaxAggregates {
   outstandingCents: number;        // unpaid balances
   salesTaxCollectedCents: number;
   totalExpensesCents: number;
-  netProfitCents: number;          // grossRevenue - expenses
+  mileageDeductionCents: number;   // business miles × IRS standard rate
+  businessMiles: number;
+  netProfitCents: number;          // grossRevenue - expenses - mileage deduction
   averageReceiptCents: number;
   setAsideCents: number;           // recommended tax set-aside ($)
   setAsidePercent: number;         // the % used
@@ -86,7 +126,8 @@ export function aggregate(
   receipts: Receipt[],
   expenses: Expense[],
   period: TaxPeriod,
-  setAsidePercent: number
+  setAsidePercent: number,
+  mileageEntries: MileageEntry[] = []
 ): TaxAggregates {
   const inPeriodReceipts = (receipts ?? []).filter(
     (r) => r.receiptStatus === "active" && withinPeriod(r.createdAt, period)
@@ -100,11 +141,13 @@ export function aggregate(
   const totalExpensesCents = Math.round(
     inPeriodExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100
   );
+  const mileage = aggregateMileage(mileageEntries, period);
+  const mileageDeductionCents = mileage.deductionCents;
   // Net profit = collected revenue - sales tax (passed through, not income)
-  // - business expenses. This is a rough estimate, not tax-filing math.
+  // - business expenses - business mileage deduction. Rough estimate only.
   const netProfitCents = Math.max(
     0,
-    grossRevenueCents - salesTaxCollectedCents - totalExpensesCents
+    grossRevenueCents - salesTaxCollectedCents - totalExpensesCents - mileageDeductionCents
   );
   const averageReceiptCents = inPeriodReceipts.length
     ? Math.round(grossRevenueCents / inPeriodReceipts.length)
@@ -117,6 +160,8 @@ export function aggregate(
     outstandingCents,
     salesTaxCollectedCents,
     totalExpensesCents,
+    mileageDeductionCents,
+    businessMiles: mileage.businessMiles,
     netProfitCents,
     averageReceiptCents,
     setAsideCents,

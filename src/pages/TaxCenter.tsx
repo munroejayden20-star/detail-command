@@ -10,6 +10,7 @@ import {
   Calculator,
   FileBarChart2,
   Calendar as CalendarIcon,
+  Car,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,7 +22,12 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/store/store";
-import { buildPeriod, aggregate, type TaxPeriodKey } from "@/lib/tax-center";
+import {
+  buildPeriod,
+  aggregate,
+  IRS_MILEAGE_RATE_CENTS_PER_MILE,
+  type TaxPeriodKey,
+} from "@/lib/tax-center";
 import { formatCents, RECEIPT_DISCLAIMER } from "@/lib/receipts";
 import { cn } from "@/lib/utils";
 
@@ -44,8 +50,15 @@ export function TaxCenterPage() {
   const setAsidePercent = data.settings.taxSetAsidePercent ?? 25;
 
   const agg = useMemo(
-    () => aggregate(data.receipts ?? [], data.expenses ?? [], period, setAsidePercent),
-    [data.receipts, data.expenses, period, setAsidePercent]
+    () =>
+      aggregate(
+        data.receipts ?? [],
+        data.expenses ?? [],
+        period,
+        setAsidePercent,
+        data.mileageEntries ?? []
+      ),
+    [data.receipts, data.expenses, data.mileageEntries, period, setAsidePercent]
   );
 
   const periodRangeLabel =
@@ -146,16 +159,18 @@ export function TaxCenterPage() {
           hint={data.settings.salesTaxEnabled ? `Rate ${data.settings.defaultTaxRate ?? 0}%` : "Not enabled"}
         />
         <StatCard
+          icon={Car}
+          label="Mileage deduction"
+          value={formatCents(agg.mileageDeductionCents)}
+          tone="emerald"
+          hint={`${agg.businessMiles.toFixed(1)} business mi @ ${IRS_MILEAGE_RATE_CENTS_PER_MILE}¢`}
+        />
+        <StatCard
           icon={AlertTriangle}
           label="Outstanding"
           value={formatCents(agg.outstandingCents)}
           tone={agg.outstandingCents > 0 ? "amber" : undefined}
           hint="Unpaid balances on receipts"
-        />
-        <StatCard
-          icon={Calculator}
-          label="Avg receipt"
-          value={formatCents(agg.averageReceiptCents)}
         />
       </div>
 
@@ -177,7 +192,13 @@ export function TaxCenterPage() {
           </p>
           <p>
             <strong>Estimated net profit</strong> ≈ gross revenue − sales tax
-            collected − business expenses. This is a rough indicator only.
+            collected − business expenses − mileage deduction. This is a rough
+            indicator only.
+          </p>
+          <p>
+            <strong>Mileage deduction</strong> is your business miles
+            (logged in Mileage) × the IRS standard rate
+            ({IRS_MILEAGE_RATE_CENTS_PER_MILE}¢/mi).
           </p>
           <p>
             <strong>Set-aside</strong> applies your set-aside percentage (configured

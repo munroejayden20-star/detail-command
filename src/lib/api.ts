@@ -41,6 +41,9 @@ import {
   receiptFromRow,
   receiptPatchToRow,
   receiptToRow,
+  mileageFromRow,
+  mileagePatchToRow,
+  mileageToRow,
 } from "./mappers";
 import { makeStarterContent, EMPTY_DATA } from "./starter";
 
@@ -82,6 +85,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     photos,
     notifications,
     receipts,
+    mileageEntries,
     settingsRow,
   ] = await Promise.all([
     safeQuery(sb.from("customers").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
@@ -97,6 +101,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     safeQuery(sb.from("photos").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
     safeQuery(sb.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(200)),
     safeQuery(sb.from("receipts").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
+    safeQuery(sb.from("mileage_entries").select("*").eq("user_id", userId).order("entry_date", { ascending: false })),
     sb.from("settings").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
@@ -115,6 +120,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     { name: "photos", ...photos },
     { name: "notifications", ...notifications },
     { name: "receipts", ...receipts },
+    { name: "mileage_entries", ...mileageEntries },
   ];
   const errs = results.filter((r) => r.error);
   if (errs.length) {
@@ -147,6 +153,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     photos: (photos.data ?? []).map(photoFromRow),
     notifications: (notifications.data ?? []).map(notificationFromRow),
     receipts: (receipts.data ?? []).map(receiptFromRow),
+    mileageEntries: (mileageEntries.data ?? []).map(mileageFromRow),
     settings: settingsRow.data ? settingsFromRow(settingsRow.data) : EMPTY_DATA.settings,
   };
 }
@@ -242,6 +249,7 @@ import type {
   Customer,
   Expense,
   Lead,
+  MileageEntry,
   Notification,
   Photo,
   Receipt,
@@ -377,6 +385,14 @@ export const api = {
     if (error) throw error;
     return data as string;
   },
+
+  // Mileage entries
+  insertMileage: (m: MileageEntry, userId: string) =>
+    sbOrThrow().from("mileage_entries").insert(mileageToRow(m, userId)),
+  updateMileage: (id: string, p: Partial<MileageEntry>) =>
+    sbOrThrow().from("mileage_entries").update(mileagePatchToRow(p)).eq("id", id),
+  deleteMileage: (id: string) =>
+    sbOrThrow().from("mileage_entries").delete().eq("id", id),
 
   // Settings
   upsertSettings: (s: Settings, userId: string) =>

@@ -84,6 +84,7 @@ export const EMPTY_DATA: AppData = {
   photos: [],
   notifications: [],
   receipts: [],
+  mileageEntries: [],
   settings: {
     theme: "system",
     bufferMinutes: 30,

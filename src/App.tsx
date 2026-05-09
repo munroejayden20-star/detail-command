@@ -32,6 +32,7 @@ const PhotosPage = lazy(() => import("@/pages/Photos").then((m) => ({ default: m
 const ReceiptsPage = lazy(() => import("@/pages/Receipts").then((m) => ({ default: m.ReceiptsPage })));
 const PublicReceiptPage = lazy(() => import("@/pages/PublicReceipt").then((m) => ({ default: m.PublicReceiptPage })));
 const TaxCenterPage = lazy(() => import("@/pages/TaxCenter").then((m) => ({ default: m.TaxCenterPage })));
+const MileagePage = lazy(() => import("@/pages/Mileage").then((m) => ({ default: m.MileagePage })));
 const WorkPage = lazy(() => import("@/pages/Work").then((m) => ({ default: m.WorkPage })));
 
 function PageFallback() {
@@ -142,6 +143,7 @@ export default function App() {
           <Route path="/photos" element={lazyRoute(<PhotosPage />)} />
           <Route path="/receipts" element={lazyRoute(<ReceiptsPage />)} />
           <Route path="/tax-center" element={lazyRoute(<TaxCenterPage />)} />
+          <Route path="/mileage" element={lazyRoute(<MileagePage />)} />
           <Route path="/work" element={lazyRoute(<WorkPage />)} />
           <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
         </Route>

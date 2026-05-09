@@ -143,6 +143,27 @@ export interface Appointment {
   createdAt: string;
 }
 
+/* ---------- Phase D: mileage ---------- */
+
+export interface MileageEntry {
+  id: ID;
+  /** Trip date — what the user filed it under, not when it was created. */
+  entryDate: string; // YYYY-MM-DD
+  startLocation?: string;
+  destination?: string;
+  miles: number;
+  odometerStart?: number;
+  odometerEnd?: number;
+  purpose?: string;
+  isBusiness: boolean;
+  chargingCostCents?: number;
+  customerId?: ID;
+  appointmentId?: ID;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ---------- Phase A: receipts ---------- */
 
 export type ReceiptStatus = "active" | "voided";
@@ -701,5 +722,6 @@ export interface AppData {
   photos: Photo[];
   notifications: Notification[];
   receipts: Receipt[];
+  mileageEntries: MileageEntry[];
   settings: Settings;
 }

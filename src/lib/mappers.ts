@@ -21,6 +21,7 @@ import type {
   ExpenseCategory,
   LeadSource,
   LeadStatus,
+  MileageEntry,
 } from "./types";
 
 /* ---------- Customers ---------- */
@@ -317,6 +318,66 @@ export function paymentFromRow(r: any): import("./types").Payment {
     receiptUrl: r.receipt_url ?? undefined,
     failureReason: r.failure_reason ?? undefined,
     metadata: r.metadata ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at ?? r.created_at,
+  };
+}
+
+/* ---------- Phase D: mileage ---------- */
+
+export function mileageToRow(m: MileageEntry, userId: string) {
+  return {
+    id: m.id,
+    user_id: userId,
+    entry_date: m.entryDate,
+    start_location: m.startLocation ?? null,
+    destination: m.destination ?? null,
+    miles: m.miles,
+    odometer_start: m.odometerStart ?? null,
+    odometer_end: m.odometerEnd ?? null,
+    purpose: m.purpose ?? null,
+    is_business: !!m.isBusiness,
+    charging_cost_cents: m.chargingCostCents ?? null,
+    customer_id: m.customerId ?? null,
+    appointment_id: m.appointmentId ?? null,
+    notes: m.notes ?? null,
+    created_at: m.createdAt,
+    updated_at: m.updatedAt,
+  };
+}
+
+export function mileagePatchToRow(p: Partial<MileageEntry>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (p.entryDate !== undefined) out.entry_date = p.entryDate;
+  if (p.startLocation !== undefined) out.start_location = p.startLocation ?? null;
+  if (p.destination !== undefined) out.destination = p.destination ?? null;
+  if (p.miles !== undefined) out.miles = p.miles;
+  if (p.odometerStart !== undefined) out.odometer_start = p.odometerStart ?? null;
+  if (p.odometerEnd !== undefined) out.odometer_end = p.odometerEnd ?? null;
+  if (p.purpose !== undefined) out.purpose = p.purpose ?? null;
+  if (p.isBusiness !== undefined) out.is_business = !!p.isBusiness;
+  if (p.chargingCostCents !== undefined) out.charging_cost_cents = p.chargingCostCents ?? null;
+  if (p.customerId !== undefined) out.customer_id = p.customerId ?? null;
+  if (p.appointmentId !== undefined) out.appointment_id = p.appointmentId ?? null;
+  if (p.notes !== undefined) out.notes = p.notes ?? null;
+  return out;
+}
+
+export function mileageFromRow(r: any): MileageEntry {
+  return {
+    id: r.id,
+    entryDate: r.entry_date,
+    startLocation: r.start_location ?? undefined,
+    destination: r.destination ?? undefined,
+    miles: Number(r.miles ?? 0),
+    odometerStart: r.odometer_start != null ? Number(r.odometer_start) : undefined,
+    odometerEnd: r.odometer_end != null ? Number(r.odometer_end) : undefined,
+    purpose: r.purpose ?? undefined,
+    isBusiness: r.is_business !== false,
+    chargingCostCents: r.charging_cost_cents != null ? Number(r.charging_cost_cents) : undefined,
+    customerId: r.customer_id ?? undefined,
+    appointmentId: r.appointment_id ?? undefined,
+    notes: r.notes ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at ?? r.created_at,
   };

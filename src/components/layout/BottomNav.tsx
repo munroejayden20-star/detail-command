@@ -16,6 +16,7 @@ import {
   Calculator,
   Image as ImageIcon,
   Hammer,
+  Car,
   Settings as SettingsIcon,
   X,
   Plus,
@@ -47,6 +48,7 @@ const MORE: NavItem[] = [
   { to: "/revenue", label: "Revenue", icon: TrendingUp },
   { to: "/receipts", label: "Receipts", icon: ReceiptText },
   { to: "/tax-center", label: "Tax Center", icon: FileBarChart2 },
+  { to: "/mileage", label: "Mileage", icon: Car },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
