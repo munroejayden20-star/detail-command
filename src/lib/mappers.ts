@@ -799,6 +799,8 @@ export function settingsToRow(s: Settings, userId: string) {
     receipt_footer_message: s.receiptFooterMessage ?? null,
     auto_generate_receipt_on_complete: s.autoGenerateReceiptOnComplete ?? true,
     default_payment_method: s.defaultPaymentMethod ?? "cash",
+    sales_tax_enabled: s.salesTaxEnabled ?? false,
+    sales_tax_disclaimer: s.salesTaxDisclaimer ?? null,
   };
 }
 
@@ -864,6 +866,8 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.receiptFooterMessage !== undefined) out.receipt_footer_message = p.receiptFooterMessage ?? null;
   if (p.autoGenerateReceiptOnComplete !== undefined) out.auto_generate_receipt_on_complete = !!p.autoGenerateReceiptOnComplete;
   if (p.defaultPaymentMethod !== undefined) out.default_payment_method = p.defaultPaymentMethod;
+  if (p.salesTaxEnabled !== undefined) out.sales_tax_enabled = !!p.salesTaxEnabled;
+  if (p.salesTaxDisclaimer !== undefined) out.sales_tax_disclaimer = p.salesTaxDisclaimer ?? null;
   return out;
 }
 
@@ -929,5 +933,7 @@ export function settingsFromRow(r: any): Settings {
     receiptFooterMessage: r.receipt_footer_message ?? undefined,
     autoGenerateReceiptOnComplete: r.auto_generate_receipt_on_complete ?? true,
     defaultPaymentMethod: (r.default_payment_method ?? "cash") as Settings["defaultPaymentMethod"],
+    salesTaxEnabled: r.sales_tax_enabled ?? false,
+    salesTaxDisclaimer: r.sales_tax_disclaimer ?? undefined,
   };
 }

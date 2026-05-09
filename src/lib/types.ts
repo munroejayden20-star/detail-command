@@ -600,6 +600,11 @@ export interface Settings {
   autoGenerateReceiptOnComplete?: boolean;
   defaultPaymentMethod?: ReceiptPaymentMethod;
 
+  // ── Sales tax (Phase B) ──────────────────────────────────────────────────
+  // Rate lives in `defaultTaxRate` (percentage, e.g. 8.5)
+  salesTaxEnabled?: boolean;
+  salesTaxDisclaimer?: string;
+
   // ── Legacy (kept for backward-compat, no longer shown in UI) ─────────────
   startupGoal: number;
 }

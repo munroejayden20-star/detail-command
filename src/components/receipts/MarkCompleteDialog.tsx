@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -67,9 +67,26 @@ export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteD
   const [finalPrice, setFinalPrice] = useState<string>(String(defaultPriceDollars));
   const [discount, setDiscount] = useState<string>("0");
   const [tax, setTax] = useState<string>("0");
+  // Tracks whether the user manually edited the tax field; if they have, we
+  // stop auto-calculating so we don't clobber their override.
+  const [taxOverridden, setTaxOverridden] = useState(false);
   const [deposit, setDeposit] = useState<string>(
     appointment.depositPaid ? String(defaultDepositDollars || 0) : "0"
   );
+
+  const taxRate = data.settings.defaultTaxRate; // percentage, e.g. 8.5
+  const salesTaxEnabled = !!data.settings.salesTaxEnabled && taxRate != null && taxRate > 0;
+
+  // Auto-calc: when sales tax is enabled and the user hasn't manually edited
+  // the tax field, recompute it from (subtotal - discount) * rate / 100.
+  useEffect(() => {
+    if (!salesTaxEnabled || taxOverridden) return;
+    const sub = Number(finalPrice) || 0;
+    const disc = Number(discount) || 0;
+    const taxable = Math.max(0, sub - disc);
+    const computed = Math.round(taxable * (taxRate as number)) / 100;
+    setTax(String(computed.toFixed(2)));
+  }, [finalPrice, discount, salesTaxEnabled, taxRate, taxOverridden]);
   const [paymentMethod, setPaymentMethod] = useState<ReceiptPaymentMethod>(
     (data.settings.defaultPaymentMethod as ReceiptPaymentMethod) || "cash"
   );
@@ -193,14 +210,24 @@ export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteD
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="tax">Sales tax</Label>
+            <Label htmlFor="tax">
+              Sales tax
+              {salesTaxEnabled ? (
+                <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                  ({taxRate}% auto)
+                </span>
+              ) : null}
+            </Label>
             <Input
               id="tax"
               type="number"
               min="0"
               step="0.01"
               value={tax}
-              onChange={(e) => setTax(e.target.value)}
+              onChange={(e) => {
+                setTax(e.target.value);
+                setTaxOverridden(true);
+              }}
             />
           </div>
           <div className="space-y-1.5">

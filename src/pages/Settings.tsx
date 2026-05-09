@@ -31,6 +31,7 @@ import {
   ArrowDown,
   Plus,
   Image as ImageIcon,
+  Receipt as ReceiptIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,15 @@ import {
 } from "@/lib/storage";
 import { api } from "@/lib/api";
 import type { Settings } from "@/lib/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RECEIPT_PAYMENT_METHODS, type ReceiptPaymentMethod } from "@/lib/types";
+import { RECEIPT_DISCLAIMER } from "@/lib/receipts";
 
 /* ─────────────────────────────────────────────
    Collapsible section card
@@ -514,6 +524,111 @@ export function SettingsPage() {
               placeholder={`Hey {name}! Thanks for having me out — hope your ride is looking fresh! If you have a minute, a Google review means the world to a small business. ${s.googleReviewLink ?? "{review_link}"}`}
             />
           </Field>
+        </SettingsSection>
+      ) : null}
+
+      {/* ── 4b. Receipts & Tax ─────────────────────────────── */}
+      {matches("receipt", "tax", "sales", "payment", "method", "footer", "auto", "generate", "disclaimer") ? (
+        <SettingsSection
+          id="receipts-tax"
+          title="Receipts & Tax"
+          description="Receipt customization and sales tax tracking. This tool helps organize records — consult a tax professional for filing requirements."
+          icon={ReceiptIcon}
+          badge={s.salesTaxEnabled ? "Tax on" : undefined}
+        >
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Receipts
+            </p>
+
+            <ToggleRow
+              label="Auto-generate receipt on completion"
+              hint="When you mark an appointment complete, prompt to generate a receipt."
+              checked={s.autoGenerateReceiptOnComplete !== false}
+              onChange={(v) => update("autoGenerateReceiptOnComplete", v)}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Default payment method" hint="Pre-selected when creating a new receipt.">
+                <Select
+                  value={s.defaultPaymentMethod ?? "cash"}
+                  onValueChange={(v) => update("defaultPaymentMethod", v as ReceiptPaymentMethod)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECEIPT_PAYMENT_METHODS.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <Field
+              label="Receipt footer message"
+              hint="Optional thank-you note shown at the bottom of every receipt."
+            >
+              <Textarea
+                rows={2}
+                value={s.receiptFooterMessage ?? ""}
+                onChange={(e) => update("receiptFooterMessage", e.target.value || undefined)}
+                placeholder={`Thank you for supporting ${s.businessName || "us"}.`}
+              />
+            </Field>
+          </div>
+
+          <Separator className="my-4" />
+
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Sales tax
+            </p>
+
+            <ToggleRow
+              label="Enable sales tax tracking"
+              hint="When enabled, new receipts auto-calculate tax from the rate below."
+              checked={!!s.salesTaxEnabled}
+              onChange={(v) => update("salesTaxEnabled", v)}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Sales tax rate (%)"
+                hint="Percentage applied to (subtotal − discount). Same rate the calculator uses."
+              >
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={s.defaultTaxRate ?? ""}
+                  onChange={(e) =>
+                    update("defaultTaxRate", e.target.value ? Number(e.target.value) : undefined)
+                  }
+                  placeholder="0"
+                  disabled={!s.salesTaxEnabled}
+                />
+              </Field>
+            </div>
+
+            <Field
+              label="Sales tax disclaimer"
+              hint="Optional line shown next to the tax row on receipts."
+            >
+              <Textarea
+                rows={2}
+                value={s.salesTaxDisclaimer ?? ""}
+                onChange={(e) => update("salesTaxDisclaimer", e.target.value || undefined)}
+                placeholder="Sales tax collected on behalf of the State of Washington."
+                disabled={!s.salesTaxEnabled}
+              />
+            </Field>
+
+            <p className="text-[11px] text-muted-foreground">{RECEIPT_DISCLAIMER}</p>
+          </div>
         </SettingsSection>
       ) : null}
 
