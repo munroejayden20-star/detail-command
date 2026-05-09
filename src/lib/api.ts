@@ -38,6 +38,9 @@ import {
   photoToRow,
   notificationFromRow,
   notificationToRow,
+  receiptFromRow,
+  receiptPatchToRow,
+  receiptToRow,
 } from "./mappers";
 import { makeStarterContent, EMPTY_DATA } from "./starter";
 
@@ -78,6 +81,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     blocks,
     photos,
     notifications,
+    receipts,
     settingsRow,
   ] = await Promise.all([
     safeQuery(sb.from("customers").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
@@ -92,6 +96,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     safeQuery(sb.from("blocked_times").select("*").eq("user_id", userId)),
     safeQuery(sb.from("photos").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
     safeQuery(sb.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(200)),
+    safeQuery(sb.from("receipts").select("*").eq("user_id", userId).order("created_at", { ascending: false })),
     sb.from("settings").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
@@ -109,6 +114,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     { name: "blocked_times", ...blocks },
     { name: "photos", ...photos },
     { name: "notifications", ...notifications },
+    { name: "receipts", ...receipts },
   ];
   const errs = results.filter((r) => r.error);
   if (errs.length) {
@@ -140,6 +146,7 @@ export async function fetchAllForUser(userId: string): Promise<AppData> {
     blocks: (blocks.data ?? []).map(blockFromRow),
     photos: (photos.data ?? []).map(photoFromRow),
     notifications: (notifications.data ?? []).map(notificationFromRow),
+    receipts: (receipts.data ?? []).map(receiptFromRow),
     settings: settingsRow.data ? settingsFromRow(settingsRow.data) : EMPTY_DATA.settings,
   };
 }
@@ -237,6 +244,7 @@ import type {
   Lead,
   Notification,
   Photo,
+  Receipt,
   Service,
   Settings,
   StartupItem,
@@ -351,6 +359,24 @@ export const api = {
     sbOrThrow().from("notifications").delete().eq("id", id),
   deleteAllNotifications: (userId: string) =>
     sbOrThrow().from("notifications").delete().eq("user_id", userId),
+
+  // Receipts
+  insertReceipt: (r: Receipt, userId: string) =>
+    sbOrThrow().from("receipts").insert(receiptToRow(r, userId)),
+  updateReceipt: (id: string, p: Partial<Receipt>) =>
+    sbOrThrow().from("receipts").update(receiptPatchToRow(p)).eq("id", id),
+  deleteReceipt: (id: string) =>
+    sbOrThrow().from("receipts").delete().eq("id", id),
+  /** Atomic next-receipt-number from the SQL helper. */
+  nextReceiptNumber: async (userId: string, prefix?: string): Promise<string> => {
+    const sb = sbOrThrow();
+    const { data, error } = await sb.rpc("next_receipt_number", {
+      p_user_id: userId,
+      p_prefix: prefix ?? "JMD",
+    });
+    if (error) throw error;
+    return data as string;
+  },
 
   // Settings
   upsertSettings: (s: Settings, userId: string) =>

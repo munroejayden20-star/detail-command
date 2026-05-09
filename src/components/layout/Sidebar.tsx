@@ -10,6 +10,7 @@ import {
   Sparkles,
   BarChart2,
   Receipt,
+  ReceiptText,
   ListChecks,
   Calculator,
   Image as ImageIcon,
@@ -37,6 +38,7 @@ const NAV: NavItem[] = [
   { to: "/photos", label: "Photos", icon: ImageIcon },
   { to: "/checklists", label: "Checklists", icon: ListChecks },
   { to: "/revenue", label: "Business Stats", icon: BarChart2 },
+  { to: "/receipts", label: "Receipts", icon: ReceiptText },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];

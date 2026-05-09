@@ -30,6 +30,12 @@ interface AppointmentFormProps {
   initialDate?: Date;
   onDone: () => void;
   onDelete?: () => void;
+  /**
+   * Called after a successful save. If provided, the form does NOT call
+   * onDone() automatically — parent decides what comes next (e.g. open
+   * MarkCompleteDialog when the appointment transitioned to "completed").
+   */
+  onSaved?: (saved: Appointment, transitionedToCompleted: boolean) => void;
 }
 
 function toLocalInput(iso: string): string {
@@ -44,7 +50,7 @@ function fromLocalInput(local: string): string {
 
 const DEFAULT_VEHICLE = { year: "", make: "", model: "", color: "", conditionNotes: "" };
 
-export function AppointmentForm({ appointment, initialDate, onDone, onDelete }: AppointmentFormProps) {
+export function AppointmentForm({ appointment, initialDate, onDone, onDelete, onSaved }: AppointmentFormProps) {
   const { data, dispatch } = useStore();
   const services = data.services.filter((s) => !s.isAddon);
   const addons = data.services.filter((s) => s.isAddon);
@@ -151,6 +157,8 @@ export function AppointmentForm({ appointment, initialDate, onDone, onDelete }: 
     }
 
     const payload: Appointment = { ...form, customerId };
+    const wasCompleted = appointment?.status === "completed";
+    const transitionedToCompleted = !wasCompleted && payload.status === "completed";
 
     if (appointment) {
       dispatch({ type: "updateAppointment", id: appointment.id, patch: payload });
@@ -159,7 +167,11 @@ export function AppointmentForm({ appointment, initialDate, onDone, onDelete }: 
       dispatch({ type: "addAppointment", appt: payload });
       toast.success("Appointment booked");
     }
-    onDone();
+    if (onSaved) {
+      onSaved(payload, transitionedToCompleted);
+    } else {
+      onDone();
+    }
   }
 
   return (

@@ -10,6 +10,7 @@ import {
   Sparkles,
   TrendingUp,
   Receipt,
+  ReceiptText,
   ListChecks,
   Calculator,
   Image as ImageIcon,
@@ -43,6 +44,7 @@ const MORE: NavItem[] = [
   { to: "/photos", label: "Photos", icon: ImageIcon },
   { to: "/checklists", label: "Checklists", icon: ListChecks },
   { to: "/revenue", label: "Revenue", icon: TrendingUp },
+  { to: "/receipts", label: "Receipts", icon: ReceiptText },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];

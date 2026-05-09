@@ -143,6 +143,123 @@ export interface Appointment {
   createdAt: string;
 }
 
+/* ---------- Phase A: receipts ---------- */
+
+export type ReceiptStatus = "active" | "voided";
+
+export type ReceiptPaymentStatus = "unpaid" | "partial" | "paid";
+
+export type ReceiptPaymentMethod =
+  | "cash"
+  | "card"
+  | "stripe"
+  | "square"
+  | "apple_pay"
+  | "venmo"
+  | "zelle"
+  | "other";
+
+export const RECEIPT_PAYMENT_METHODS: { value: ReceiptPaymentMethod; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "card", label: "Card" },
+  { value: "stripe", label: "Stripe" },
+  { value: "square", label: "Square" },
+  { value: "apple_pay", label: "Apple Pay" },
+  { value: "venmo", label: "Venmo" },
+  { value: "zelle", label: "Zelle" },
+  { value: "other", label: "Other" },
+];
+
+export type ReceiptLineItemCategory =
+  | "service"
+  | "addon"
+  | "protection"
+  | "travel_fee"
+  | "discount"
+  | "tax"
+  | "custom";
+
+export interface ReceiptLineItem {
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPriceCents: number;
+  totalCents: number;
+  category: ReceiptLineItemCategory;
+}
+
+/** Frozen at receipt creation time so old receipts don't drift. */
+export interface ReceiptCustomerSnapshot {
+  id?: ID;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+export interface ReceiptVehicleSnapshot {
+  year?: string;
+  make?: string;
+  model?: string;
+  color?: string;
+  size?: string;
+}
+
+export interface ReceiptBusinessSnapshot {
+  name: string;
+  ownerName?: string;
+  phone?: string;
+  email?: string;
+  serviceArea?: string;
+  logoUrl?: string;
+  reviewLink?: string;
+  website?: string;
+}
+
+export interface ReceiptAppointmentSnapshot {
+  id?: ID;
+  startAt?: string;
+  completedAt?: string;
+  serviceNames?: string[];
+  addonNames?: string[];
+}
+
+export interface Receipt {
+  id: ID;
+  customerId?: ID;
+  appointmentId?: ID;
+
+  receiptNumber: string;
+  receiptStatus: ReceiptStatus;
+  paymentStatus: ReceiptPaymentStatus;
+  paymentMethod: ReceiptPaymentMethod;
+
+  // Money — all in cents
+  subtotalCents: number;
+  discountCents: number;
+  taxCents: number;
+  depositPaidCents: number;
+  totalCents: number;
+  amountPaidCents: number;
+  remainingBalanceCents: number;
+  currency: string;
+
+  lineItems: ReceiptLineItem[];
+  customerSnapshot?: ReceiptCustomerSnapshot;
+  vehicleSnapshot?: ReceiptVehicleSnapshot;
+  businessSnapshot?: ReceiptBusinessSnapshot;
+  appointmentSnapshot?: ReceiptAppointmentSnapshot;
+
+  notes?: string;
+  sentVia?: "sms" | "email" | "copied";
+  sentAt?: string;
+  publicReceiptToken?: string;
+  pdfUrl?: string;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ---------- Phase 7: payments ---------- */
 
 export type PaymentRecordStatus =
@@ -478,6 +595,11 @@ export interface Settings {
   notifyUpdates?: boolean;
   reminderMinutes?: number;
 
+  // ── Receipts (Phase A) ───────────────────────────────────────────────────
+  receiptFooterMessage?: string;
+  autoGenerateReceiptOnComplete?: boolean;
+  defaultPaymentMethod?: ReceiptPaymentMethod;
+
   // ── Legacy (kept for backward-compat, no longer shown in UI) ─────────────
   startupGoal: number;
 }
@@ -569,5 +691,6 @@ export interface AppData {
   blocks: BlockedTime[];
   photos: Photo[];
   notifications: Notification[];
+  receipts: Receipt[];
   settings: Settings;
 }

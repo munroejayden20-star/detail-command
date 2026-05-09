@@ -18,6 +18,7 @@ import type {
   Lead,
   Notification,
   Photo,
+  Receipt,
   Service,
   Settings,
   StartupItem,
@@ -74,6 +75,9 @@ type Action =
   | { type: "deleteNotification"; id: string }
   | { type: "deleteAllNotifications" }
   | { type: "upsertNotificationFromRealtime"; notification: Notification }
+  | { type: "addReceipt"; receipt: Receipt }
+  | { type: "updateReceipt"; id: string; patch: Partial<Receipt> }
+  | { type: "deleteReceipt"; id: string }
   | { type: "updateSettings"; patch: Partial<Settings> };
 
 function reducer(state: AppData, action: Action): AppData {
@@ -250,6 +254,21 @@ function reducer(state: AppData, action: Action): AppData {
       return {
         ...state,
         photos: (state.photos ?? []).filter((p) => p.id !== action.id),
+      };
+
+    case "addReceipt":
+      return { ...state, receipts: [action.receipt, ...(state.receipts ?? [])] };
+    case "updateReceipt":
+      return {
+        ...state,
+        receipts: (state.receipts ?? []).map((r) =>
+          r.id === action.id ? { ...r, ...action.patch } : r
+        ),
+      };
+    case "deleteReceipt":
+      return {
+        ...state,
+        receipts: (state.receipts ?? []).filter((r) => r.id !== action.id),
       };
 
     case "updateSettings":
@@ -433,6 +452,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         "checklist_groups",
         "blocked_times",
         "photos",
+        "receipts",
         "settings",
       ];
 
@@ -740,6 +760,22 @@ async function syncAction(action: Action, userId: string): Promise<void> {
     }
     case "deletePhoto": {
       const r = await api.deletePhoto(action.id);
+      if (r.error) throw r.error;
+      return;
+    }
+
+    case "addReceipt": {
+      const r = await api.insertReceipt(action.receipt, userId);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "updateReceipt": {
+      const r = await api.updateReceipt(action.id, action.patch);
+      if (r.error) throw r.error;
+      return;
+    }
+    case "deleteReceipt": {
+      const r = await api.deleteReceipt(action.id);
       if (r.error) throw r.error;
       return;
     }

@@ -83,6 +83,7 @@ export const EMPTY_DATA: AppData = {
   blocks: [],
   photos: [],
   notifications: [],
+  receipts: [],
   settings: {
     theme: "system",
     bufferMinutes: 30,

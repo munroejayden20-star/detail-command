@@ -193,6 +193,110 @@ export function appointmentFromRow(r: any): Appointment {
   };
 }
 
+/* ---------- Phase A: receipts ---------- */
+
+import type {
+  Receipt,
+  ReceiptLineItem,
+  ReceiptPaymentMethod,
+  ReceiptPaymentStatus,
+  ReceiptStatus,
+} from "./types";
+
+export function receiptToRow(r: Receipt, userId: string) {
+  return {
+    id: r.id,
+    user_id: userId,
+    customer_id: r.customerId ?? null,
+    appointment_id: r.appointmentId ?? null,
+    receipt_number: r.receiptNumber,
+    receipt_status: r.receiptStatus,
+    payment_status: r.paymentStatus,
+    payment_method: r.paymentMethod,
+    subtotal_cents: r.subtotalCents,
+    discount_cents: r.discountCents,
+    tax_cents: r.taxCents,
+    deposit_paid_cents: r.depositPaidCents,
+    total_cents: r.totalCents,
+    amount_paid_cents: r.amountPaidCents,
+    remaining_balance_cents: r.remainingBalanceCents,
+    currency: r.currency || "usd",
+    line_items: r.lineItems ?? [],
+    customer_snapshot: r.customerSnapshot ?? null,
+    vehicle_snapshot: r.vehicleSnapshot ?? null,
+    business_snapshot: r.businessSnapshot ?? null,
+    appointment_snapshot: r.appointmentSnapshot ?? null,
+    notes: r.notes ?? null,
+    sent_via: r.sentVia ?? null,
+    sent_at: r.sentAt ?? null,
+    public_receipt_token: r.publicReceiptToken ?? null,
+    pdf_url: r.pdfUrl ?? null,
+    created_at: r.createdAt,
+    updated_at: r.updatedAt,
+  };
+}
+
+export function receiptPatchToRow(p: Partial<Receipt>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (p.customerId !== undefined) out.customer_id = p.customerId ?? null;
+  if (p.appointmentId !== undefined) out.appointment_id = p.appointmentId ?? null;
+  if (p.receiptNumber !== undefined) out.receipt_number = p.receiptNumber;
+  if (p.receiptStatus !== undefined) out.receipt_status = p.receiptStatus;
+  if (p.paymentStatus !== undefined) out.payment_status = p.paymentStatus;
+  if (p.paymentMethod !== undefined) out.payment_method = p.paymentMethod;
+  if (p.subtotalCents !== undefined) out.subtotal_cents = p.subtotalCents;
+  if (p.discountCents !== undefined) out.discount_cents = p.discountCents;
+  if (p.taxCents !== undefined) out.tax_cents = p.taxCents;
+  if (p.depositPaidCents !== undefined) out.deposit_paid_cents = p.depositPaidCents;
+  if (p.totalCents !== undefined) out.total_cents = p.totalCents;
+  if (p.amountPaidCents !== undefined) out.amount_paid_cents = p.amountPaidCents;
+  if (p.remainingBalanceCents !== undefined) out.remaining_balance_cents = p.remainingBalanceCents;
+  if (p.currency !== undefined) out.currency = p.currency;
+  if (p.lineItems !== undefined) out.line_items = p.lineItems;
+  if (p.customerSnapshot !== undefined) out.customer_snapshot = p.customerSnapshot ?? null;
+  if (p.vehicleSnapshot !== undefined) out.vehicle_snapshot = p.vehicleSnapshot ?? null;
+  if (p.businessSnapshot !== undefined) out.business_snapshot = p.businessSnapshot ?? null;
+  if (p.appointmentSnapshot !== undefined) out.appointment_snapshot = p.appointmentSnapshot ?? null;
+  if (p.notes !== undefined) out.notes = p.notes ?? null;
+  if (p.sentVia !== undefined) out.sent_via = p.sentVia ?? null;
+  if (p.sentAt !== undefined) out.sent_at = p.sentAt ?? null;
+  if (p.publicReceiptToken !== undefined) out.public_receipt_token = p.publicReceiptToken ?? null;
+  if (p.pdfUrl !== undefined) out.pdf_url = p.pdfUrl ?? null;
+  return out;
+}
+
+export function receiptFromRow(r: any): Receipt {
+  return {
+    id: r.id,
+    customerId: r.customer_id ?? undefined,
+    appointmentId: r.appointment_id ?? undefined,
+    receiptNumber: r.receipt_number,
+    receiptStatus: (r.receipt_status ?? "active") as ReceiptStatus,
+    paymentStatus: (r.payment_status ?? "paid") as ReceiptPaymentStatus,
+    paymentMethod: (r.payment_method ?? "cash") as ReceiptPaymentMethod,
+    subtotalCents: Number(r.subtotal_cents ?? 0),
+    discountCents: Number(r.discount_cents ?? 0),
+    taxCents: Number(r.tax_cents ?? 0),
+    depositPaidCents: Number(r.deposit_paid_cents ?? 0),
+    totalCents: Number(r.total_cents ?? 0),
+    amountPaidCents: Number(r.amount_paid_cents ?? 0),
+    remainingBalanceCents: Number(r.remaining_balance_cents ?? 0),
+    currency: r.currency ?? "usd",
+    lineItems: (r.line_items ?? []) as ReceiptLineItem[],
+    customerSnapshot: r.customer_snapshot ?? undefined,
+    vehicleSnapshot: r.vehicle_snapshot ?? undefined,
+    businessSnapshot: r.business_snapshot ?? undefined,
+    appointmentSnapshot: r.appointment_snapshot ?? undefined,
+    notes: r.notes ?? undefined,
+    sentVia: r.sent_via ?? undefined,
+    sentAt: r.sent_at ?? undefined,
+    publicReceiptToken: r.public_receipt_token ?? undefined,
+    pdfUrl: r.pdf_url ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at ?? r.created_at,
+  };
+}
+
 /* ---------- Phase 7: payments ---------- */
 
 export function paymentFromRow(r: any): import("./types").Payment {
@@ -692,6 +796,9 @@ export function settingsToRow(s: Settings, userId: string) {
     notify_weather: s.notifyWeather ?? true,
     notify_updates: s.notifyUpdates ?? true,
     reminder_minutes: s.reminderMinutes ?? 60,
+    receipt_footer_message: s.receiptFooterMessage ?? null,
+    auto_generate_receipt_on_complete: s.autoGenerateReceiptOnComplete ?? true,
+    default_payment_method: s.defaultPaymentMethod ?? "cash",
   };
 }
 
@@ -754,6 +861,9 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.notifyWeather !== undefined) out.notify_weather = !!p.notifyWeather;
   if (p.notifyUpdates !== undefined) out.notify_updates = !!p.notifyUpdates;
   if (p.reminderMinutes !== undefined) out.reminder_minutes = p.reminderMinutes;
+  if (p.receiptFooterMessage !== undefined) out.receipt_footer_message = p.receiptFooterMessage ?? null;
+  if (p.autoGenerateReceiptOnComplete !== undefined) out.auto_generate_receipt_on_complete = !!p.autoGenerateReceiptOnComplete;
+  if (p.defaultPaymentMethod !== undefined) out.default_payment_method = p.defaultPaymentMethod;
   return out;
 }
 
@@ -816,5 +926,8 @@ export function settingsFromRow(r: any): Settings {
     notifyWeather: r.notify_weather ?? true,
     notifyUpdates: r.notify_updates ?? true,
     reminderMinutes: r.reminder_minutes ?? 60,
+    receiptFooterMessage: r.receipt_footer_message ?? undefined,
+    autoGenerateReceiptOnComplete: r.auto_generate_receipt_on_complete ?? true,
+    defaultPaymentMethod: (r.default_payment_method ?? "cash") as Settings["defaultPaymentMethod"],
   };
 }

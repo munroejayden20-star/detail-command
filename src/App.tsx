@@ -29,6 +29,8 @@ const ChecklistsPage = lazy(() => import("@/pages/Checklists").then((m) => ({ de
 const SettingsPage = lazy(() => import("@/pages/Settings").then((m) => ({ default: m.SettingsPage })));
 const CalculatorPage = lazy(() => import("@/pages/Calculator").then((m) => ({ default: m.CalculatorPage })));
 const PhotosPage = lazy(() => import("@/pages/Photos").then((m) => ({ default: m.PhotosPage })));
+const ReceiptsPage = lazy(() => import("@/pages/Receipts").then((m) => ({ default: m.ReceiptsPage })));
+const PublicReceiptPage = lazy(() => import("@/pages/PublicReceipt").then((m) => ({ default: m.PublicReceiptPage })));
 const WorkPage = lazy(() => import("@/pages/Work").then((m) => ({ default: m.WorkPage })));
 
 function PageFallback() {
@@ -110,6 +112,7 @@ export default function App() {
         <Route path="/book" element={lazyRoute(<BookingPage />)} />
         <Route path="/booking/success" element={lazyRoute(<BookingSuccessPage />)} />
         <Route path="/booking/cancel" element={lazyRoute(<BookingCancelPage />)} />
+        <Route path="/receipt/:token" element={lazyRoute(<PublicReceiptPage />)} />
         <Route
           element={
             <AuthGuard>
@@ -136,6 +139,7 @@ export default function App() {
           <Route path="/checklists" element={lazyRoute(<ChecklistsPage />)} />
           <Route path="/calculator" element={lazyRoute(<CalculatorPage />)} />
           <Route path="/photos" element={lazyRoute(<PhotosPage />)} />
+          <Route path="/receipts" element={lazyRoute(<ReceiptsPage />)} />
           <Route path="/work" element={lazyRoute(<WorkPage />)} />
           <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
         </Route>

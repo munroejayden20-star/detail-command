@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
   Star,
   Plus,
   MessageSquare,
+  Receipt as ReceiptIcon,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,9 @@ import { ReachOutDialog } from "@/components/contact/ReachOutDialog";
 import { PhotoGallery } from "@/components/photos/PhotoGallery";
 import { PhotoUploader } from "@/components/photos/PhotoUploader";
 import { AppointmentRow } from "@/components/appointments/AppointmentRow";
+import { ReceiptViewModal } from "@/components/receipts/ReceiptViewModal";
+import { formatCents } from "@/lib/receipts";
+import type { Receipt } from "@/lib/types";
 import { useStore } from "@/store/store";
 import {
   customerAppointmentCount,
@@ -40,6 +44,22 @@ export function CustomerDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [newAppt, setNewAppt] = useState(false);
   const [reachOpen, setReachOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
+
+  const customerReceipts = useMemo(() => {
+    if (!id) return [];
+    return (data.receipts ?? [])
+      .filter((r) => r.customerId === id)
+      .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+  }, [data.receipts, id]);
+
+  const receiptTotals = useMemo(() => {
+    const active = customerReceipts.filter((r) => r.receiptStatus === "active");
+    const totalSpentCents = active.reduce((s, r) => s + r.amountPaidCents, 0);
+    const unpaidCents = active.reduce((s, r) => s + r.remainingBalanceCents, 0);
+    const lastReceiptAt = active[0]?.createdAt;
+    return { count: active.length, totalSpentCents, unpaidCents, lastReceiptAt };
+  }, [customerReceipts]);
 
   if (!customer) {
     return (
@@ -230,6 +250,60 @@ export function CustomerDetailPage() {
         </div>
       </div>
 
+      {/* Receipts & payment history */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ReceiptIcon className="h-4 w-4" /> Receipts & payment history
+            </CardTitle>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {receiptTotals.count} receipt{receiptTotals.count === 1 ? "" : "s"} ·{" "}
+              {formatCents(receiptTotals.totalSpentCents)} collected
+              {receiptTotals.unpaidCents > 0
+                ? ` · ${formatCents(receiptTotals.unpaidCents)} outstanding`
+                : ""}
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {customerReceipts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No receipts yet for this customer.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {customerReceipts.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setSelectedReceipt(r)}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">
+                      {r.receiptNumber}
+                      {r.receiptStatus === "voided" ? (
+                        <span className="ml-2 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                          Voided
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {format(parseISO(r.createdAt), "MMM d, yyyy")} ·{" "}
+                      {r.paymentMethod === "apple_pay" ? "Apple Pay" : r.paymentMethod} ·{" "}
+                      {r.paymentStatus}
+                    </p>
+                  </div>
+                  <span className="font-mono text-sm font-semibold">
+                    {formatCents(r.totalCents, r.currency)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Photos */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -307,6 +381,13 @@ export function CustomerDetailPage() {
 
       <CustomerDialog open={editOpen} onOpenChange={setEditOpen} customer={customer} />
       <AppointmentDialog open={newAppt} onOpenChange={setNewAppt} />
+      {selectedReceipt ? (
+        <ReceiptViewModal
+          open={true}
+          receipt={selectedReceipt}
+          onClose={() => setSelectedReceipt(null)}
+        />
+      ) : null}
       <ReachOutDialog
         open={reachOpen}
         onOpenChange={setReachOpen}
