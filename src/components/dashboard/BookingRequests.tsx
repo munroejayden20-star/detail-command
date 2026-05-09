@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
+import { formatBusinessDateTime } from "@/lib/datetime";
 import {
   CheckCircle2,
   XCircle,
@@ -90,7 +91,7 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
           {appt.start && (
             <span className="flex items-center gap-1">
               <CalendarDays className="h-3 w-3 shrink-0" />
-              {format(parseISO(appt.start), "EEE, MMM d 'at' h:mm a")}
+              {formatBusinessDateTime(appt.start)}
             </span>
           )}
           {vehicleLabel && (
@@ -224,7 +225,7 @@ interface BookingRequestsProps {
 }
 
 export function BookingRequests({ onReachOut }: BookingRequestsProps) {
-  const { data, dispatch } = useStore();
+  const { data, commit } = useStore();
 
   const pending = data.appointments
     .filter((a) => a.status === "pending_approval")
@@ -232,14 +233,22 @@ export function BookingRequests({ onReachOut }: BookingRequestsProps) {
 
   if (pending.length === 0) return null;
 
-  function approve(appt: Appointment) {
-    dispatch({ type: "updateAppointment", id: appt.id, patch: { status: "confirmed" } });
-    toast.success("Booking approved — status set to Confirmed.");
+  async function approve(appt: Appointment) {
+    const r = await commit({
+      type: "updateAppointment",
+      id: appt.id,
+      patch: { status: "confirmed" },
+    });
+    if (r.ok) toast.success("Booking approved — status set to Confirmed.");
   }
 
-  function decline(appt: Appointment) {
-    dispatch({ type: "updateAppointment", id: appt.id, patch: { status: "canceled" } });
-    toast.success("Booking declined — status set to Canceled.");
+  async function decline(appt: Appointment) {
+    const r = await commit({
+      type: "updateAppointment",
+      id: appt.id,
+      patch: { status: "canceled" },
+    });
+    if (r.ok) toast.success("Booking declined — status set to Canceled.");
   }
 
   return (

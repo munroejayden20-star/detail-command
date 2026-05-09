@@ -1,62 +1,62 @@
 # Detail Command — Current Task
 
-## What We Are Working On
+## What We Just Shipped
 
-**Phase 6B — Admin-customizable booking landing page.**
+**Phase G — Reliability, Reviews, and Professional Output.** Combined Phase F (review request workflow) and Phase G (timezone correctness, hardened critical writes, PDF receipts, Vitest setup). The app is now safer to trust with real customer bookings, real money, and real tax records.
 
-Phase 6A shipped a full landing-page experience at `/book` (hero, services, how-it-works, before/after gallery, why-us, water/power info, embedded 7-step form, FAQ, final CTA, footer). The copy and gallery are currently hard-coded. Phase 6B exposes those fields in Settings so Jayden can edit them without a redeploy.
-
----
-
-## Files to Change
-
-1. **`src/lib/types.ts` — extend `Settings` interface**
-   - `bookingHeroHeadline?: string`
-   - `bookingHeroSubheadline?: string`
-   - `bookingWaterPowerText?: string`
-   - `bookingFeaturedPhotoIds?: string[]`
-   - `bookingPhone?: string`
-   - `bookingEmail?: string`
-   - `bookingFaqs?: Array<{ q: string; a: string }>` (optional override)
-
-2. **`src/lib/mappers.ts`**
-   - Map all of the above in `settingsFromRow`, `settingsToRow`, `settingsPatchToRow`.
-
-3. **`src/lib/booking-api.ts`**
-   - Extend `PublicBookingInfo.settings` with the new fields plus a resolved `featuredPhotos: { url: string }[]`.
-
-4. **`supabase` SQL — write a `phase_6b_booking_settings.sql` migration**
-   - `ALTER TABLE settings ADD COLUMN IF NOT EXISTS booking_hero_headline TEXT;` (and the rest)
-   - Update `get_public_booking_info()` RPC to return the new fields. Resolve `featured_photos` IDs into their public URLs from the `photos` table.
-
-5. **`src/pages/Settings.tsx` — Booking Page section**
-   - Add inputs for hero headline, subheadline, water/power text, phone, email
-   - Add a featured-photos picker (multi-select from `photos`, drag-to-reorder if simple)
-   - Add a FAQ editor (array of {q, a} rows; optional override)
-
-6. **`src/pages/BookingPage.tsx`**
-   - Read all of the above from `info.settings` with sensible fallbacks (current hard-coded copy stays as the default).
-   - Replace the four placeholder slots in `BeforeAfterGallery` with `featuredPhotos` if any are set.
-   - Use `bookingPhone` / `bookingEmail` in the footer.
+Highlights:
+- Business-time everywhere via `src/lib/datetime.ts` — no more "browser must be in PT" caveat.
+- Critical writes use `commit()` server-first instead of optimistic dispatch — receipts, voids, booking approve/decline.
+- Google review requests track sent state per appointment with prompt + dashboard widget.
+- Receipts download as professional PDFs (jsPDF) with full branding.
+- Vitest covers pure-function logic; `docs/manual-test-checklist.md` covers the rest.
 
 ---
 
-## Acceptance Tests
+## What's Next
 
-- [ ] Go to Settings → Booking Page section, see fields for Hero Headline, Hero Subheadline, Water/Power Text, Phone, Email, Featured Photos picker, FAQ editor
-- [ ] Save a custom hero headline — it appears at `/book` after page reload
-- [ ] Pick 4 photos as featured — they replace the placeholder gallery slots
-- [ ] Phone/email appear in `/book` footer when set
-- [ ] If no overrides are set, the page renders with current Phase 6A defaults (no regressions)
-- [ ] FAQ editor: can add, edit, delete, reorder; saved values render at `/book`
-- [ ] Booking submission flow still works end-to-end (create customer, appointment, photos, notification)
+The app is at "ship to real customers" reliability. Sensible next focuses:
+
+### Near-term polish
+
+- Server-side cron for review reminders honoring `reviewRequestDelayHours` (would need Supabase pg_cron + a scheduled edge function).
+- Upload generated receipt PDFs to Supabase Storage (`receipts/{user_id}/{receipt_id}.pdf`) and store on `receipts.pdf_url` so SMS/email links don't regenerate every open.
+- Convert remaining write sites (Expenses, Mileage, Services price changes, Settings deposit/tax fields) to `commit()` — currently only the most money-critical ones use it.
+- Receipt PDF storage so old receipts can be retrieved without recomputing.
+- Convert `dispatch` → `commit` in `AppointmentForm` save path (currently optimistic — fine for status changes, less fine for price changes).
+
+### Medium-term
+
+- Customer portal (let customers view their appointment status with a public link).
+- True PWA offline mode — write-through queue for when offline.
+- SMS reminders via the already-scaffolded Twilio integration.
+- Push the review request from the server when a job hits "completed", not just from the UI.
+
+### Long-term ideas
+
+- Multi-detailer / role-based dashboards.
+- Lifetime value / retention analytics.
+- Memberships and recurring jobs.
 
 ---
 
-## Do-Not-Break Rules
+## Migrations Outstanding
 
-- Do NOT change the `submit_public_booking` RPC behavior or signature.
-- Do NOT change the existing form logic in `BookingPage.tsx` (steps 1–7, validation, payload, photo upload).
-- Do NOT remove the placeholder fallback in `BeforeAfterGallery` — it must render if no featured photos are picked.
-- Do NOT expose any private Supabase keys on the booking page.
-- Do NOT touch `booking_fixes.sql` — that file's already-applied migration must stay as a historical record.
+Run these in Supabase SQL editor in order if not already applied:
+
+1. `supabase/phase_d_mileage.sql` — Mileage tracker.
+2. `supabase/phase_e_push_notifications.sql` — Push subscriptions + SMS settings.
+3. `supabase/phase_f_review_requests.sql` — Review request tracking.
+
+All three are idempotent and preserve existing data.
+
+---
+
+## Do-Not-Break Rules (still active)
+
+- `/book` public booking flow.
+- `submit_public_booking` RPC signature.
+- Stripe deposit checkout and webhook.
+- Admin allowlist lockdown.
+- Existing receipts, customers, appointments, expenses, mileage, services, photos.
+- Public receipt page (`/receipt/:token`) and its token format.

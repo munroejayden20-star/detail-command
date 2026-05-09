@@ -112,6 +112,9 @@ export function appointmentToRow(a: Appointment, userId: string) {
     deposit_payment_id: a.depositPaymentId ?? null,
     final_price_cents: a.finalPriceCents ?? null,
     stripe_checkout_session_id: a.stripeCheckoutSessionId ?? null,
+    review_request_sent: !!a.reviewRequestSent,
+    review_request_sent_at: a.reviewRequestSentAt ?? null,
+    review_request_method: a.reviewRequestMethod ?? null,
     created_at: a.createdAt,
   };
 }
@@ -151,6 +154,9 @@ export function appointmentPatchToRow(p: Partial<Appointment>): Record<string, u
   if (p.depositPaymentId !== undefined) out.deposit_payment_id = p.depositPaymentId ?? null;
   if (p.finalPriceCents !== undefined) out.final_price_cents = p.finalPriceCents ?? null;
   if (p.stripeCheckoutSessionId !== undefined) out.stripe_checkout_session_id = p.stripeCheckoutSessionId ?? null;
+  if (p.reviewRequestSent !== undefined) out.review_request_sent = !!p.reviewRequestSent;
+  if (p.reviewRequestSentAt !== undefined) out.review_request_sent_at = p.reviewRequestSentAt ?? null;
+  if (p.reviewRequestMethod !== undefined) out.review_request_method = p.reviewRequestMethod ?? null;
   return out;
 }
 
@@ -190,6 +196,9 @@ export function appointmentFromRow(r: any): Appointment {
     depositPaymentId: r.deposit_payment_id ?? undefined,
     finalPriceCents: r.final_price_cents != null ? Number(r.final_price_cents) : undefined,
     stripeCheckoutSessionId: r.stripe_checkout_session_id ?? undefined,
+    reviewRequestSent: !!r.review_request_sent,
+    reviewRequestSentAt: r.review_request_sent_at ?? undefined,
+    reviewRequestMethod: r.review_request_method ?? undefined,
     createdAt: r.created_at,
   };
 }
@@ -867,6 +876,8 @@ export function settingsToRow(s: Settings, userId: string) {
     push_notifications_enabled: s.pushNotificationsEnabled ?? false,
     sms_enabled: s.smsEnabled ?? false,
     sms_phone_number: s.smsPhoneNumber ?? null,
+    review_request_enabled: s.reviewRequestEnabled ?? true,
+    review_request_delay_hours: s.reviewRequestDelayHours ?? 2,
   };
 }
 
@@ -939,6 +950,8 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.pushNotificationsEnabled !== undefined) out.push_notifications_enabled = !!p.pushNotificationsEnabled;
   if (p.smsEnabled !== undefined) out.sms_enabled = !!p.smsEnabled;
   if (p.smsPhoneNumber !== undefined) out.sms_phone_number = p.smsPhoneNumber ?? null;
+  if (p.reviewRequestEnabled !== undefined) out.review_request_enabled = !!p.reviewRequestEnabled;
+  if (p.reviewRequestDelayHours !== undefined) out.review_request_delay_hours = p.reviewRequestDelayHours;
   return out;
 }
 
@@ -1011,5 +1024,7 @@ export function settingsFromRow(r: any): Settings {
     pushNotificationsEnabled: r.push_notifications_enabled ?? false,
     smsEnabled: r.sms_enabled ?? false,
     smsPhoneNumber: r.sms_phone_number ?? undefined,
+    reviewRequestEnabled: r.review_request_enabled ?? true,
+    reviewRequestDelayHours: r.review_request_delay_hours != null ? Number(r.review_request_delay_hours) : 2,
   };
 }

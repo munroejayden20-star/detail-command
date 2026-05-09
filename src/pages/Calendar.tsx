@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { formatBusinessTime, getAppointmentDisplayRange } from "@/lib/datetime";
 import {
   ChevronLeft,
   ChevronRight,
@@ -412,7 +413,7 @@ function DraggableChip({
         )}
       />
       <span className="ml-1.5 truncate">
-        {format(parseISO(appointment.start), "p")} ·{" "}
+        {formatBusinessTime(appointment.start)} ·{" "}
         {appointment.vehicle.make || "Job"}
       </span>
     </div>
@@ -623,7 +624,7 @@ function WeekEvent({
       <div className="pl-2 pr-1.5 py-1.5">
         <p className="truncate text-[11px] font-semibold">{customer?.name ?? "—"}</p>
         <p className="truncate text-[10px] text-muted-foreground">
-          {format(parseISO(appointment.start), "p")} ·{" "}
+          {formatBusinessTime(appointment.start)} ·{" "}
           {vehicleStr(appointment.vehicle) || "Vehicle"}
         </p>
         {height > 60 ? (
@@ -743,7 +744,7 @@ function DayView({
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold">{customer?.name}</p>
                     <Badge variant="soft">
-                      {format(parseISO(a.start), "p")}
+                      {formatBusinessTime(a.start)}
                     </Badge>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -792,7 +793,7 @@ function DayEvent({
       <div className="pl-3 pr-2 py-2">
         <p className="text-sm font-semibold">{customer?.name}</p>
         <p className="text-xs text-muted-foreground">
-          {format(parseISO(appointment.start), "p")} – {format(parseISO(appointment.end), "p")} ·{" "}
+          {getAppointmentDisplayRange(appointment.start, appointment.end)} ·{" "}
           {vehicleStr(appointment.vehicle)}
         </p>
         {height > 70 ? (

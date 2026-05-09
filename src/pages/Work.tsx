@@ -17,6 +17,7 @@ import {
   Plus,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { formatBusinessDate, formatBusinessDateTime, formatBusinessTime } from "@/lib/datetime";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -161,7 +162,7 @@ export function WorkPage() {
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">
-              {format(parseISO(current.start), "EEE, MMM d · p")}
+              {formatBusinessDateTime(current.start)}
             </span>
           </div>
           {current.address ? (
@@ -353,7 +354,7 @@ export function WorkPage() {
                         {c?.name ?? "Customer"}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {format(parseISO(u.start), "EEE p")}
+                        {formatBusinessDate(u.start)} · {formatBusinessTime(u.start)}
                       </p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />

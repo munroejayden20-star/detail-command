@@ -1,5 +1,5 @@
-import { format, parseISO } from "date-fns";
 import { Clock, MapPin, Droplets, Plug, AlertTriangle } from "lucide-react";
+import { formatBusinessDate, getAppointmentDisplayRange } from "@/lib/datetime";
 import { useState } from "react";
 import type { Appointment } from "@/lib/types";
 import { useStore } from "@/store/store";
@@ -18,8 +18,6 @@ export function AppointmentRow({ appointment, compact, className }: AppointmentR
   const customer = data.customers.find((c) => c.id === appointment.customerId);
   const [open, setOpen] = useState(false);
 
-  const start = parseISO(appointment.start);
-  const end = parseISO(appointment.end);
   const services = appointment.serviceIds
     .map((id) => data.services.find((s) => s.id === id)?.name)
     .filter(Boolean)
@@ -63,7 +61,8 @@ export function AppointmentRow({ appointment, compact, className }: AppointmentR
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {format(start, "EEE p")} – {format(end, "p")}
+              {formatBusinessDate(appointment.start)} ·{" "}
+              {getAppointmentDisplayRange(appointment.start, appointment.end)}
             </span>
             {!compact && appointment.address ? (
               <span className="inline-flex items-center gap-1 truncate max-w-[160px]">

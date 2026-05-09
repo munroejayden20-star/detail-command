@@ -13,6 +13,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { formatBusinessDateTime } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,6 +31,7 @@ import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
 import { ReachOutDialog, type ReachOutContact } from "@/components/contact/ReachOutDialog";
 import { BookingRequests } from "@/components/dashboard/BookingRequests";
+import { ReviewsDueWidget } from "@/components/reviews/ReviewsDueWidget";
 import { useStore } from "@/store/store";
 import { vehicleStr } from "@/lib/utils";
 import {
@@ -151,6 +153,9 @@ export function DashboardPage() {
 
       {/* Booking requests */}
       <BookingRequests onReachOut={(contact) => setReachContact(contact)} />
+
+      {/* Reviews due (Phase F) */}
+      <ReviewsDueWidget />
 
       {/* Two-column grid */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -358,7 +363,7 @@ function ConfirmRow({
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold">{customerName}</p>
         <p className="text-xs text-muted-foreground">
-          {format(parseISO(start), "EEE, MMM d · p")}
+          {formatBusinessDateTime(start)}
         </p>
       </div>
       <div className="flex items-center gap-2">

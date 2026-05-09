@@ -45,7 +45,7 @@ interface MarkCompleteDialogProps {
 }
 
 export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteDialogProps) {
-  const { data, dispatch } = useStore();
+  const { data, commit } = useStore();
   const { user } = useAuth();
 
   const customer = useMemo(
@@ -152,10 +152,17 @@ export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteD
         receiptNumber,
       };
 
-      dispatch({ type: "addReceipt", receipt });
+      // Pessimistic: write receipt to Supabase first. Only mark created if
+      // the server actually accepted it — otherwise the user would think
+      // money is logged when it isn't.
+      const receiptResult = await commit({ type: "addReceipt", receipt });
+      if (!receiptResult.ok) {
+        // commit() already toasted + refetched
+        return;
+      }
 
-      // Sync the appointment so finalPrice + paymentStatus reflect the receipt.
-      dispatch({
+      // Update the appointment to reflect the final price + payment status
+      const apptResult = await commit({
         type: "updateAppointment",
         id: appointment.id,
         patch: {
@@ -163,8 +170,15 @@ export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteD
           paymentStatus: paymentStatus === "paid" ? "paid" : "unpaid",
         },
       });
-
-      toast.success(`Receipt ${receiptNumber} generated`);
+      if (!apptResult.ok) {
+        // The receipt itself saved, but the appointment didn't update.
+        // Don't pretend everything's fine — surface this clearly.
+        toast.warning(
+          `Receipt ${receiptNumber} saved, but the appointment status didn't update. Refresh to see current state.`,
+        );
+      } else {
+        toast.success(`Receipt ${receiptNumber} generated`);
+      }
       setCreatedReceipt(receipt);
     } catch (e) {
       console.error("[receipt] create failed", e);

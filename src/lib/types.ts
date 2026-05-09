@@ -140,6 +140,10 @@ export interface Appointment {
   depositPaymentId?: ID;
   finalPriceCents?: number;
   stripeCheckoutSessionId?: string;
+  // Phase F — review requests
+  reviewRequestSent?: boolean;
+  reviewRequestSentAt?: string;
+  reviewRequestMethod?: "sms" | "email" | "copied" | "manual";
   createdAt: string;
 }
 
@@ -615,6 +619,10 @@ export interface Settings {
   notifyWeather?: boolean;
   notifyUpdates?: boolean;
   reminderMinutes?: number;
+
+  // ── Review requests (Phase F) ────────────────────────────────────────────
+  reviewRequestEnabled?: boolean;
+  reviewRequestDelayHours?: number;
 
   // ── Phone notifications (Phase E) ────────────────────────────────────────
   /** Master switch for sending push to subscribed devices. */

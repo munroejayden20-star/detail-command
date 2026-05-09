@@ -1,5 +1,10 @@
 import { Phone, Mail, MapPin } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import {
+  formatBusinessDateOnly,
+  formatBusinessMonthDay,
+  formatBusinessTime,
+} from "@/lib/datetime";
 import type { Receipt } from "@/lib/types";
 import { formatCents, RECEIPT_DISCLAIMER } from "@/lib/receipts";
 import { phoneFmt, vehicleStr } from "@/lib/utils";
@@ -57,7 +62,7 @@ export function ReceiptView({ receipt }: ReceiptViewProps) {
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Receipt</p>
           <p className="font-mono text-sm font-semibold">{receipt.receiptNumber}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {format(parseISO(receipt.createdAt), "MMM d, yyyy")}
+            {formatBusinessDateOnly(receipt.createdAt)}
           </p>
         </div>
       </div>
@@ -92,12 +97,13 @@ export function ReceiptView({ receipt }: ReceiptViewProps) {
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Service date</p>
           <p className="mt-1 text-sm font-medium">
             {appointment?.startAt
-              ? format(parseISO(appointment.startAt), "MMM d, yyyy")
+              ? formatBusinessDateOnly(appointment.startAt)
               : "—"}
           </p>
           {appointment?.completedAt ? (
             <p className="text-xs text-muted-foreground">
-              Completed {format(parseISO(appointment.completedAt), "MMM d, h:mm a")}
+              Completed {formatBusinessMonthDay(appointment.completedAt)},{" "}
+              {formatBusinessTime(appointment.completedAt)}
             </p>
           ) : null}
         </div>

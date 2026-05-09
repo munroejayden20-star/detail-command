@@ -298,12 +298,25 @@ function reducer(state: AppData, action: Action): AppData {
   }
 }
 
+export interface CommitResult {
+  ok: boolean;
+  error?: { message: string };
+}
+
 interface StoreContextValue {
   data: AppData;
   loaded: boolean;
   loading: boolean;
   error: string | null;
   dispatch: React.Dispatch<Action>;
+  /**
+   * "Pessimistic" dispatch — write to Supabase first, only update local
+   * state on confirmed success. Use this for money-touching, receipt-,
+   * payment-, or other records where you cannot let the UI claim the
+   * change saved when it didn't. On failure it shows an error toast and
+   * triggers a refetch so local state matches the server again.
+   */
+  commit: (action: Action) => Promise<CommitResult>;
   reload: () => Promise<void>;
   reset: () => void;
 }
@@ -373,6 +386,43 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       });
     });
   }, []);
+
+  // Pessimistic dispatch — server first, then local on success. See JSDoc
+  // on the type for when to use this.
+  const commit = useCallback<(action: Action) => Promise<CommitResult>>(
+    async (action) => {
+      const uid = userIdRef.current;
+      if (!uid) {
+        return { ok: false, error: { message: "Not signed in" } };
+      }
+      try {
+        await syncAction(action, uid);
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === "object" && err && "message" in err
+              ? String((err as { message: unknown }).message)
+              : String(err);
+        console.error("[commit]", action.type, err);
+        toast.error("Save failed. Your change was not saved.", {
+          description: msg,
+        });
+        // Refetch from Supabase so local state matches server (no false saved UI)
+        try {
+          const fresh = await fetchAllForUser(uid);
+          baseDispatch({ type: "set", data: fresh });
+        } catch (refetchErr) {
+          console.error("[commit] refetch after failure also failed:", refetchErr);
+        }
+        return { ok: false, error: { message: msg } };
+      }
+      // Server confirmed — apply local state
+      baseDispatch(action);
+      return { ok: true };
+    },
+    [],
+  );
 
   /* ----- Initial load + reload-on-user-change ----- */
 
@@ -555,10 +605,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       dispatch,
+      commit,
       reload: load,
       reset,
     }),
-    [data, loaded, loading, error, dispatch, load, reset]
+    [data, loaded, loading, error, dispatch, commit, load, reset]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

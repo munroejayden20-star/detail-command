@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, MessageSquare, Mail, Ban, Loader2, Printer } from "lucide-react";
+import { Copy, MessageSquare, Mail, Ban, Loader2, Printer, Star, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   publicReceiptUrl,
 } from "@/lib/receipts";
 import { ReceiptView } from "./ReceiptView";
+import { ReviewRequestPrompt } from "@/components/reviews/ReviewRequestPrompt";
 
 interface ReceiptViewModalProps {
   open: boolean;
@@ -29,8 +30,34 @@ interface ReceiptViewModalProps {
 }
 
 export function ReceiptViewModal({ open, receipt, onClose, title }: ReceiptViewModalProps) {
-  const { dispatch } = useStore();
+  const { data, dispatch, commit } = useStore();
   const [busy, setBusy] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const linkedAppointment = receipt.appointmentId
+    ? data.appointments.find((a) => a.id === receipt.appointmentId)
+    : undefined;
+  const linkedCustomer = receipt.customerId
+    ? data.customers.find((c) => c.id === receipt.customerId)
+    : undefined;
+  const reviewEnabled = data.settings.reviewRequestEnabled !== false;
+
+  async function handleDownloadPdf() {
+    setPdfBusy(true);
+    try {
+      // Lazy-import jsPDF on first use so the main bundle stays small.
+      const { downloadReceiptPdf } = await import("@/lib/receipt-pdf");
+      await downloadReceiptPdf(receipt, data.settings);
+    } catch (e) {
+      console.error("[receipt-pdf] generate failed:", e);
+      toast.error("Couldn't generate PDF", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   async function copyLink() {
     const url = receipt.publicReceiptToken
@@ -103,11 +130,13 @@ export function ReceiptViewModal({ open, receipt, onClose, title }: ReceiptViewM
       return;
     setBusy(true);
     try {
-      dispatch({
+      // Pessimistic: confirm the void server-side before claiming success.
+      const r = await commit({
         type: "updateReceipt",
         id: receipt.id,
         patch: { receiptStatus: "voided" },
       });
+      if (!r.ok) return; // commit() already toasted + refetched
       toast.success("Receipt voided");
       onClose();
     } finally {
@@ -132,6 +161,13 @@ export function ReceiptViewModal({ open, receipt, onClose, title }: ReceiptViewM
 
         <DialogFooter className="flex flex-wrap gap-2 sm:justify-between print:hidden">
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfBusy}>
+              {pdfBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={printReceipt}>
+              <Printer className="h-4 w-4" /> Print
+            </Button>
             <Button variant="outline" size="sm" onClick={copyLink}>
               <Copy className="h-4 w-4" /> Copy link
             </Button>
@@ -144,9 +180,21 @@ export function ReceiptViewModal({ open, receipt, onClose, title }: ReceiptViewM
             <Button variant="outline" size="sm" onClick={sendEmail}>
               <Mail className="h-4 w-4" /> Email
             </Button>
-            <Button variant="outline" size="sm" onClick={printReceipt}>
-              <Printer className="h-4 w-4" /> Print
-            </Button>
+            {linkedAppointment && reviewEnabled ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReviewOpen(true)}
+                title={
+                  linkedAppointment.reviewRequestSent
+                    ? "Review request was already sent — click to send again"
+                    : "Send a Google review request"
+                }
+              >
+                <Star className="h-4 w-4 text-amber-500" />
+                {linkedAppointment.reviewRequestSent ? "Review sent" : "Review"}
+              </Button>
+            ) : null}
           </div>
           <div className="flex gap-2">
             {receipt.receiptStatus === "active" ? (
@@ -161,6 +209,14 @@ export function ReceiptViewModal({ open, receipt, onClose, title }: ReceiptViewM
           </div>
         </DialogFooter>
       </DialogContent>
+      {linkedAppointment ? (
+        <ReviewRequestPrompt
+          open={reviewOpen}
+          appointment={linkedAppointment}
+          customer={linkedCustomer}
+          onClose={() => setReviewOpen(false)}
+        />
+      ) : null}
     </Dialog>
   );
 }

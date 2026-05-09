@@ -145,8 +145,30 @@ The `bookingPageSlug` in settings is for future multi-user support.
   ```sql
   v_start_at := timezone('America/Los_Angeles', p_date::date + p_time::time);
   ```
-- The dashboard renders times using `date-fns` `format()` which uses the browser's local timezone.
-- **Known limitation:** Times display correctly only when the dashboard browser is in America/Los_Angeles timezone.
+- **Display path** (Phase G): all business-time displays go through `src/lib/datetime.ts`, which uses `Intl.DateTimeFormat` with `timeZone: "America/Los_Angeles"`. Helpers:
+  - `formatBusinessDate(iso)` — "Sun, Jun 15"
+  - `formatBusinessTime(iso)` — "8:00 AM"
+  - `formatBusinessDateTime(iso)` — combined
+  - `formatBusinessDateOnly(iso)` — "Jun 15, 2025"
+  - `getAppointmentDisplayRange(start, end)` — "8:00 AM – 10:30 AM"
+  - `combineLocalDateTimeInBusinessTimezone(date, time)` — input-form helper to convert a date+time picker selection (intended as LA wall-clock) to a UTC ISO string. Handles DST transitions via two-pass offset correction.
+- **Rule:** never call `format(parseISO(appt.start), "...")` directly for an appointment time — it would render in browser-local TZ. Use the helpers.
+- AppointmentForm's `<input type="datetime-local">` uses `toLocalInput`/`fromLocalInput` wrappers that route through `toBusinessDateKey`, `toBusinessTimeKey`, and `combineLocalDateTimeInBusinessTimezone` so editing an appointment from any browser produces the same UTC instant.
+
+## Critical Write Strategy
+
+The store exposes two dispatch paths:
+
+- `dispatch(action)` — optimistic. Reducer applies, then `syncAction` mirrors to Supabase async. On failure: yellow toast, local change stays, refetches on next focus. Use for low-risk UI changes (status flips, photo metadata, settings tweaks where consistency isn't urgent).
+- `commit(action): Promise<{ok, error?}>` — pessimistic. Writes to Supabase first, only applies local state on confirmed success. On failure: clear "Save failed. Your change was not saved." toast + auto-refetch from server so the UI matches reality. Returns `{ok: false}` so callers can short-circuit.
+
+**Critical writes that use `commit()`:**
+- Receipt creation (`MarkCompleteDialog`)
+- Receipt void (`ReceiptViewModal`)
+- Appointment review-request marking (`ReviewRequestPrompt`)
+- Booking approve / decline (`BookingRequests`)
+
+**Still optimistic** (low risk or high frequency): customer dialog saves, appointment status updates from calendar drag, expense/mileage adds, photo metadata updates. These can be migrated to `commit()` if a specific reliability concern surfaces.
 
 ---
 

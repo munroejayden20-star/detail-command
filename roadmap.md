@@ -46,33 +46,56 @@
 
 ---
 
-## Current Phase — 6B: Admin-Customizable Booking Page
+### Phase 6B — Admin-Customizable Booking Page (shipped)
+- [x] Settings columns for hero headline/sub, water/power text override, phone/email, featured photos JSONB.
+- [x] `get_public_booking_info` returns the new fields + resolved featured photos.
+- [x] Settings UI for editing them.
+- [x] BookingPage reads from settings with sensible fallbacks.
 
-The landing page currently uses hard-coded copy and placeholder gallery slots. Phase 6B makes those customizable from the dashboard so Jayden can edit content without redeploying.
+### Phase 7 — Stripe Deposits (shipped)
+- [x] `payments` + `stripe_events` tables, edge functions, webhook idempotency.
 
-- [ ] Add columns to `settings` table for hero headline / subheadline overrides, water/power text override, business phone/email, and a `featured_photos` JSONB array of photo IDs.
-- [ ] Update `get_public_booking_info` RPC to include those fields.
-- [ ] Add UI to Settings → Booking Page section for editing them, plus a featured-photos picker pulling from the `photos` table.
-- [ ] BookingPage reads featured photos and falls back to placeholder slots if none are set.
-- [ ] FAQ overrides (optional — array of `{q, a}` in settings).
+### Phase 8 — Admin Lockdown (shipped)
+- [x] `is_admin()` allowlist + access-denied redirect.
 
----
+### Phase A — Receipts (shipped)
+- [x] Snapshotted receipts, public `/receipt/:token` page, atomic numbering.
 
-## Phase 6C — Form UI Polish
-- [ ] Live price chip animation
-- [ ] Tighter step transitions
-- [ ] Better empty/error states inside each step
-- [ ] No logic changes — form fields, validation, RPC calls all unchanged
+### Phase B — Sales Tax (shipped)
+- [x] `defaultTaxRate`, auto-calc on receipt generation, sales-tax setting.
+
+### Phase C — Tax Center (shipped)
+- [x] Period filter, set-aside %, gross/net/expenses/sales tax dashboard.
+
+### Phase D — Mileage (shipped)
+- [x] Trip log with IRS standard rate deduction in Tax Center.
+
+### Phase E — Phone Notifications (shipped)
+- [x] Web Push via VAPID + service worker, SMS scaffold, Settings panel.
+
+### Phase F — Review Request Workflow (shipped)
+- [x] `appointments.review_request_*` columns + settings.
+- [x] `ReviewRequestPrompt` dialog (copy / SMS / email / mark as sent).
+- [x] Dashboard "Reviews due" widget.
+- [x] Receipt view "Review" button.
+
+### Phase G — Reliability, Reviews, and Professional Output (shipped)
+- [x] `src/lib/datetime.ts` — business-time formatters; refactored Calendar, Dashboard, BookingRequests, ReceiptView, AppointmentRow, AppointmentForm, Work, CommandPalette.
+- [x] `commit()` server-first dispatch path; converted MarkCompleteDialog, ReceiptViewModal void, BookingRequests approve/decline.
+- [x] `src/lib/receipt-pdf.ts` — jsPDF receipt download (lazy-loaded chunk).
+- [x] Vitest setup + tests for `datetime`, `receipts`, `tax-center` (37 tests).
+- [x] `docs/manual-test-checklist.md` for things automated tests can't reach.
 
 ---
 
 ## Planned / Future
 
 ### Near-term
-- [ ] Stripe deposit collection on booking page
-- [ ] Invoice generation and PDF export
-- [ ] Review request automation (send Google review link post-job)
-- [ ] Route optimization for multi-job days
+- [ ] Server-side cron for review reminders honoring `reviewRequestDelayHours`.
+- [ ] Upload generated receipt PDFs to Supabase Storage; populate `receipts.pdf_url`.
+- [ ] Convert remaining write sites (Expenses, Mileage, Services, Settings) to `commit()`.
+- [ ] Route optimization for multi-job days.
+- [ ] Form UI polish (live price chip, tighter step transitions).
 
 ### Medium-term
 - [ ] Customer portal (customer can view their appointment status)

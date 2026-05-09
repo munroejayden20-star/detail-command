@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
+import { formatBusinessDateTime } from "@/lib/datetime";
 import {
   Search,
   Users,
@@ -636,8 +637,7 @@ function apptResult(
   score = 50
 ): BaseResult {
   const cust = customers.find((c) => c.id === a.customerId);
-  const dt = parseISO(a.start);
-  const when = format(dt, "EEE MMM d · h:mm a");
+  const when = formatBusinessDateTime(a.start);
   const subtitle = [cust?.name, vehicleStr(a.vehicle)].filter(Boolean).join(" · ");
   return {
     id: a.id,

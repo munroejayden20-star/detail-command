@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { addMinutes, formatISO, parseISO } from "date-fns";
+import {
+  toBusinessDateKey,
+  toBusinessTimeKey,
+  combineLocalDateTimeInBusinessTimezone,
+} from "@/lib/datetime";
 import { Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,14 +43,30 @@ interface AppointmentFormProps {
   onSaved?: (saved: Appointment, transitionedToCompleted: boolean) => void;
 }
 
+/**
+ * Render an ISO timestamp as the YYYY-MM-DDTHH:mm string a `datetime-local`
+ * input expects, *displayed in business timezone*. So a UTC instant that is
+ * 8:00 AM in LA always shows as 8:00 AM in this input — regardless of the
+ * dashboard's browser timezone.
+ */
 function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  const tzOffset = d.getTimezoneOffset() * 60_000;
-  return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+  if (!iso) return "";
+  const dateKey = toBusinessDateKey(iso); // "YYYY-MM-DD" in LA
+  const timeKey = toBusinessTimeKey(iso); // "HH:mm" in LA
+  if (!dateKey || !timeKey) return "";
+  return `${dateKey}T${timeKey}`;
 }
 
+/**
+ * Inverse of toLocalInput: take the YYYY-MM-DDTHH:mm string from the input
+ * (which the user is editing in business-local wall-clock) and produce the
+ * correct UTC ISO timestamp.
+ */
 function fromLocalInput(local: string): string {
-  return formatISO(new Date(local));
+  if (!local) return "";
+  const [datePart, timePart] = local.split("T");
+  if (!datePart || !timePart) return "";
+  return combineLocalDateTimeInBusinessTimezone(datePart, timePart.slice(0, 5));
 }
 
 const DEFAULT_VEHICLE = { year: "", make: "", model: "", color: "", conditionNotes: "" };
