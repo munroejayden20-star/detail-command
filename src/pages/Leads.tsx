@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format, formatISO, parseISO } from "date-fns";
 import { Plus, Trash2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,21 @@ export function LeadsPage() {
   const { data, dispatch } = useStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Open the edit dialog when a lead id is passed in the URL (from search palette)
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    const found = data.leads.find((l) => l.id === id);
+    if (found) {
+      setEditing(found);
+      setOpen(true);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("id");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, data.leads, setSearchParams]);
 
   const grouped = useMemo(() => {
     const map = new Map<LeadStatus, Lead[]>();

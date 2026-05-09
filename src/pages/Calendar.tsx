@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -51,6 +52,24 @@ export function CalendarPage() {
   const [createDate, setCreateDate] = useState<Date | undefined>();
   const [createOpen, setCreateOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Open the edit dialog if an appointment id was passed in the URL
+  // (e.g. via the global command palette). Consume the param after handling
+  // so a refresh doesn't re-open the dialog unexpectedly.
+  useEffect(() => {
+    const apptId = searchParams.get("appt");
+    if (!apptId) return;
+    const found = data.appointments.find((a) => a.id === apptId);
+    if (found) {
+      setEditAppt(found);
+      setEditOpen(true);
+      setCursor(parseISO(found.start));
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("appt");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, data.appointments, setSearchParams]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })

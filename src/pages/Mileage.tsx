@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import {
   Plus,
@@ -52,6 +53,21 @@ export function MileagePage() {
   const [editing, setEditing] = useState<MileageEntry | undefined>();
   const [periodKey, setPeriodKey] = useState<TaxPeriodKey>("this_year");
   const [scope, setScope] = useState<ScopeFilter>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Open the edit dialog when a trip id is passed in the URL (from search palette)
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    const found = (data.mileageEntries ?? []).find((m) => m.id === id);
+    if (found) {
+      setEditing(found);
+      setOpen(true);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("id");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, data.mileageEntries, setSearchParams]);
 
   const period = useMemo(() => buildPeriod(periodKey), [periodKey]);
   const entries = data.mileageEntries ?? [];

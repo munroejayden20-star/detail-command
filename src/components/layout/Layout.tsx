@@ -8,6 +8,7 @@ import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 import { useUpdateChecker } from "@/hooks/useUpdateChecker";
 import { UpdateBanner } from "@/components/updates/UpdateBanner";
 import { MigrationBanner } from "@/components/migration/MigrationBanner";
+import { GlobalCommandPalette } from "@/components/search/CommandPalette";
 
 export function Layout() {
   const [open, setOpen] = useState(false);
@@ -32,6 +33,7 @@ export function Layout() {
         </main>
       </div>
       <BottomNav />
+      <GlobalCommandPalette />
     </div>
   );
 }

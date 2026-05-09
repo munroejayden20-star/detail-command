@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { Search, Receipt as ReceiptIcon, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,18 @@ export function ReceiptsPage() {
   const [paymentFilter, setPaymentFilter] =
     useState<"all" | "paid" | "partial" | "unpaid">("all");
   const [selected, setSelected] = useState<Receipt | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Open the receipt view modal when an id is passed in the URL (from search palette)
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    const found = (data.receipts ?? []).find((r) => r.id === id);
+    if (found) setSelected(found);
+    const next = new URLSearchParams(searchParams);
+    next.delete("id");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, data.receipts, setSearchParams]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

@@ -2,14 +2,14 @@ import { Menu, Moon, Sun, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { useStore } from "@/store/store";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
-import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { UserMenu } from "@/auth/UserMenu";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { openCommandPalette } from "@/components/search/CommandPalette";
 
 interface TopBarProps {
   onMenu: () => void;
@@ -18,11 +18,14 @@ interface TopBarProps {
 export function TopBar({ onMenu }: TopBarProps) {
   const { toggle } = useTheme();
   const { data } = useStore();
-  const navigate = useNavigate();
   const [appOpen, setAppOpen] = useState(false);
   const [custOpen, setCustOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent));
+  }, []);
 
   const todayCount = data.appointments.filter((a) => {
     const d = new Date(a.start);
@@ -35,12 +38,6 @@ export function TopBar({ onMenu }: TopBarProps) {
   }).length;
 
   const openTaskCount = data.tasks.filter((t) => !t.completed).length;
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    navigate(`/customers?q=${encodeURIComponent(query)}`);
-  }
 
   return (
     <>
@@ -63,20 +60,18 @@ export function TopBar({ onMenu }: TopBarProps) {
           </p>
         </div>
 
-        <form
-          onSubmit={handleSearch}
-          className="ml-auto flex flex-1 items-center justify-end gap-2 md:ml-0 md:flex-initial md:max-w-xs"
+        <button
+          type="button"
+          onClick={openCommandPalette}
+          aria-label="Search"
+          className="ml-auto flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:ml-0 md:w-64"
         >
-          <div className="relative hidden flex-1 md:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search customers…"
-              className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm ring-focus placeholder:text-muted-foreground"
-            />
-          </div>
-        </form>
+          <Search className="h-4 w-4 shrink-0" />
+          <span className="hidden md:inline">Search…</span>
+          <kbd className="ml-auto hidden md:inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono">
+            {isMac ? "⌘" : "Ctrl"}K
+          </kbd>
+        </button>
 
         <div className="flex items-center gap-1.5">
           <Button

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Trash2, Pencil, Sparkles, Tag, Percent, DollarSign, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,21 @@ export function ServicesPage() {
   const { data, dispatch } = useStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Service | undefined>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Open the edit dialog when a service id is passed in the URL (from search palette)
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    const found = data.services.find((s) => s.id === id);
+    if (found) {
+      setEditing(found);
+      setOpen(true);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("id");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, data.services, setSearchParams]);
 
   const packages = data.services.filter((s) => !s.isAddon);
   const addons = data.services.filter((s) => s.isAddon);

@@ -20,9 +20,11 @@ import {
   Settings as SettingsIcon,
   X,
   Plus,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
+import { openCommandPalette } from "@/components/search/CommandPalette";
 
 type NavItem = {
   to: string;
@@ -110,6 +112,17 @@ export function BottomNav() {
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.5rem)" }}
       >
         <Plus className="h-6 w-6" />
+      </button>
+
+      {/* Floating search button — mirrors the FAB on the left for one-tap access */}
+      <button
+        type="button"
+        onClick={openCommandPalette}
+        aria-label="Search"
+        className="fixed left-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-card text-foreground border border-border shadow-lift active:scale-95 transition-transform lg:hidden"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.75rem)" }}
+      >
+        <Search className="h-5 w-5" />
       </button>
       <AppointmentDialog open={apptOpen} onOpenChange={setApptOpen} />
 
