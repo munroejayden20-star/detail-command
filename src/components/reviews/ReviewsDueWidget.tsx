@@ -19,6 +19,7 @@ const REVIEW_WINDOW_HOURS = 14 * 24; // surface jobs from the last 2 weeks
 export function ReviewsDueWidget() {
   const { data } = useStore();
   const enabled = data.settings.reviewRequestEnabled !== false;
+  const delayHours = data.settings.reviewRequestDelayHours ?? 2;
   const [target, setTarget] = useState<Appointment | null>(null);
 
   const due = useMemo(() => {
@@ -30,11 +31,11 @@ export function ReviewsDueWidget() {
       .filter((a) => {
         const t = parseISO(a.start).getTime();
         const hours = (now - t) / (1000 * 60 * 60);
-        return hours >= 0 && hours <= REVIEW_WINDOW_HOURS;
+        return hours >= delayHours && hours <= REVIEW_WINDOW_HOURS;
       })
       .sort((a, b) => b.start.localeCompare(a.start))
       .slice(0, 5);
-  }, [data.appointments, enabled]);
+  }, [data.appointments, enabled, delayHours]);
 
   if (!enabled || due.length === 0) return null;
 

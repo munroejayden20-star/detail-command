@@ -518,6 +518,26 @@ export function SettingsPage() {
             />
           </Field>
 
+          <ToggleRow
+            label="Review requests enabled"
+            hint="When off, the Dashboard 'Reviews due' widget is hidden and review prompts are suppressed."
+            checked={s.reviewRequestEnabled !== false}
+            onChange={(v) => update("reviewRequestEnabled", v)}
+          />
+
+          <Field
+            label="Review request delay (hours)"
+            hint="How long after a job is marked complete before it shows up in 'Reviews due'."
+          >
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              value={s.reviewRequestDelayHours ?? 2}
+              onChange={(e) => update("reviewRequestDelayHours", Number(e.target.value))}
+            />
+          </Field>
+
           <Field label="Default review request message" hint="Sent to customers after a completed job.">
             <Textarea
               rows={3}
