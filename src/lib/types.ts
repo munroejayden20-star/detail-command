@@ -616,6 +616,14 @@ export interface Settings {
   notifyUpdates?: boolean;
   reminderMinutes?: number;
 
+  // ── Phone notifications (Phase E) ────────────────────────────────────────
+  /** Master switch for sending push to subscribed devices. */
+  pushNotificationsEnabled?: boolean;
+  /** Master switch for SMS — only fires when Twilio is configured server-side. */
+  smsEnabled?: boolean;
+  /** Recipient phone number for SMS (E.164 format, e.g. +13605551234). */
+  smsPhoneNumber?: string;
+
   // ── Receipts (Phase A) ───────────────────────────────────────────────────
   receiptFooterMessage?: string;
   autoGenerateReceiptOnComplete?: boolean;

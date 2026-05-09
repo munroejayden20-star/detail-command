@@ -32,6 +32,8 @@ import {
   Plus,
   Image as ImageIcon,
   Receipt as ReceiptIcon,
+  Smartphone,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -1033,9 +1035,11 @@ export function SettingsPage() {
             Send test notification
           </Button>
 
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-200">
-            Notifications fire while the app is open. Push notifications that wake your phone when closed require a server piece and will come in a future update.
-          </p>
+          <PhoneNotificationsControls
+            settings={s}
+            userId={user?.id}
+            onUpdate={(patch) => dispatch({ type: "updateSettings", patch })}
+          />
         </SettingsSection>
       ) : null}
 
@@ -1377,6 +1381,155 @@ function DangerZone() {
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
           {totalRows === 0 ? "Already empty" : `Reset all data`}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Phase E: Phone notifications controls
+   Web Push enable/disable + SMS phone number scaffold.
+───────────────────────────────────────────── */
+function PhoneNotificationsControls({
+  settings,
+  userId,
+  onUpdate,
+}: {
+  settings: Settings;
+  userId: string | undefined;
+  onUpdate: (patch: Partial<Settings>) => void;
+}) {
+  const [pushSupport, setPushSupport] = useState<{
+    supported: boolean;
+    reason?: string;
+    isStandalone: boolean;
+    isIos: boolean;
+    permission: NotificationPermission | "unsupported";
+  }>(() => ({
+    supported: false,
+    reason: "Loading…",
+    isStandalone: false,
+    isIos: false,
+    permission: "default",
+  }));
+  const [hasLocalSub, setHasLocalSub] = useState(false);
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { getPushSupport, hasActiveSubscription } = await import("@/lib/push");
+      const support = getPushSupport();
+      const local = await hasActiveSubscription();
+      if (!cancelled) {
+        setPushSupport(support);
+        setHasLocalSub(local);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pushOn = settings.pushNotificationsEnabled === true && hasLocalSub;
+
+  async function handleEnablePush(next: boolean) {
+    if (!userId) return;
+    setWorking(true);
+    try {
+      const { subscribeToPush, unsubscribeFromPush, hasActiveSubscription } = await import("@/lib/push");
+      if (next) {
+        const ok = await subscribeToPush(userId);
+        if (!ok) {
+          toast.error("Permission denied", {
+            description: "Allow notifications in your browser settings, then try again.",
+          });
+          return;
+        }
+        onUpdate({ pushNotificationsEnabled: true });
+        toast.success("Phone notifications on", {
+          description: "We'll wake your phone when something needs your attention.",
+        });
+      } else {
+        await unsubscribeFromPush(userId);
+        onUpdate({ pushNotificationsEnabled: false });
+        toast.success("Phone notifications off");
+      }
+      const local = await hasActiveSubscription();
+      setHasLocalSub(local);
+    } catch (e) {
+      console.error("[push] toggle failed:", e);
+      toast.error("Couldn't update push settings", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+      <div className="flex items-center gap-2">
+        <Smartphone className="h-4 w-4 text-primary" />
+        <p className="text-sm font-semibold">Phone notifications</p>
+      </div>
+      <p className="text-xs text-muted-foreground -mt-1">
+        Get real notifications on your phone, even when the app is closed.
+      </p>
+
+      {/* Web Push */}
+      <div className="rounded-md border border-border bg-card p-3">
+        <ToggleRow
+          label="Push notifications (web)"
+          hint={
+            pushSupport.supported
+              ? hasLocalSub
+                ? "Active on this device. Toggle off to unsubscribe."
+                : "Tap to subscribe this device — you'll get a permission prompt."
+              : pushSupport.reason ?? "Not supported on this device."
+          }
+          checked={pushOn}
+          onChange={handleEnablePush}
+          disabled={!pushSupport.supported || working || !userId}
+        />
+        {pushSupport.isIos && !pushSupport.isStandalone ? (
+          <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-700 dark:text-amber-200">
+            <strong>iPhone:</strong> tap the Share button in Safari → "Add to Home Screen", then open the
+            installed app. iOS only allows web push from installed PWAs.
+          </p>
+        ) : null}
+      </div>
+
+      {/* SMS scaffold */}
+      <div className="rounded-md border border-border bg-card p-3 space-y-2">
+        <ToggleRow
+          label="SMS text messages"
+          hint="Coming soon — needs a Twilio account configured server-side."
+          checked={settings.smsEnabled === true}
+          onChange={(v) => onUpdate({ smsEnabled: v })}
+          disabled={!userId}
+        />
+        <div
+          className={cn(
+            "flex items-center gap-2 transition-opacity",
+            settings.smsEnabled === true ? "" : "opacity-60",
+          )}
+        >
+          <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            type="tel"
+            inputMode="tel"
+            placeholder="+13605551234"
+            value={settings.smsPhoneNumber ?? ""}
+            onChange={(e) => onUpdate({ smsPhoneNumber: e.target.value || undefined })}
+            disabled={settings.smsEnabled !== true}
+            className="h-8 text-sm"
+          />
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Use E.164 format (+1 country code). SMS only sends once a Twilio account SID, auth token, and
+          from-number are added as Supabase function secrets.
+        </p>
       </div>
     </div>
   );

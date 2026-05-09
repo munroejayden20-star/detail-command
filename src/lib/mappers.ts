@@ -864,6 +864,9 @@ export function settingsToRow(s: Settings, userId: string) {
     sales_tax_disclaimer: s.salesTaxDisclaimer ?? null,
     tax_set_aside_percent: s.taxSetAsidePercent ?? 25,
     tax_business_state: s.taxBusinessState ?? null,
+    push_notifications_enabled: s.pushNotificationsEnabled ?? false,
+    sms_enabled: s.smsEnabled ?? false,
+    sms_phone_number: s.smsPhoneNumber ?? null,
   };
 }
 
@@ -933,6 +936,9 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.salesTaxDisclaimer !== undefined) out.sales_tax_disclaimer = p.salesTaxDisclaimer ?? null;
   if (p.taxSetAsidePercent !== undefined) out.tax_set_aside_percent = p.taxSetAsidePercent ?? 25;
   if (p.taxBusinessState !== undefined) out.tax_business_state = p.taxBusinessState ?? null;
+  if (p.pushNotificationsEnabled !== undefined) out.push_notifications_enabled = !!p.pushNotificationsEnabled;
+  if (p.smsEnabled !== undefined) out.sms_enabled = !!p.smsEnabled;
+  if (p.smsPhoneNumber !== undefined) out.sms_phone_number = p.smsPhoneNumber ?? null;
   return out;
 }
 
@@ -1002,5 +1008,8 @@ export function settingsFromRow(r: any): Settings {
     salesTaxDisclaimer: r.sales_tax_disclaimer ?? undefined,
     taxSetAsidePercent: r.tax_set_aside_percent != null ? Number(r.tax_set_aside_percent) : 25,
     taxBusinessState: r.tax_business_state ?? undefined,
+    pushNotificationsEnabled: r.push_notifications_enabled ?? false,
+    smsEnabled: r.sms_enabled ?? false,
+    smsPhoneNumber: r.sms_phone_number ?? undefined,
   };
 }
