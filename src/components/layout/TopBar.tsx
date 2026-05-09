@@ -1,4 +1,5 @@
-import { Menu, Moon, Sun, Plus, Search } from "lucide-react";
+import { Menu, Moon, Sun, Plus, Search, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { useStore } from "@/store/store";
@@ -17,11 +18,27 @@ interface TopBarProps {
 
 export function TopBar({ onMenu }: TopBarProps) {
   const { toggle } = useTheme();
-  const { data } = useStore();
+  const { data, reload, loading } = useStore();
   const [appOpen, setAppOpen] = useState(false);
   const [custOpen, setCustOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function handleRefresh() {
+    if (refreshing || loading) return;
+    setRefreshing(true);
+    try {
+      await reload();
+      toast.success("Refreshed");
+    } catch (e) {
+      toast.error("Refresh failed", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   useEffect(() => {
     setIsMac(/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent));
@@ -99,6 +116,16 @@ export function TopBar({ onMenu }: TopBarProps) {
           >
             <Plus className="h-4 w-4" />
             Appointment
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            aria-label="Refresh data"
+            title="Refresh data"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing || loading ? "animate-spin" : ""}`} />
           </Button>
           <NotificationCenter />
           <Button
