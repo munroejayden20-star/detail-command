@@ -120,9 +120,6 @@ export function ReceiptView({ receipt }: ReceiptViewProps) {
               <div key={idx} className="flex items-baseline justify-between gap-4 text-sm">
                 <div className="min-w-0 flex-1">
                   <span className="font-medium">{li.name}</span>
-                  {li.description ? (
-                    <span className="ml-2 text-xs text-muted-foreground">{li.description}</span>
-                  ) : null}
                 </div>
                 <span className="font-mono">
                   {formatCents(li.totalCents, receipt.currency)}

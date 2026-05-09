@@ -212,16 +212,6 @@ export async function downloadReceiptPdf(
     doc.text(formatCents(item.totalCents, receipt.currency), pageWidth - marginX, y, {
       align: "right",
     });
-    if (item.description) {
-      y += 12;
-      doc.setFontSize(8);
-      doc.setTextColor(...MUTED);
-      doc.text(item.description, marginX, y, {
-        maxWidth: pageWidth - marginX * 2 - 220,
-      });
-      doc.setFontSize(10);
-      doc.setTextColor(20, 20, 20);
-    }
     y += 16;
   }
 
