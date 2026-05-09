@@ -402,12 +402,37 @@ function ServiceCard({
   const disc = activeDiscount(service);
   const discLow = disc ? applyDiscount(service.priceLow, disc) : null;
   const discHigh = disc ? applyDiscount(service.priceHigh, disc) : null;
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const descRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    if (!service.description) return;
+    function measure() {
+      const el = descRef.current;
+      if (!el) return;
+      if (el.dataset.clamped === "true") {
+        setOverflows(el.scrollHeight - 1 > el.clientHeight);
+      }
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (descRef.current) ro.observe(descRef.current);
+    return () => ro.disconnect();
+  }, [service.description]);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className={`w-full text-left rounded-xl border p-4 transition-all ${
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`w-full text-left rounded-xl border p-4 transition-all cursor-pointer ${
         selected
           ? "border-red-500 bg-red-500/10 shadow-[0_0_0_2px_rgba(239,68,68,0.3)]"
           : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
@@ -425,7 +450,29 @@ function ServiceCard({
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-white text-sm">{service.name}</p>
           {service.description ? (
-            <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2">{service.description}</p>
+            <>
+              <p
+                ref={descRef}
+                data-clamped={!expanded}
+                className={`text-xs text-zinc-400 mt-0.5 whitespace-pre-line ${expanded ? "" : "line-clamp-2"}`}
+              >
+                {service.description}
+              </p>
+              {overflows ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpanded((v) => !v);
+                  }}
+                  className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-red-400 hover:text-red-300 transition-colors"
+                  aria-expanded={expanded}
+                >
+                  {expanded ? "Show less" : "Read more"}
+                  <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                </button>
+              ) : null}
+            </>
           ) : null}
           <p className="text-xs text-zinc-500 mt-1">Est. {fmtDuration(service.durationMinutes)}</p>
         </div>
@@ -447,7 +494,7 @@ function ServiceCard({
           ) : null}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -460,19 +507,45 @@ function AddonCard({
   checked: boolean;
   onToggle: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const descRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    if (!service.description) return;
+    function measure() {
+      const el = descRef.current;
+      if (!el) return;
+      if (el.dataset.clamped === "true") {
+        setOverflows(el.scrollHeight - 1 > el.clientHeight);
+      }
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (descRef.current) ro.observe(descRef.current);
+    return () => ro.disconnect();
+  }, [service.description]);
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onToggle}
-      className={`w-full text-left rounded-xl border p-3 transition-all ${
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      className={`w-full text-left rounded-xl border p-3 transition-all cursor-pointer ${
         checked
           ? "border-red-500 bg-red-500/10"
           : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
       }`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <div
-          className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${
+          className={`h-4 w-4 mt-0.5 rounded border flex items-center justify-center shrink-0 ${
             checked ? "bg-red-600 border-red-600" : "border-zinc-500"
           }`}
         >
@@ -481,14 +554,36 @@ function AddonCard({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white">{service.name}</p>
           {service.description ? (
-            <p className="text-xs text-zinc-400 truncate">{service.description}</p>
+            <>
+              <p
+                ref={descRef}
+                data-clamped={!expanded}
+                className={`text-xs text-zinc-400 whitespace-pre-line ${expanded ? "" : "line-clamp-2"}`}
+              >
+                {service.description}
+              </p>
+              {overflows ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpanded((v) => !v);
+                  }}
+                  className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-red-400 hover:text-red-300 transition-colors"
+                  aria-expanded={expanded}
+                >
+                  {expanded ? "Show less" : "Read more"}
+                  <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                </button>
+              ) : null}
+            </>
           ) : null}
         </div>
         <span className="text-sm font-semibold text-zinc-300 shrink-0">
           +{fmtPrice(service.priceLow, service.priceHigh)}
         </span>
       </div>
-    </button>
+    </div>
   );
 }
 
