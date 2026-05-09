@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "./AuthProvider";
 import { cn } from "@/lib/utils";
 
-type Mode = "signin" | "signup" | "magic";
+type Mode = "signin" | "magic";
 
 export function LoginPage() {
-  const { user, loading, configured, signIn, signUp, signInWithMagicLink } = useAuth();
+  const { user, loading, configured, signIn, signInWithMagicLink } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,15 +40,10 @@ export function LoginPage() {
       if (mode === "signin") {
         const { error } = await signIn(email, password);
         if (error) setError(error);
-      } else if (mode === "signup") {
-        const { error, needsConfirmation } = await signUp(email, password);
-        if (error) setError(error);
-        else if (needsConfirmation)
-          setInfo("Check your email to confirm your account, then sign in.");
       } else if (mode === "magic") {
         const { error } = await signInWithMagicLink(email);
         if (error) setError(error);
-        else setInfo("Magic-link sent. Check your inbox.");
+        else setInfo("If that email is an admin, a magic link has been sent.");
       }
     } finally {
       setBusy(false);
@@ -71,17 +66,12 @@ export function LoginPage() {
         <Card>
           <CardContent className="p-6">
             <h1 className="text-2xl font-semibold tracking-tight">
-              {mode === "signin" && "Sign in"}
-              {mode === "signup" && "Create your account"}
+              {mode === "signin" && "Admin sign in"}
               {mode === "magic" && "Sign in with email"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {mode === "signin" &&
-                "Welcome back. Your data syncs across phone, tablet, and desktop."}
-              {mode === "signup" &&
-                "Free to start — your data lives in your own Supabase project."}
-              {mode === "magic" &&
-                "We'll email you a one-tap link. No password needed."}
+              Private admin access only. New accounts cannot be created from
+              this page.
             </p>
 
             <form onSubmit={onSubmit} className="mt-5 space-y-4">
@@ -128,17 +118,13 @@ export function LoginPage() {
               <Button type="submit" className="w-full" disabled={busy}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {mode === "signin" && "Sign in"}
-                {mode === "signup" && "Create account"}
                 {mode === "magic" && "Send magic link"}
               </Button>
             </form>
 
-            <div className="mt-5 grid grid-cols-3 gap-2 text-xs">
+            <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
               <ModeTab active={mode === "signin"} onClick={() => setMode("signin")}>
                 Sign in
-              </ModeTab>
-              <ModeTab active={mode === "signup"} onClick={() => setMode("signup")}>
-                Sign up
               </ModeTab>
               <ModeTab active={mode === "magic"} onClick={() => setMode("magic")}>
                 <Mail className="mr-1 inline h-3 w-3" />
@@ -149,7 +135,11 @@ export function LoginPage() {
         </Card>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Your data is private to your account and protected by Supabase Row-Level Security.
+          Looking to book a detail?{" "}
+          <a href="/book" className="font-medium text-primary underline">
+            Visit the booking page
+          </a>
+          .
         </p>
       </div>
     </div>

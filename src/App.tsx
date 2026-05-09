@@ -8,6 +8,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthGuard } from "@/auth/AuthGuard";
 import { LoginPage } from "@/auth/LoginPage";
 import { AuthCallback } from "@/auth/AuthCallback";
+import { AccessDeniedPage } from "@/auth/AccessDeniedPage";
 import { Layout } from "@/components/layout/Layout";
 // Dashboard is the default landing page — keep it eager-loaded so the first
 // paint is instant. Every other route is lazy so the initial bundle stays small.
@@ -105,6 +106,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/confirm" element={<AuthCallback />} />
+        <Route path="/access-denied" element={<AccessDeniedPage />} />
         <Route path="/book" element={lazyRoute(<BookingPage />)} />
         <Route path="/booking/success" element={lazyRoute(<BookingSuccessPage />)} />
         <Route path="/booking/cancel" element={lazyRoute(<BookingCancelPage />)} />

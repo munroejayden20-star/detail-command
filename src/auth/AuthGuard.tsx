@@ -1,13 +1,23 @@
+import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
+import { isAdminUser } from "@/lib/admin";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading, configured } = useAuth();
+  const { user, loading, configured, signOut } = useAuth();
   const location = useLocation();
 
+  // If a non-admin somehow has a session, force them out so a stale token
+  // can't keep them logged in across reloads.
+  useEffect(() => {
+    if (!loading && user && !isAdminUser(user)) {
+      void signOut();
+    }
+  }, [loading, user, signOut]);
+
   if (!configured) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/book" replace />;
   }
 
   if (loading) {
@@ -22,7 +32,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    // Anonymous visitors land on the public booking page. Admin reaches
+    // /login directly when they want to sign in.
+    return <Navigate to="/book" replace state={{ from: location }} />;
+  }
+
+  if (!isAdminUser(user)) {
+    return <Navigate to="/access-denied" replace />;
   }
 
   return <>{children}</>;

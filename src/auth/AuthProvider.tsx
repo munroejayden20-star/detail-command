@@ -48,23 +48,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    if (!supabase) return { error: "Supabase is not configured.", needsConfirmation: false };
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    if (error) return { error: error.message, needsConfirmation: false };
-    // If email confirmations are enabled, session will be null until confirmed.
-    return { error: null, needsConfirmation: !data.session };
+  // Public signup is intentionally disabled — this app is private/admin-only.
+  // Kept on the context so existing callers compile, but always rejects.
+  const signUp = useCallback(async (_email: string, _password: string) => {
+    return {
+      error: "Sign-ups are disabled. This app is private.",
+      needsConfirmation: false,
+    };
   }, []);
 
   const signInWithMagicLink = useCallback(async (email: string) => {
     if (!supabase) return { error: "Supabase is not configured." };
+    // shouldCreateUser:false prevents magic links from creating new accounts
+    // for unknown emails — only existing (admin) users can request one.
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        shouldCreateUser: false,
+      },
     });
     return { error: error?.message ?? null };
   }, []);
