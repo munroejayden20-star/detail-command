@@ -528,7 +528,7 @@ export function SettingsPage() {
       ) : null}
 
       {/* ── 4b. Receipts & Tax ─────────────────────────────── */}
-      {matches("receipt", "tax", "sales", "payment", "method", "footer", "auto", "generate", "disclaimer") ? (
+      {matches("receipt", "tax", "sales", "payment", "method", "footer", "auto", "generate", "disclaimer", "set", "aside", "state") ? (
         <SettingsSection
           id="receipts-tax"
           title="Receipts & Tax"
@@ -626,6 +626,52 @@ export function SettingsPage() {
                 disabled={!s.salesTaxEnabled}
               />
             </Field>
+          </div>
+
+          <Separator className="my-4" />
+
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Tax Center
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Set-aside %"
+                hint="Recommended share of net profit to set aside for taxes."
+              >
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={s.taxSetAsidePercent ?? 25}
+                  onChange={(e) =>
+                    update(
+                      "taxSetAsidePercent",
+                      e.target.value ? Number(e.target.value) : 25
+                    )
+                  }
+                  placeholder="25"
+                />
+              </Field>
+              <Field
+                label="Business tax state"
+                hint="Two-letter code shown on the Tax Center, e.g. WA or OR."
+              >
+                <Input
+                  maxLength={2}
+                  value={s.taxBusinessState ?? ""}
+                  onChange={(e) =>
+                    update(
+                      "taxBusinessState",
+                      e.target.value ? e.target.value.toUpperCase() : undefined
+                    )
+                  }
+                  placeholder="WA"
+                />
+              </Field>
+            </div>
 
             <p className="text-[11px] text-muted-foreground">{RECEIPT_DISCLAIMER}</p>
           </div>

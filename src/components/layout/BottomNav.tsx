@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Receipt,
   ReceiptText,
+  FileBarChart2,
   ListChecks,
   Calculator,
   Image as ImageIcon,
@@ -45,6 +46,7 @@ const MORE: NavItem[] = [
   { to: "/checklists", label: "Checklists", icon: ListChecks },
   { to: "/revenue", label: "Revenue", icon: TrendingUp },
   { to: "/receipts", label: "Receipts", icon: ReceiptText },
+  { to: "/tax-center", label: "Tax Center", icon: FileBarChart2 },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];

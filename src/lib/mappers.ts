@@ -801,6 +801,8 @@ export function settingsToRow(s: Settings, userId: string) {
     default_payment_method: s.defaultPaymentMethod ?? "cash",
     sales_tax_enabled: s.salesTaxEnabled ?? false,
     sales_tax_disclaimer: s.salesTaxDisclaimer ?? null,
+    tax_set_aside_percent: s.taxSetAsidePercent ?? 25,
+    tax_business_state: s.taxBusinessState ?? null,
   };
 }
 
@@ -868,6 +870,8 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.defaultPaymentMethod !== undefined) out.default_payment_method = p.defaultPaymentMethod;
   if (p.salesTaxEnabled !== undefined) out.sales_tax_enabled = !!p.salesTaxEnabled;
   if (p.salesTaxDisclaimer !== undefined) out.sales_tax_disclaimer = p.salesTaxDisclaimer ?? null;
+  if (p.taxSetAsidePercent !== undefined) out.tax_set_aside_percent = p.taxSetAsidePercent ?? 25;
+  if (p.taxBusinessState !== undefined) out.tax_business_state = p.taxBusinessState ?? null;
   return out;
 }
 
@@ -935,5 +939,7 @@ export function settingsFromRow(r: any): Settings {
     defaultPaymentMethod: (r.default_payment_method ?? "cash") as Settings["defaultPaymentMethod"],
     salesTaxEnabled: r.sales_tax_enabled ?? false,
     salesTaxDisclaimer: r.sales_tax_disclaimer ?? undefined,
+    taxSetAsidePercent: r.tax_set_aside_percent != null ? Number(r.tax_set_aside_percent) : 25,
+    taxBusinessState: r.tax_business_state ?? undefined,
   };
 }

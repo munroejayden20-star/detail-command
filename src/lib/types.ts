@@ -605,6 +605,10 @@ export interface Settings {
   salesTaxEnabled?: boolean;
   salesTaxDisclaimer?: string;
 
+  // ── Tax Center (Phase C) ─────────────────────────────────────────────────
+  taxSetAsidePercent?: number;  // % of net profit to set aside (default 25)
+  taxBusinessState?: string;    // e.g. "WA", "OR"
+
   // ── Legacy (kept for backward-compat, no longer shown in UI) ─────────────
   startupGoal: number;
 }
