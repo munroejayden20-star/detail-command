@@ -83,7 +83,6 @@ export interface MileageAggregates {
   totalMiles: number;
   /** Business miles × IRS standard rate. */
   deductionCents: number;
-  chargingCostCents: number;
 }
 
 export function aggregateMileage(
@@ -93,14 +92,12 @@ export function aggregateMileage(
   const inPeriod = (entries ?? []).filter((m) => isMileageInPeriod(m, period));
   const businessMiles = inPeriod.filter((m) => m.isBusiness).reduce((s, m) => s + Number(m.miles || 0), 0);
   const personalMiles = inPeriod.filter((m) => !m.isBusiness).reduce((s, m) => s + Number(m.miles || 0), 0);
-  const chargingCostCents = inPeriod.reduce((s, m) => s + (m.chargingCostCents ?? 0), 0);
   return {
     tripsCount: inPeriod.length,
     businessMiles,
     personalMiles,
     totalMiles: businessMiles + personalMiles,
     deductionCents: Math.round(businessMiles * IRS_MILEAGE_RATE_CENTS_PER_MILE),
-    chargingCostCents,
   };
 }
 

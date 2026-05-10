@@ -9,7 +9,6 @@ import {
   Briefcase,
   Wallet,
   Route as RouteIcon,
-  Zap,
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,7 @@ import {
   IRS_MILEAGE_RATE_CENTS_PER_MILE,
   type TaxPeriodKey,
 } from "@/lib/tax-center";
-import { formatCents, dollarsToCents, centsToDollars } from "@/lib/receipts";
+import { formatCents } from "@/lib/receipts";
 
 type ScopeFilter = "all" | "business" | "personal";
 
@@ -130,7 +129,7 @@ export function MileagePage() {
         <span className="text-xs text-muted-foreground">{periodRangeLabel}</span>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
         <Stat
           label="Business miles"
           value={agg.businessMiles.toFixed(1)}
@@ -148,12 +147,6 @@ export function MileagePage() {
           icon={<Wallet className="h-4 w-4" />}
           hint={`@ ${IRS_MILEAGE_RATE_CENTS_PER_MILE}¢ / mile (IRS standard)`}
           trend="up"
-        />
-        <Stat
-          label="Charging cost"
-          value={formatCents(agg.chargingCostCents)}
-          icon={<Zap className="h-4 w-4" />}
-          hint="Logged on EV trips"
         />
       </div>
 
@@ -223,11 +216,6 @@ export function MileagePage() {
                     <Badge variant={m.isBusiness ? "default" : "outline"}>
                       {m.isBusiness ? "Business" : "Personal"}
                     </Badge>
-                    {m.chargingCostCents ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <Zap className="h-3 w-3" /> {formatCents(m.chargingCostCents)}
-                      </span>
-                    ) : null}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground truncate">
                     {format(parseISO(m.entryDate), "MMM d, yyyy")}
@@ -303,17 +291,10 @@ function MileageDialog({
 }) {
   const { data, dispatch } = useStore();
   const [form, setForm] = useState<MileageEntry>(() => entry ?? blankEntry());
-  const [chargingDollars, setChargingDollars] = useState<string>("");
 
   useEffect(() => {
     if (open) {
-      const next = entry ?? blankEntry();
-      setForm(next);
-      setChargingDollars(
-        next.chargingCostCents != null
-          ? centsToDollars(next.chargingCostCents).toFixed(2)
-          : ""
-      );
+      setForm(entry ?? blankEntry());
     }
   }, [open, entry]);
 
@@ -324,7 +305,6 @@ function MileageDialog({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const charging = chargingDollars.trim() === "" ? undefined : dollarsToCents(Number(chargingDollars));
     const miles =
       computedMiles != null && (form.miles === 0 || form.miles == null)
         ? computedMiles
@@ -332,7 +312,6 @@ function MileageDialog({
     const payload: MileageEntry = {
       ...form,
       miles: Number(miles) || 0,
-      chargingCostCents: charging,
       updatedAt: new Date().toISOString(),
     };
     if (entry) dispatch({ type: "updateMileage", id: entry.id, patch: payload });
@@ -466,28 +445,14 @@ function MileageDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="m-purpose">Purpose</Label>
-              <Input
-                id="m-purpose"
-                value={form.purpose ?? ""}
-                onChange={(e) => setForm({ ...form, purpose: e.target.value })}
-                placeholder="Job, supply run…"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="m-charge">Charging cost ($)</Label>
-              <Input
-                id="m-charge"
-                type="number"
-                step="0.01"
-                min="0"
-                value={chargingDollars}
-                onChange={(e) => setChargingDollars(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="m-purpose">Purpose</Label>
+            <Input
+              id="m-purpose"
+              value={form.purpose ?? ""}
+              onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+              placeholder="Job, supply run…"
+            />
           </div>
 
           <div className="space-y-1.5">
