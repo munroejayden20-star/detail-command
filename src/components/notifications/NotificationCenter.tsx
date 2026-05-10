@@ -171,7 +171,7 @@ export function NotificationCenter() {
 
       {open ? (
         <div
-          className="absolute right-0 top-11 z-40 w-[360px] sm:w-[420px] rounded-xl border bg-card shadow-lift animate-in fade-in-0 zoom-in-95 duration-150"
+          className="absolute right-0 top-11 z-40 w-[360px] sm:w-[420px] max-w-[calc(100vw-1rem)] -mr-2 sm:-mr-12 md:-mr-20 lg:-mr-24 rounded-xl border bg-card shadow-lift animate-in fade-in-0 zoom-in-95 duration-150"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b px-3 py-2.5">
