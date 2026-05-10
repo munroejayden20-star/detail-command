@@ -33,6 +33,7 @@ import {
 import { useStore, makeId } from "@/store/store";
 import { PhotoUploader } from "@/components/photos/PhotoUploader";
 import { WorkChecklistDialog } from "@/components/work/WorkChecklistDialog";
+import { MarkCompleteDialog } from "@/components/receipts/MarkCompleteDialog";
 import {
   appointmentsOnDay,
   upcomingAppointments,
@@ -66,6 +67,7 @@ export function WorkPage() {
 
   const [noteOpen, setNoteOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [completedAppt, setCompletedAppt] = useState<Appointment | null>(null);
 
   if (!current) {
     return (
@@ -117,6 +119,7 @@ export function WorkPage() {
 
   function setStatus(status: JobStatus) {
     if (!current) return;
+    const wasNotCompleted = current.status !== "completed";
     const patch: Partial<Appointment> = { status };
     const now = new Date().toISOString();
     // Stamp the timer on the matching transitions. Don't overwrite an
@@ -140,6 +143,21 @@ export function WorkPage() {
         ? "Job completed"
         : `Status: ${status}`
     );
+
+    // Mirror the AppointmentDialog flow: when a job transitions to completed
+    // and auto-receipt is on (and there's no active receipt yet), open the
+    // receipt generator so the user can confirm payment without bouncing
+    // back to the calendar.
+    if (status === "completed" && wasNotCompleted) {
+      const wantsAutoReceipt = data.settings.autoGenerateReceiptOnComplete !== false;
+      const alreadyHasReceipt = (data.receipts ?? []).some(
+        (r) => r.appointmentId === current.id && r.receiptStatus === "active"
+      );
+      if (wantsAutoReceipt && !alreadyHasReceipt) {
+        // Apply the patch locally so the receipt dialog sees the latest state.
+        setCompletedAppt({ ...current, ...patch });
+      }
+    }
   }
 
   function resetTimer() {
@@ -429,6 +447,13 @@ export function WorkPage() {
         appointmentId={current.id}
         customerId={current.customerId}
       />
+      {completedAppt ? (
+        <MarkCompleteDialog
+          open={true}
+          appointment={completedAppt}
+          onClose={() => setCompletedAppt(null)}
+        />
+      ) : null}
     </div>
   );
 }
