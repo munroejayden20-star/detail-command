@@ -30,7 +30,7 @@ import {
   type Expense,
   type ExpenseCategory,
 } from "@/lib/types";
-import { appointmentRevenue, totalExpenses } from "@/lib/selectors";
+import { appointmentRevenue, totalExpenses, signedExpenseAmount } from "@/lib/selectors";
 import { formatCurrency, formatCurrencyExact } from "@/lib/utils";
 
 export function ExpensesPage() {
@@ -42,11 +42,16 @@ export function ExpensesPage() {
   const completed = data.appointments.filter((a) => a.status === "completed");
   const revenue = completed.reduce((s, a) => s + appointmentRevenue(a), 0);
   const profit = revenue - total;
+  const totalCredits = data.expenses
+    .filter((e) => e.kind === "credit")
+    .reduce((s, e) => s + e.amount, 0);
 
   const byCat = useMemo(() => {
     const map = new Map<ExpenseCategory, number>();
     EXPENSE_CATEGORIES.forEach((c) => map.set(c.value, 0));
-    data.expenses.forEach((e) => map.set(e.category, (map.get(e.category) ?? 0) + e.amount));
+    data.expenses.forEach((e) =>
+      map.set(e.category, (map.get(e.category) ?? 0) + signedExpenseAmount(e))
+    );
     return map;
   }, [data.expenses]);
 
@@ -63,7 +68,15 @@ export function ExpensesPage() {
       />
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Stat label="Total expenses" value={formatCurrency(total)} hint={`${data.expenses.length} entries`} />
+        <Stat
+          label="Net expenses"
+          value={formatCurrency(total)}
+          hint={
+            totalCredits > 0
+              ? `After ${formatCurrency(totalCredits)} in credits`
+              : `${data.expenses.length} entries`
+          }
+        />
         <Stat label="Revenue earned" value={formatCurrency(revenue)} hint={`${completed.length} completed jobs`} />
         <Stat label="Net profit" value={formatCurrency(profit)} trend={profit >= 0 ? "up" : "down"} hint={profit >= 0 ? "In the green" : "Behind right now"} />
         <Stat
@@ -111,15 +124,30 @@ export function ExpensesPage() {
               .sort((a, b) => b.date.localeCompare(a.date))
               .map((e) => {
                 const cat = EXPENSE_CATEGORIES.find((c) => c.value === e.category);
+                const isCredit = e.kind === "credit";
                 return (
                   <div
                     key={e.id}
-                    className="group flex items-center gap-3 rounded-lg border bg-card p-3 hover:border-primary/40 transition-colors"
+                    className={`group flex items-center gap-3 rounded-lg border bg-card p-3 hover:border-primary/40 transition-colors ${
+                      isCredit ? "border-emerald-500/30" : ""
+                    }`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold">{formatCurrencyExact(e.amount)}</p>
+                        <p
+                          className={`text-sm font-semibold ${
+                            isCredit ? "text-emerald-600 dark:text-emerald-400" : ""
+                          }`}
+                        >
+                          {isCredit ? "− " : ""}
+                          {formatCurrencyExact(e.amount)}
+                        </p>
                         <Badge variant="outline">{cat?.label}</Badge>
+                        {isCredit ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
+                            Credit
+                          </Badge>
+                        ) : null}
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {format(parseISO(e.date), "MMM d, yyyy")}
@@ -177,6 +205,7 @@ function ExpenseDialog({
       category: "products",
       amount: 0,
       notes: "",
+      kind: "expense",
     }
   );
 
@@ -189,10 +218,13 @@ function ExpenseDialog({
           category: "products",
           amount: 0,
           notes: "",
+          kind: "expense",
         }
       );
     }
   }, [open, expense]);
+
+  const isCredit = form.kind === "credit";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -205,9 +237,43 @@ function ExpenseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{expense ? "Edit expense" : "New expense"}</DialogTitle>
+          <DialogTitle>
+            {expense ? (isCredit ? "Edit credit" : "Edit expense") : "New entry"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Type</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, kind: "expense" })}
+                className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                  !isCredit
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                Expense
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, kind: "credit" })}
+                className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                  isCredit
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-border text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                Credit
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isCredit
+                ? "Money coming back in — gift cards, refunds, rebates. Subtracts from total expenses."
+                : "A regular expense — products, gas, equipment, marketing."}
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="amt">Amount</Label>
@@ -263,7 +329,9 @@ function ExpenseDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{expense ? "Save" : "Add expense"}</Button>
+            <Button type="submit">
+              {expense ? "Save" : isCredit ? "Add credit" : "Add expense"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

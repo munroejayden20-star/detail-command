@@ -538,6 +538,7 @@ export function expenseToRow(e: Expense, userId: string) {
     category: e.category,
     amount: e.amount,
     notes: e.notes ?? null,
+    kind: e.kind ?? "expense",
   };
 }
 
@@ -547,6 +548,7 @@ export function expensePatchToRow(p: Partial<Expense>): Record<string, unknown> 
   if (p.category !== undefined) out.category = p.category;
   if (p.amount !== undefined) out.amount = p.amount;
   if (p.notes !== undefined) out.notes = p.notes ?? null;
+  if (p.kind !== undefined) out.kind = p.kind;
   return out;
 }
 
@@ -557,6 +559,7 @@ export function expenseFromRow(r: any): Expense {
     category: (r.category ?? "misc") as ExpenseCategory,
     amount: Number(r.amount ?? 0),
     notes: r.notes ?? undefined,
+    kind: r.kind === "credit" ? "credit" : "expense",
   };
 }
 

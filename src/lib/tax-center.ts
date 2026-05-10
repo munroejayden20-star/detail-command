@@ -138,8 +138,12 @@ export function aggregate(
   const outstandingCents = inPeriodReceipts.reduce((s, r) => s + r.remainingBalanceCents, 0);
   const salesTaxCollectedCents = inPeriodReceipts.reduce((s, r) => s + r.taxCents, 0);
   // Expenses are stored in dollars (legacy). Convert to cents.
+  // Credits (gift cards, refunds, rebates) subtract from total spend.
   const totalExpensesCents = Math.round(
-    inPeriodExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100
+    inPeriodExpenses.reduce((s, e) => {
+      const signed = e.kind === "credit" ? -(Number(e.amount) || 0) : (Number(e.amount) || 0);
+      return s + signed;
+    }, 0) * 100
   );
   const mileage = aggregateMileage(mileageEntries, period);
   const mileageDeductionCents = mileage.deductionCents;

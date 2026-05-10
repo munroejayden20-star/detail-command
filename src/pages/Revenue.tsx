@@ -40,7 +40,7 @@ import { Stat } from "@/components/ui/stat";
 import { SectionHeader } from "@/components/ui/section-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useStore } from "@/store/store";
-import { appointmentRevenue } from "@/lib/selectors";
+import { appointmentRevenue, signedExpenseAmount } from "@/lib/selectors";
 import { formatCurrency, cn } from "@/lib/utils";
 
 const CHART_COLORS = ["#1a5eef", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
@@ -90,7 +90,7 @@ export function RevenuePage() {
         : null;
 
     const avgJob = completed.length ? totalRevenue / completed.length : 0;
-    const totalExpenses = data.expenses.reduce((s, e) => s + e.amount, 0);
+    const totalExpenses = data.expenses.reduce((s, e) => s + signedExpenseAmount(e), 0);
     const netProfit = totalRevenue - totalExpenses;
 
     const activeCustomerIds = new Set(nonCanceled.map((a) => a.customerId));
@@ -150,7 +150,7 @@ export function RevenuePage() {
         .reduce((s, a) => s + appointmentRevenue(a), 0);
       const expenses = data.expenses
         .filter((e) => isWithinInterval(parseISO(e.date), { start, end }))
-        .reduce((s, e) => s + e.amount, 0);
+        .reduce((s, e) => s + signedExpenseAmount(e), 0);
       return {
         label: format(start, "MMM"),
         revenue,

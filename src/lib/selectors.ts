@@ -71,8 +71,14 @@ export function customerAppointmentCount(data: AppData, customerId: string): num
   return data.appointments.filter((a) => a.customerId === customerId).length;
 }
 
+/** Returns the signed contribution of an expense to net spend.
+ *  Credits (gift cards, refunds, rebates) subtract; regular expenses add. */
+export function signedExpenseAmount(e: { amount: number; kind?: "expense" | "credit" }): number {
+  return e.kind === "credit" ? -e.amount : e.amount;
+}
+
 export function totalExpenses(data: AppData): number {
-  return data.expenses.reduce((s, e) => s + e.amount, 0);
+  return data.expenses.reduce((s, e) => s + signedExpenseAmount(e), 0);
 }
 
 export function pendingFollowUps(data: AppData): number {

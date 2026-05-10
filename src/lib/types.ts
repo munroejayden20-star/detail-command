@@ -369,6 +369,8 @@ export interface Expense {
   category: ExpenseCategory;
   amount: number;
   notes?: string;
+  /** "credit" entries (gift cards, refunds, rebates) subtract from totals. */
+  kind?: "expense" | "credit";
 }
 
 export type ExpenseCategory =
