@@ -29,23 +29,26 @@ export function AppointmentRow({ appointment, compact, className }: AppointmentR
       <button
         onClick={() => setOpen(true)}
         className={cn(
-          "group relative flex w-full items-stretch gap-3 rounded-xl border bg-card p-3 text-left transition-all hover:shadow-soft hover:border-primary/30 ring-focus",
+          "group relative flex w-full items-stretch gap-3 overflow-hidden rounded-md border border-border/80 bg-card p-3 text-left",
+          "transition-[border-color,background-color,box-shadow] duration-fast",
+          "hover:border-primary/30 hover:bg-hover hover:shadow-soft",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           className
         )}
       >
         <div
           className={cn(
-            "w-1 shrink-0 rounded-full",
+            "w-[3px] shrink-0 rounded-full",
             `status-bar-${appointment.status.replace("_", "-")}`
           )}
         />
-        <div className="min-w-0 flex-1 space-y-1">
+        <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
+              <p className="truncate text-sm font-semibold leading-tight">
                 {customer?.name ?? "—"}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {vehicleStr(appointment.vehicle) || "Vehicle TBD"}
               </p>
             </div>
@@ -59,7 +62,7 @@ export function AppointmentRow({ appointment, compact, className }: AppointmentR
           )}
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 tabular-nums">
               <Clock className="h-3 w-3" />
               {formatBusinessDate(appointment.start)} ·{" "}
               {getAppointmentDisplayRange(appointment.start, appointment.end)}
@@ -70,7 +73,7 @@ export function AppointmentRow({ appointment, compact, className }: AppointmentR
                 <span className="truncate">{appointment.address}</span>
               </span>
             ) : null}
-            <span className="ml-auto font-semibold text-foreground">
+            <span className="ml-auto font-semibold text-foreground tabular-nums">
               {formatCurrency(appointment.finalPrice ?? appointment.estimatedPrice)}
             </span>
           </div>
@@ -114,12 +117,12 @@ function Tag({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
         tone === "positive" &&
-          "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200",
+          "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
         tone === "warn" &&
-          "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",
-        !tone && "bg-muted text-muted-foreground"
+          "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        !tone && "border-border/80 bg-muted/60 text-muted-foreground"
       )}
     >
       {icon}

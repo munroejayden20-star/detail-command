@@ -31,7 +31,7 @@ import {
   type ExpenseCategory,
 } from "@/lib/types";
 import { appointmentRevenue, totalExpenses, signedExpenseAmount } from "@/lib/selectors";
-import { formatCurrency, formatCurrencyExact } from "@/lib/utils";
+import { cn, formatCurrency, formatCurrencyExact } from "@/lib/utils";
 
 export function ExpensesPage() {
   const { data, commit } = useStore();
@@ -56,7 +56,7 @@ export function ExpensesPage() {
   }, [data.expenses]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SectionHeader
         title="Expenses"
         description="Track every dollar going out — products, gas, equipment, marketing."
@@ -87,16 +87,22 @@ export function ExpensesPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle>By category</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Net spend per category — credits subtract from the total
+          </p>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {EXPENSE_CATEGORIES.map((c) => (
-            <div key={c.value} className="rounded-lg border p-3">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div
+              key={c.value}
+              className="rounded-md border border-border/80 bg-card p-3 transition-colors duration-fast hover:bg-hover"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {c.label}
               </p>
-              <p className="mt-1 text-lg font-semibold">
+              <p className="mt-1.5 text-lg font-semibold tabular-nums tracking-tight">
                 {formatCurrency(byCat.get(c.value) ?? 0)}
               </p>
             </div>
@@ -105,10 +111,13 @@ export function ExpensesPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle>All expenses</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {data.expenses.length} {data.expenses.length === 1 ? "entry" : "entries"} · most recent first
+          </p>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-1.5">
           {data.expenses.length === 0 ? (
             <EmptyState
               title="No expenses logged yet"
@@ -128,25 +137,28 @@ export function ExpensesPage() {
                 return (
                   <div
                     key={e.id}
-                    className={`group flex items-center gap-3 rounded-lg border bg-card p-3 hover:border-primary/40 transition-colors ${
-                      isCredit ? "border-emerald-500/30" : ""
-                    }`}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-md border bg-card p-3",
+                      "transition-colors duration-fast hover:bg-hover",
+                      isCredit
+                        ? "border-emerald-500/25 hover:border-emerald-500/40"
+                        : "border-border/80 hover:border-border"
+                    )}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p
-                          className={`text-sm font-semibold ${
-                            isCredit ? "text-emerald-600 dark:text-emerald-400" : ""
-                          }`}
+                          className={cn(
+                            "text-sm font-semibold tabular-nums tracking-tight",
+                            isCredit && "text-emerald-600 dark:text-emerald-400"
+                          )}
                         >
                           {isCredit ? "− " : ""}
                           {formatCurrencyExact(e.amount)}
                         </p>
                         <Badge variant="outline">{cat?.label}</Badge>
                         {isCredit ? (
-                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
-                            Credit
-                          </Badge>
+                          <Badge variant="success">Credit</Badge>
                         ) : null}
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">

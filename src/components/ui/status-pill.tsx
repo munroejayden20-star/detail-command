@@ -12,7 +12,7 @@ export function StatusPill({ status, className, size = "md" }: StatusPillProps) 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-medium whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-full border font-medium whitespace-nowrap tracking-tight",
         def.tone,
         size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
         className
@@ -20,7 +20,7 @@ export function StatusPill({ status, className, size = "md" }: StatusPillProps) 
     >
       <span
         className={cn(
-          "h-1.5 w-1.5 rounded-full",
+          "h-1.5 w-1.5 shrink-0 rounded-full",
           `status-bar-${status.replace("_", "-")}`
         )}
       />

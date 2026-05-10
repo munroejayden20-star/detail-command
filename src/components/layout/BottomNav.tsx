@@ -74,7 +74,7 @@ export function BottomNav() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/90 backdrop-blur-md lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid grid-cols-5">
@@ -85,19 +85,40 @@ export function BottomNav() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors",
+                  "relative flex flex-col items-center justify-center gap-0.5 py-2.5",
+                  "text-[10px] font-medium tracking-tight transition-colors duration-fast",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )
               }
             >
-              <item.icon className="h-5 w-5" />
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  {/* Top accent bar on active */}
+                  {isActive ? (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary"
+                    />
+                  ) : null}
+                  <item.icon
+                    className={cn(
+                      "h-5 w-5 transition-transform duration-fast",
+                      isActive ? "scale-110" : "scale-100"
+                    )}
+                  />
+                  {item.label}
+                </>
+              )}
             </NavLink>
           ))}
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium text-muted-foreground"
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 py-2.5",
+              "text-[10px] font-medium tracking-tight",
+              moreOpen ? "text-primary" : "text-muted-foreground"
+            )}
           >
             <MoreHorizontal className="h-5 w-5" />
             More
@@ -110,18 +131,26 @@ export function BottomNav() {
         type="button"
         onClick={() => setApptOpen(true)}
         aria-label="New appointment"
-        className="fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lift active:scale-95 transition-transform lg:hidden"
+        className={[
+          "fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full",
+          "bg-primary text-primary-foreground shadow-lift",
+          "active:scale-95 transition-transform duration-fast lg:hidden",
+        ].join(" ")}
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.5rem)" }}
       >
         <Plus className="h-6 w-6" />
       </button>
 
-      {/* Floating search button — mirrors the FAB on the left for one-tap access */}
+      {/* Floating search button — mirrors the FAB on the left */}
       <button
         type="button"
         onClick={openCommandPalette}
         aria-label="Search"
-        className="fixed left-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-card text-foreground border border-border shadow-lift active:scale-95 transition-transform lg:hidden"
+        className={[
+          "fixed left-4 z-30 flex h-12 w-12 items-center justify-center rounded-full",
+          "bg-card text-foreground border border-border shadow-lift",
+          "active:scale-95 transition-transform duration-fast lg:hidden",
+        ].join(" ")}
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.75rem)" }}
       >
         <Search className="h-5 w-5" />
@@ -131,21 +160,26 @@ export function BottomNav() {
       {/* "More" sheet */}
       {moreOpen ? (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden animate-fade-in"
           onClick={() => setMoreOpen(false)}
         >
           <div
             ref={sheetRef}
-            className="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-border bg-card p-4 shadow-lift animate-slide-up"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+            className={cn(
+              "absolute inset-x-0 bottom-0 rounded-t-xl border-t border-border bg-card",
+              "p-4 shadow-elevated animate-slide-up"
+            )}
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold">More</p>
+              <p className="text-sm font-semibold tracking-tight">More</p>
               <button
                 onClick={() => setMoreOpen(false)}
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent"
+                className="rounded-md p-1 text-muted-foreground hover:bg-accent transition-colors"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -159,7 +193,11 @@ export function BottomNav() {
                     setMoreOpen(false);
                     navigate(item.to);
                   }}
-                  className="flex flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center text-[11px] font-medium hover:bg-accent transition-colors"
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-md border border-border/80 bg-card",
+                    "p-3 text-center text-[11px] font-medium",
+                    "transition-colors duration-fast hover:bg-hover hover:border-border"
+                  )}
                 >
                   <item.icon className="h-5 w-5 text-muted-foreground" />
                   {item.label}

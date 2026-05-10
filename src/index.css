@@ -3,49 +3,97 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Detail Command — design tokens.
+   *
+   * Premium automotive direction: charcoal/black with controlled red accents.
+   * Layered surfaces (background → card → elevated → hover) so the UI has
+   * depth without resorting to heavy shadows.
+   */
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Surfaces — light mode is near-white with subtle warm gray, no blue tint */
+    --background: 0 0% 99%;
+    --foreground: 220 14% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 14% 11%;
+    --elevated: 0 0% 98%;
+    --hover: 220 14% 96%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 94%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.875rem;
+    --popover-foreground: 220 14% 11%;
+
+    /* Primary — confident automotive red */
+    --primary: 0 72% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary / muted / accent — neutral grays for hierarchy */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 14% 14%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 42%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 14% 11%;
+
+    /* Semantics */
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 70% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 48%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Borders / focus */
+    --border: 220 14% 91%;
+    --input: 220 14% 89%;
+    --ring: 0 72% 50%;
+
+    --radius: 0.75rem;
+
+    /* Shadows — layered and atmospheric, not flat drop-shadows */
+    --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+    --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 1px 3px 0 rgb(15 23 42 / 0.04);
+    --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.04);
+    --shadow-lg: 0 12px 24px -8px rgb(15 23 42 / 0.12), 0 4px 8px -4px rgb(15 23 42 / 0.06);
+    --shadow-xl: 0 25px 50px -12px rgb(15 23 42 / 0.18);
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 14%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 217 91% 60%;
+    /* Layered charcoal — never plain black, gives depth in the field */
+    --background: 220 13% 7%;
+    --foreground: 0 0% 96%;
+    --card: 220 13% 10%;
+    --card-foreground: 0 0% 96%;
+    --elevated: 220 13% 12%;
+    --hover: 220 13% 15%;
+    --popover: 220 13% 10%;
+    --popover-foreground: 0 0% 96%;
+
+    /* Primary — slightly brighter red for dark contrast */
+    --primary: 0 75% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 13% 14%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 220 13% 13%;
+    --muted-foreground: 220 9% 64%;
+    --accent: 220 13% 16%;
+    --accent-foreground: 0 0% 96%;
+
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 60% 48%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 56%;
+    --warning-foreground: 220 13% 7%;
+
+    --border: 220 13% 17%;
+    --input: 220 13% 19%;
+    --ring: 0 75% 58%;
+
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 12px 24px -8px rgb(0 0 0 / 0.6), 0 4px 8px -4px rgb(0 0 0 / 0.4);
+    --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.7);
   }
 
   * {
@@ -57,8 +105,42 @@
     @apply h-full;
   }
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "cv11" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Atmospheric backdrop — subtle radial wash so the field doesn't read as flat
+     gray. Performance-cheap (one fixed gradient, no animation). */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(
+        ellipse 80% 50% at 50% -20%,
+        hsl(var(--primary) / 0.06),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 60% 50% at 100% 100%,
+        hsl(var(--primary) / 0.03),
+        transparent 60%
+      );
+  }
+
+  /* Stronger focus ring — accessible and looks intentional */
+  :focus-visible {
+    outline: none;
+  }
+
+  /* Selection styled to brand */
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
   }
 }
 
@@ -75,54 +157,86 @@
     background: hsl(var(--border));
     border-radius: 999px;
   }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  /* Glass — used on sidebar/topbar for subtle frosted depth */
   .glass {
     background: linear-gradient(
       180deg,
       hsl(var(--card) / 0.85),
       hsl(var(--card) / 0.7)
     );
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
   }
+
+  /* Surface utilities — explicit layered backgrounds */
+  .surface-elevated {
+    background: hsl(var(--elevated));
+  }
+  .surface-hover {
+    background: hsl(var(--hover));
+  }
+
+  /* Press-feedback — used on buttons + tap-targets */
   .pressable {
     @apply transition-all duration-150 active:scale-[0.98];
   }
+
+  /* Focus ring — single source of truth */
   .ring-focus {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
+
+  /* Subtle gradient overlay — used on premium cards */
+  .gradient-card {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--card)),
+      hsl(var(--card) / 0.85)
+    );
+  }
+
+  /* Hairline divider that respects color mode */
+  .hairline {
+    border-color: hsl(var(--border));
+  }
 }
 
-/* Status pill colors */
-.status-pending-approval { @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200; }
-.status-inquiry { @apply bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200; }
-.status-scheduled { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200; }
-.status-confirmed { @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200; }
-.status-in-progress { @apply bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200; }
-.status-completed { @apply bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200; }
-.status-follow-up { @apply bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200; }
-.status-canceled { @apply bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200; }
+/* Status pill colors — refined palette, less saturated, more sophisticated */
+.status-pending-approval { @apply bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20; }
+.status-inquiry { @apply bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20; }
+.status-scheduled { @apply bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/20; }
+.status-confirmed { @apply bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20; }
+.status-in-progress { @apply bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20; }
+.status-completed { @apply bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/20; }
+.status-follow-up { @apply bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/20; }
+.status-canceled { @apply bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/20; }
 
-.status-bar-pending-approval { @apply bg-yellow-400; }
+/* Status bars — used in row indicators */
+.status-bar-pending-approval { @apply bg-amber-500; }
 .status-bar-inquiry { @apply bg-slate-400; }
-.status-bar-scheduled { @apply bg-blue-500; }
+.status-bar-scheduled { @apply bg-sky-500; }
 .status-bar-confirmed { @apply bg-emerald-500; }
 .status-bar-in-progress { @apply bg-amber-500; }
 .status-bar-completed { @apply bg-violet-500; }
 .status-bar-follow-up { @apply bg-orange-500; }
 .status-bar-canceled { @apply bg-rose-500; }
 
-/* ---------- Phase 5 mobile-portrait polish ---------- */
+/* Mobile-portrait polish */
 
-/* Global horizontal-overflow guard. A wide table or absolute element
-   shouldn't be able to make the whole document scroll sideways. */
+/* Global horizontal-overflow guard. */
 html, body, #root {
   overflow-x: hidden;
 }
 
 /* iOS auto-zooms inputs whose font-size is < 16px. Force 16px on small
-   screens so the camera-mounted phone never zooms when you tap a field. */
+   screens so the field-mounted phone never zooms when you tap a field. */
 @media (max-width: 640px) {
   input[type="text"],
   input[type="email"],
@@ -143,4 +257,16 @@ html, body, #root {
 /* Prevent rubber-band scroll behind sticky headers on iOS */
 html {
   overscroll-behavior-y: contain;
+}
+
+/* Respect reduced motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

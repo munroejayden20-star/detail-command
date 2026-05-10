@@ -9,24 +9,42 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  className,
+}: EmptyStateProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/30 px-6 py-10 text-center",
+        "relative flex flex-col items-center justify-center overflow-hidden",
+        "rounded-lg border border-dashed border-border/70",
+        "bg-gradient-to-b from-muted/40 to-transparent",
+        "px-6 py-12 text-center",
         className
       )}
     >
       {icon ? (
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-background text-muted-foreground shadow-soft">
+        <div
+          className={cn(
+            "mb-4 flex h-12 w-12 items-center justify-center rounded-lg",
+            "border border-border/70 bg-card text-muted-foreground shadow-soft"
+          )}
+        >
           {icon}
         </div>
       ) : null}
-      <h4 className="text-sm font-semibold">{title}</h4>
+      <h4 className="text-sm font-semibold leading-tight tracking-tight">
+        {title}
+      </h4>
       {description ? (
-        <p className="mt-1 text-sm text-muted-foreground max-w-sm">{description}</p>
+        <p className="mt-1.5 max-w-sm text-sm text-muted-foreground leading-relaxed">
+          {description}
+        </p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
 }

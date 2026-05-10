@@ -82,17 +82,20 @@ export function DashboardPage() {
     data.tasks.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Hero */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             {format(today, "EEEE")} · {format(today, "MMMM d")}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {greeting()}{owner ? `, ${owner}` : ""}
+          <h1 className="mt-1.5 text-3xl font-semibold leading-tight tracking-tight">
+            {greeting()}
+            {owner ? (
+              <span className="text-foreground/70">, {owner}</span>
+            ) : null}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
             {isFirstRun
               ? "Your command center is ready. Add your first appointment, customer, or task to get rolling."
               : todays.length === 0
@@ -102,18 +105,18 @@ export function DashboardPage() {
               : `${todays.length} jobs on the schedule today.`}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 shrink-0">
           <Button onClick={() => setAppOpen(true)}>
             <Plus className="h-4 w-4" />
             Add Appointment
           </Button>
           <Button variant="outline" onClick={() => setCustOpen(true)}>
             <Plus className="h-4 w-4" />
-            Add Customer
+            Customer
           </Button>
           <Button variant="outline" onClick={() => setTaskOpen(true)}>
             <Plus className="h-4 w-4" />
-            Add To-Do
+            To-Do
           </Button>
         </div>
       </div>
@@ -168,19 +171,19 @@ export function DashboardPage() {
       <ReviewsDueWidget />
 
       {/* Two-column grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         {/* Today's appointments */}
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <div className="space-y-0.5">
               <CardTitle>Today's appointments</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                {format(today, "EEEE, MMMM d")}
+              <p className="text-xs text-muted-foreground">
+                {format(today, "EEEE, MMMM d")} · {todays.length} scheduled
               </p>
             </div>
             <Button asChild size="sm" variant="ghost">
               <Link to="/calendar" className="gap-1">
-                Open calendar <ArrowRight className="h-3.5 w-3.5" />
+                Calendar <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
           </CardHeader>
@@ -189,7 +192,7 @@ export function DashboardPage() {
               <EmptyState
                 icon={<CalendarDays className="h-5 w-5" />}
                 title="No appointments yet today"
-                description="Add your first appointment to get started."
+                description="Add your first appointment to get started, or use a quiet day to chase leads."
                 action={
                   <Button size="sm" onClick={() => setAppOpen(true)}>
                     <Plus className="h-4 w-4" /> Add appointment
@@ -204,8 +207,11 @@ export function DashboardPage() {
 
         {/* Upcoming */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Upcoming</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Next {upcoming.length} on the books
+            </p>
           </CardHeader>
           <CardContent className="space-y-2">
             {upcoming.length === 0 ? (
@@ -227,11 +233,16 @@ export function DashboardPage() {
       </div>
 
       {/* Confirm + Tasks row */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Needs confirmation</CardTitle>
-            <Badge variant={unconfirmed.length ? "soft" : "secondary"}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <div className="space-y-0.5">
+              <CardTitle>Needs confirmation</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Jobs within ~48 hours that still need a yes
+              </p>
+            </div>
+            <Badge variant={unconfirmed.length ? "warning" : "secondary"}>
               {unconfirmed.length} job{unconfirmed.length === 1 ? "" : "s"}
             </Badge>
           </CardHeader>
@@ -277,11 +288,17 @@ export function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Today's tasks</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <div className="space-y-0.5">
+              <CardTitle>Today's tasks</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {openTasks.length} open ·{" "}
+                {todayTasks.length} due today
+              </p>
+            </div>
             <Button asChild size="sm" variant="ghost">
               <Link to="/tasks" className="gap-1">
-                All tasks <ArrowRight className="h-3.5 w-3.5" />
+                All <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
           </CardHeader>
@@ -293,9 +310,12 @@ export function DashboardPage() {
                 description="No open tasks right now."
               />
             ) : (
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {openTasks.slice(0, 6).map((t) => (
-                  <li key={t.id} className="flex items-start gap-2 rounded-md p-2 hover:bg-accent">
+                  <li
+                    key={t.id}
+                    className="group flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-hover"
+                  >
                     <Checkbox
                       checked={t.completed}
                       onCheckedChange={() =>
@@ -308,12 +328,19 @@ export function DashboardPage() {
                       className="mt-0.5"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className={cn("text-sm", t.completed && "line-through text-muted-foreground")}>
+                      <p
+                        className={cn(
+                          "text-sm leading-tight",
+                          t.completed && "line-through text-muted-foreground"
+                        )}
+                      >
                         {t.title}
                       </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {t.priority === "high" ? "🔴 " : t.priority === "medium" ? "🟡 " : "⚪️ "}
-                        {t.dueDate ? format(parseISO(t.dueDate), "MMM d") : "no due date"}
+                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <PriorityDot priority={t.priority} />
+                        {t.dueDate
+                          ? format(parseISO(t.dueDate), "MMM d")
+                          : "no due date"}
                       </p>
                     </div>
                   </li>
@@ -326,16 +353,16 @@ export function DashboardPage() {
 
       {/* 7-day outlook */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <div className="space-y-0.5">
             <CardTitle>Next 7 days</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground">
               How the week is filling up
             </p>
           </div>
           <Button asChild variant="ghost" size="sm">
             <Link to="/calendar" className="gap-1">
-              Open calendar <ArrowRight className="h-3.5 w-3.5" />
+              Calendar <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
         </CardHeader>
@@ -362,6 +389,28 @@ export function DashboardPage() {
   );
 }
 
+function PriorityDot({
+  priority,
+}: {
+  priority?: "high" | "medium" | "low";
+}) {
+  const color =
+    priority === "high"
+      ? "bg-rose-500"
+      : priority === "medium"
+      ? "bg-amber-500"
+      : "bg-muted-foreground/30";
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+        color
+      )}
+    />
+  );
+}
+
 function ConfirmRow({
   customerName,
   start,
@@ -375,20 +424,27 @@ function ConfirmRow({
   apptId: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3">
+    <div
+      className={cn(
+        "group flex items-center justify-between gap-3 rounded-md border border-border/80 bg-card p-3",
+        "transition-colors duration-fast hover:border-border hover:bg-hover"
+      )}
+    >
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold">{customerName}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="truncate text-sm font-semibold leading-tight">
+          {customerName}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {formatBusinessDateTime(start)}
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 shrink-0">
         <Button size="sm" variant="outline" onClick={onReachOut}>
           <MessageSquare className="h-3.5 w-3.5" />
-          Reach out
+          <span className="hidden sm:inline">Reach out</span>
         </Button>
         <Button size="sm" onClick={onConfirm}>
-          Mark confirmed
+          Confirm
         </Button>
       </div>
     </div>
@@ -417,23 +473,28 @@ function SevenDayOutlook() {
         const filled = appts.length;
         const pct = Math.min(100, (filled / max) * 100);
         const isToday = i === 0;
+        const isFull = filled >= max;
         return (
           <div
             key={date.toISOString()}
             className={cn(
-              "rounded-lg border p-3",
-              isToday && "border-primary/40 bg-primary/5"
+              "rounded-md border p-3 transition-colors duration-fast",
+              isToday
+                ? "border-primary/40 bg-primary/5"
+                : "border-border/80 bg-card hover:bg-hover"
             )}
           >
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               {isToday ? "Today" : format(date, "EEE")}
             </p>
-            <p className="text-sm font-semibold">{format(date, "MMM d")}</p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+            <p className="text-sm font-semibold leading-tight tabular-nums">
+              {format(date, "MMM d")}
+            </p>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted/60">
               <div
                 className={cn(
-                  "h-full rounded-full transition-all",
-                  filled >= max
+                  "h-full rounded-full transition-all duration-relaxed ease-smooth",
+                  isFull
                     ? "bg-emerald-500"
                     : filled > 0
                     ? "bg-primary"
@@ -442,12 +503,17 @@ function SevenDayOutlook() {
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
+            <p className="mt-1.5 text-[11px] text-muted-foreground tabular-nums">
               {filled}/{max} jobs
             </p>
             {revenue > 0 ? (
-              <p className="mt-0.5 inline-flex items-center text-[11px] font-medium">
-                <TrendingUp className="mr-0.5 h-3 w-3" />
+              <p
+                className={cn(
+                  "mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums",
+                  isFull ? "text-emerald-600 dark:text-emerald-400" : "text-foreground/80"
+                )}
+              >
+                <TrendingUp className="h-3 w-3" />
                 {formatCurrency(revenue)}
               </p>
             ) : null}

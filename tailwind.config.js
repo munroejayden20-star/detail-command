@@ -29,6 +29,8 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        elevated: "hsl(var(--elevated))",
+        hover: "hsl(var(--hover))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -40,6 +42,14 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -57,27 +67,48 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Brand — refined neutral charcoal palette (was blue).
+        // Used for avatar gradients and other neutral-accent surfaces.
         brand: {
-          50: "#eef6ff",
-          100: "#d9eaff",
-          200: "#bcd9ff",
-          300: "#8dc1ff",
-          400: "#579dff",
-          500: "#2f7bff",
-          600: "#1a5eef",
-          700: "#1649d6",
-          800: "#173eac",
-          900: "#193a86",
+          50: "#f8fafc",
+          100: "#f1f5f9",
+          200: "#e2e8f0",
+          300: "#cbd5e1",
+          400: "#94a3b8",
+          500: "#475569",
+          600: "#334155",
+          700: "#1e293b",
+          800: "#0f172a",
+          900: "#020617",
         },
       },
       borderRadius: {
+        xl: "calc(var(--radius) + 4px)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        soft: "0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.06)",
-        lift: "0 10px 30px -12px rgba(15, 23, 42, 0.18)",
+        // Map to CSS-var-driven shadows for theme-aware elevation
+        xs: "var(--shadow-xs)",
+        soft: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lift: "var(--shadow-lg)",
+        elevated: "var(--shadow-xl)",
+        // Subtle inner glow used on focus / active states
+        "ring-primary": "0 0 0 3px hsl(var(--primary) / 0.18)",
+      },
+      transitionTimingFunction: {
+        // Premium easing — exits sharply, settles smoothly
+        smooth: "cubic-bezier(0.32, 0.72, 0, 1)",
+        // Snappy — for button presses and small interactions
+        snappy: "cubic-bezier(0.16, 1, 0.3, 1)",
+      },
+      transitionDuration: {
+        instant: "100ms",
+        fast: "150ms",
+        normal: "200ms",
+        relaxed: "300ms",
       },
       keyframes: {
         "fade-in": {
@@ -88,10 +119,20 @@ export default {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.96)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
-        "fade-in": "fade-in 0.2s ease-out",
-        "slide-up": "slide-up 0.25s ease-out",
+        "fade-in": "fade-in 0.2s cubic-bezier(0.32, 0.72, 0, 1)",
+        "slide-up": "slide-up 0.25s cubic-bezier(0.32, 0.72, 0, 1)",
+        "scale-in": "scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
+        shimmer: "shimmer 1.6s linear infinite",
       },
     },
   },
