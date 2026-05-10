@@ -97,33 +97,39 @@ function SettingsSection({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-accent/40 transition-colors lg:cursor-pointer"
+        className={cn(
+          "w-full flex items-center gap-3 px-5 py-4 text-left",
+          "transition-colors duration-fast hover:bg-hover lg:cursor-pointer",
+          "focus-visible:outline-none focus-visible:bg-hover"
+        )}
         aria-expanded={open}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-sm">{title}</p>
-            {badge ? (
-              <Badge variant="secondary" className="text-[10px]">{badge}</Badge>
-            ) : null}
+            <p className="font-semibold text-sm leading-tight tracking-tight">
+              {title}
+            </p>
+            {badge ? <Badge variant="secondary">{badge}</Badge> : null}
           </div>
           {description ? (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{description}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {description}
+            </p>
           ) : null}
         </div>
         <ChevronDown
           className={cn(
-            "h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200",
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-fast ease-smooth",
             open && "rotate-180"
           )}
         />
       </button>
       {open ? (
-        <div className="border-t border-border">
-          <div className="px-5 py-5 space-y-5">{children}</div>
+        <div className="border-t border-border/60">
+          <div className="space-y-5 px-5 py-5">{children}</div>
         </div>
       ) : null}
     </Card>
@@ -149,13 +155,20 @@ function ToggleRow({
   return (
     <label
       className={cn(
-        "flex items-center justify-between gap-4 rounded-lg border p-3 text-sm transition-colors",
-        disabled ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-accent/40"
+        "flex items-center justify-between gap-4 rounded-md border border-border/80 bg-card p-3 text-sm",
+        "transition-colors duration-fast",
+        disabled
+          ? "pointer-events-none opacity-50"
+          : "cursor-pointer hover:bg-hover hover:border-border"
       )}
     >
       <div className="min-w-0">
-        <p className="font-medium">{label}</p>
-        {hint ? <p className="text-xs text-muted-foreground mt-0.5">{hint}</p> : null}
+        <p className="font-medium leading-tight">{label}</p>
+        {hint ? (
+          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+            {hint}
+          </p>
+        ) : null}
       </div>
       <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </label>
@@ -178,11 +191,11 @@ function Field({
 }) {
   return (
     <div className={cn("space-y-1.5", col && "")}>
-      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        {label}
-      </Label>
+      <Label>{label}</Label>
       {children}
-      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
+      {hint ? (
+        <p className="text-[11px] text-muted-foreground leading-relaxed">{hint}</p>
+      ) : null}
     </div>
   );
 }
@@ -209,11 +222,13 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="space-y-5 max-w-2xl mx-auto">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">
+      <div className="space-y-1.5">
+        <h1 className="text-2xl font-semibold leading-tight tracking-tight">
+          Settings
+        </h1>
+        <p className="text-sm text-muted-foreground leading-relaxed">
           Manage your business profile, scheduling, defaults, and app preferences.
         </p>
       </div>

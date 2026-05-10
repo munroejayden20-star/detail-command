@@ -8,11 +8,11 @@ import {
   PiggyBank,
   Receipt as ReceiptIcon,
   Calculator,
-  FileBarChart2,
   Calendar as CalendarIcon,
   Car,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionHeader } from "@/components/ui/section-header";
 import {
   Select,
   SelectContent,
@@ -68,51 +68,46 @@ export function TaxCenterPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <FileBarChart2 className="h-6 w-6 text-primary" /> Tax Center
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {periodRangeLabel}
-            {data.settings.taxBusinessState ? ` · ${data.settings.taxBusinessState}` : ""}
-          </p>
-        </div>
-      </div>
-
-      {/* Period filter */}
-      <div className="flex flex-wrap items-center gap-2">
-        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-        <Select value={periodKey} onValueChange={(v) => setPeriodKey(v as TaxPeriodKey)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="this_week">This week</SelectItem>
-            <SelectItem value="this_month">This month</SelectItem>
-            <SelectItem value="this_quarter">This quarter</SelectItem>
-            <SelectItem value="this_year">This year</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
-            <SelectItem value="custom">Custom range</SelectItem>
-          </SelectContent>
-        </Select>
-        {periodKey === "custom" ? (
-          <>
-            <Input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="w-auto"
-            />
-            <Input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="w-auto"
-            />
-          </>
-        ) : null}
-      </div>
+      <SectionHeader
+        title="Tax Center"
+        description={`${periodRangeLabel}${
+          data.settings.taxBusinessState ? ` · ${data.settings.taxBusinessState}` : ""
+        }`}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <Select value={periodKey} onValueChange={(v) => setPeriodKey(v as TaxPeriodKey)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this_week">This week</SelectItem>
+                <SelectItem value="this_month">This month</SelectItem>
+                <SelectItem value="this_quarter">This quarter</SelectItem>
+                <SelectItem value="this_year">This year</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="custom">Custom range</SelectItem>
+              </SelectContent>
+            </Select>
+            {periodKey === "custom" ? (
+              <>
+                <Input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="w-auto"
+                />
+                <Input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="w-auto"
+                />
+              </>
+            ) : null}
+          </div>
+        }
+      />
 
       {/* Hero stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -234,16 +229,45 @@ function StatCard({
       : tone === "primary"
       ? "text-primary"
       : "";
+  const iconBg =
+    tone === "emerald"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      : tone === "rose"
+      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+      : tone === "amber"
+      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+      : tone === "primary"
+      ? "bg-primary/10 text-primary"
+      : "bg-muted text-muted-foreground";
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Icon className="h-3.5 w-3.5" />
-          <p className="text-[11px] uppercase tracking-wider">{label}</p>
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-lg border border-border/80 bg-card p-5 shadow-soft",
+        "transition-[box-shadow,border-color] duration-normal ease-smooth",
+        "hover:shadow-md hover:border-border"
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            {label}
+          </p>
+          <p
+            className={cn(
+              "text-[26px] font-semibold leading-none tracking-tight tabular-nums",
+              toneClass
+            )}
+          >
+            {value}
+          </p>
         </div>
-        <p className={cn("mt-1 text-2xl font-semibold tracking-tight", toneClass)}>{value}</p>
-        {hint ? <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p> : null}
-      </CardContent>
-    </Card>
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", iconBg)}>
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      {hint ? (
+        <p className="mt-3 text-xs text-muted-foreground tabular-nums">{hint}</p>
+      ) : null}
+    </div>
   );
 }

@@ -43,6 +43,7 @@ import {
   type TaxPeriodKey,
 } from "@/lib/tax-center";
 import { formatCents } from "@/lib/receipts";
+import { cn } from "@/lib/utils";
 
 type ScopeFilter = "all" | "business" | "personal";
 
@@ -96,38 +97,36 @@ export function MileagePage() {
       : "All time";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SectionHeader
         title="Mileage"
-        description="Log business and personal trips. Business miles are auto-totaled and deducted in the Tax Center."
+        description={periodRangeLabel}
         actions={
-          <Button
-            onClick={() => {
-              setEditing(undefined);
-              setOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Log trip
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={periodKey} onValueChange={(v) => setPeriodKey(v as TaxPeriodKey)}>
+              <SelectTrigger className="w-[160px]">
+                <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this_week">This week</SelectItem>
+                <SelectItem value="this_month">This month</SelectItem>
+                <SelectItem value="this_quarter">This quarter</SelectItem>
+                <SelectItem value="this_year">This year</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => {
+                setEditing(undefined);
+                setOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Log trip
+            </Button>
+          </div>
         }
       />
-
-      <div className="flex flex-wrap items-center gap-2">
-        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-        <Select value={periodKey} onValueChange={(v) => setPeriodKey(v as TaxPeriodKey)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="this_week">This week</SelectItem>
-            <SelectItem value="this_month">This month</SelectItem>
-            <SelectItem value="this_quarter">This quarter</SelectItem>
-            <SelectItem value="this_year">This year</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-xs text-muted-foreground">{periodRangeLabel}</span>
-      </div>
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
         <Stat
@@ -150,20 +149,19 @@ export function MileagePage() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Filter
-        </span>
+      <div className="flex flex-wrap items-center gap-1.5">
         {(["all", "business", "personal"] as ScopeFilter[]).map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => setScope(s)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium tracking-tight",
+              "transition-[border-color,background-color,color] duration-fast",
               scope === s
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-accent"
-            }`}
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/80 bg-card text-muted-foreground hover:border-border hover:bg-hover hover:text-foreground"
+            )}
           >
             {s === "all" ? "All" : s === "business" ? "Business" : "Personal"}
           </button>
@@ -195,14 +193,18 @@ export function MileagePage() {
             visible.map((m) => (
               <div
                 key={m.id}
-                className="group flex items-center gap-3 rounded-lg border bg-card p-3 hover:border-primary/40 transition-colors"
+                className={cn(
+                  "group flex items-center gap-3 rounded-md border border-border/80 bg-card p-3",
+                  "transition-[border-color,background-color] duration-fast hover:border-border hover:bg-hover"
+                )}
               >
                 <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
                     m.isBusiness
                       ? "bg-primary/10 text-primary"
                       : "bg-muted text-muted-foreground"
-                  }`}
+                  )}
                 >
                   {m.isBusiness ? (
                     <Briefcase className="h-4 w-4" />
@@ -212,12 +214,14 @@ export function MileagePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold">{m.miles.toFixed(1)} mi</p>
-                    <Badge variant={m.isBusiness ? "default" : "outline"}>
+                    <p className="text-sm font-semibold tabular-nums">
+                      {m.miles.toFixed(1)} mi
+                    </p>
+                    <Badge variant={m.isBusiness ? "soft" : "outline"}>
                       {m.isBusiness ? "Business" : "Personal"}
                     </Badge>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground truncate">
+                  <p className="mt-0.5 text-xs text-muted-foreground truncate tabular-nums">
                     {format(parseISO(m.entryDate), "MMM d, yyyy")}
                     {m.startLocation || m.destination
                       ? ` · ${[m.startLocation, m.destination].filter(Boolean).join(" → ")}`

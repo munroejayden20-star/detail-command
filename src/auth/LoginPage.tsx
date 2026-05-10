@@ -51,30 +51,42 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-muted/30 px-4 py-8">
+    <div className="relative min-h-screen w-full px-4 py-8">
+      {/* Atmospheric backdrop layered on top of the body's radial gradient */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 50% at 50% 0%, hsl(var(--primary) / 0.08), transparent 60%)",
+        }}
+      />
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center">
         <div className="mb-6 flex items-center gap-3">
-          <img src="/logo.svg" alt="Detail Command" className="h-11 w-11 rounded-xl shadow-soft" />
+          <img
+            src="/logo.svg"
+            alt="Detail Command"
+            className="h-11 w-11 rounded-md object-cover ring-1 ring-border/60 shadow-soft"
+          />
           <div>
             <p className="text-sm font-semibold tracking-tight">Detail Command</p>
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Mobile detailing hub
             </p>
           </div>
         </div>
 
-        <Card>
+        <Card className="shadow-elevated">
           <CardContent className="p-6">
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-2xl font-semibold leading-tight tracking-tight">
               {mode === "signin" && "Admin sign in"}
               {mode === "magic" && "Sign in with email"}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Private admin access only. New accounts cannot be created from
-              this page.
+            <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+              Private admin access only. New accounts cannot be created from this page.
             </p>
 
-            <form onSubmit={onSubmit} className="mt-5 space-y-4">
+            <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -105,17 +117,17 @@ export function LoginPage() {
               ) : null}
 
               {error ? (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
                 </div>
               ) : null}
               {info ? (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200">
+                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
                   {info}
                 </div>
               ) : null}
 
-              <Button type="submit" className="w-full" disabled={busy}>
+              <Button type="submit" size="lg" className="w-full" disabled={busy}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {mode === "signin" && "Sign in"}
                 {mode === "magic" && "Send magic link"}
@@ -136,7 +148,7 @@ export function LoginPage() {
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Looking to book a detail?{" "}
-          <a href="/book" className="font-medium text-primary underline">
+          <a href="/book" className="font-medium text-primary underline-offset-2 hover:underline">
             Visit the booking page
           </a>
           .
@@ -160,10 +172,11 @@ function ModeTab({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md border px-2 py-1.5 font-medium transition-colors",
+        "rounded-md border px-2 py-1.5 font-medium",
+        "transition-[border-color,background-color,color] duration-fast",
         active
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-card text-muted-foreground hover:bg-accent"
+          ? "border-primary/40 bg-primary/10 text-primary"
+          : "border-border/80 bg-card text-muted-foreground hover:border-border hover:bg-hover hover:text-foreground"
       )}
     >
       {children}
