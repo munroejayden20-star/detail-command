@@ -34,6 +34,7 @@ const PublicReceiptPage = lazy(() => import("@/pages/PublicReceipt").then((m) =>
 const TaxCenterPage = lazy(() => import("@/pages/TaxCenter").then((m) => ({ default: m.TaxCenterPage })));
 const MileagePage = lazy(() => import("@/pages/Mileage").then((m) => ({ default: m.MileagePage })));
 const WorkPage = lazy(() => import("@/pages/Work").then((m) => ({ default: m.WorkPage })));
+const TemplatesPage = lazy(() => import("@/pages/Templates").then((m) => ({ default: m.TemplatesPage })));
 
 function PageFallback() {
   return (
@@ -135,8 +136,8 @@ export default function App() {
           <Route path="/services" element={lazyRoute(<ServicesPage />)} />
           <Route path="/revenue" element={lazyRoute(<RevenuePage />)} />
           <Route path="/expenses" element={lazyRoute(<ExpensesPage />)} />
-          {/* /templates and /startup removed — redirecting to home */}
-          <Route path="/templates" element={<Navigate to="/" replace />} />
+          <Route path="/templates" element={lazyRoute(<TemplatesPage />)} />
+          {/* /startup removed — redirecting to home */}
           <Route path="/startup" element={<Navigate to="/" replace />} />
           <Route path="/checklists" element={lazyRoute(<ChecklistsPage />)} />
           <Route path="/calculator" element={lazyRoute(<CalculatorPage />)} />

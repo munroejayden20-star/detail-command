@@ -17,6 +17,7 @@ import {
   Image as ImageIcon,
   Hammer,
   Car,
+  MessageSquare,
   Settings as SettingsIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const NAV: NavItem[] = [
   { to: "/calculator", label: "Quote Calculator", icon: Calculator },
   { to: "/photos", label: "Photos", icon: ImageIcon },
   { to: "/checklists", label: "Checklists", icon: ListChecks },
+  { to: "/templates", label: "Templates", icon: MessageSquare },
   { to: "/revenue", label: "Business Stats", icon: BarChart2 },
   { to: "/receipts", label: "Receipts", icon: ReceiptText },
   { to: "/tax-center", label: "Tax Center", icon: FileBarChart2 },
