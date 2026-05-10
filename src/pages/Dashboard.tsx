@@ -50,6 +50,11 @@ export function DashboardPage() {
   const [custOpen, setCustOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
   const [reachContact, setReachContact] = useState<ReachOutContact | null>(null);
+  const [reachAppointmentId, setReachAppointmentId] = useState<string | null>(null);
+  const reachAppointment = useMemo(
+    () => data.appointments.find((a) => a.id === reachAppointmentId) ?? null,
+    [data.appointments, reachAppointmentId]
+  );
 
   const today = useMemo(() => new Date(), []);
   const todays = appointmentsOnDay(data, today);
@@ -152,7 +157,12 @@ export function DashboardPage() {
       </div>
 
       {/* Booking requests */}
-      <BookingRequests onReachOut={(contact) => setReachContact(contact)} />
+      <BookingRequests
+        onReachOut={(contact, appt) => {
+          setReachContact(contact);
+          setReachAppointmentId(appt.id);
+        }}
+      />
 
       {/* Reviews due (Phase F) */}
       <ReviewsDueWidget />
@@ -248,17 +258,17 @@ export function DashboardPage() {
                         patch: { status: "confirmed", reminderSent: true },
                       })
                     }
-                    onReachOut={() =>
-                      cust
-                        ? setReachContact({
-                            name: cust.name,
-                            phone: cust.phone,
-                            email: cust.email ?? null,
-                            address: cust.address ?? null,
-                            vehicle: vehicleStr(a.vehicle),
-                          })
-                        : null
-                    }
+                    onReachOut={() => {
+                      if (!cust) return;
+                      setReachContact({
+                        name: cust.name,
+                        phone: cust.phone,
+                        email: cust.email ?? null,
+                        address: cust.address ?? null,
+                        vehicle: vehicleStr(a.vehicle),
+                      });
+                      setReachAppointmentId(a.id);
+                    }}
                   />
                 );
               })
@@ -339,8 +349,14 @@ export function DashboardPage() {
       <TaskQuickAdd open={taskOpen} onOpenChange={setTaskOpen} />
       <ReachOutDialog
         open={!!reachContact}
-        onOpenChange={(v) => !v && setReachContact(null)}
+        onOpenChange={(v) => {
+          if (!v) {
+            setReachContact(null);
+            setReachAppointmentId(null);
+          }
+        }}
         contact={reachContact ?? { name: "" }}
+        appointment={reachAppointment}
       />
     </div>
   );

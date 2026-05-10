@@ -20,7 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/store/store";
 import { phoneFmt } from "@/lib/utils";
-import type { Template } from "@/lib/types";
+import type { Appointment, Template } from "@/lib/types";
+import { renderTemplate } from "@/lib/messageTemplate";
 
 export interface ReachOutContact {
   name: string;
@@ -37,6 +38,10 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   contact: ReachOutContact;
+  /** Optional appointment for template placeholder substitution
+   *  ({date}, {time}, {service}, etc.). Pass when the reach-out is about a
+   *  specific booking — e.g. from the Booking Requests card. */
+  appointment?: Appointment | null;
 }
 
 const isMobile =
@@ -56,7 +61,7 @@ async function copy(value: string, label: string) {
   }
 }
 
-export function ReachOutDialog({ open, onOpenChange, contact }: Props) {
+export function ReachOutDialog({ open, onOpenChange, contact, appointment }: Props) {
   const { data } = useStore();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
@@ -65,6 +70,43 @@ export function ReachOutDialog({ open, onOpenChange, contact }: Props) {
     () => templates.find((t) => t.id === selectedTemplateId),
     [templates, selectedTemplateId]
   );
+
+  const customer = useMemo(() => {
+    if (appointment) {
+      return data.customers.find((c) => c.id === appointment.customerId) ?? null;
+    }
+    return null;
+  }, [appointment, data.customers]);
+
+  const renderedBody = useMemo(() => {
+    if (!selected) return "";
+    return renderTemplate(selected.body, {
+      customer: customer ?? {
+        name: contact.name,
+        phone: contact.phone ?? null,
+        email: contact.email ?? null,
+        address: contact.address ?? null,
+      },
+      appointment: appointment ?? null,
+      services: data.services,
+      settings: data.settings,
+    });
+  }, [selected, customer, contact, appointment, data.services, data.settings]);
+
+  const renderedSubject = useMemo(() => {
+    if (!selected) return "";
+    return renderTemplate(selected.title, {
+      customer: customer ?? {
+        name: contact.name,
+        phone: contact.phone ?? null,
+        email: contact.email ?? null,
+        address: contact.address ?? null,
+      },
+      appointment: appointment ?? null,
+      services: data.services,
+      settings: data.settings,
+    });
+  }, [selected, customer, contact, appointment, data.services, data.settings]);
 
   const phoneDigits = digits(contact.phone);
   const hasPhone = phoneDigits.length > 0;
@@ -75,7 +117,7 @@ export function ReachOutDialog({ open, onOpenChange, contact }: Props) {
       toast.error("No phone number on file");
       return;
     }
-    const body = selected?.body ?? "";
+    const body = renderedBody;
     if (isMobile) {
       // sms:NUMBER?body=... is broadly supported
       const href = `sms:${phoneDigits}${body ? `?body=${encodeURIComponent(body)}` : ""}`;
@@ -101,8 +143,8 @@ export function ReachOutDialog({ open, onOpenChange, contact }: Props) {
       toast.error("No email on file");
       return;
     }
-    const body = selected?.body ?? "";
-    const subject = selected?.title ?? "";
+    const body = renderedBody;
+    const subject = renderedSubject;
     const params = new URLSearchParams();
     if (subject) params.set("subject", subject);
     if (body) params.set("body", body);
@@ -115,7 +157,7 @@ export function ReachOutDialog({ open, onOpenChange, contact }: Props) {
       toast.error("Pick a template first");
       return;
     }
-    void copy(selected.body, "Message");
+    void copy(renderedBody, "Message");
   }
 
   return (
@@ -213,9 +255,16 @@ export function ReachOutDialog({ open, onOpenChange, contact }: Props) {
               })}
             </div>
             {selected ? (
-              <p className="mt-2 whitespace-pre-wrap rounded-md border bg-card p-2.5 text-xs text-muted-foreground">
-                {selected.body}
-              </p>
+              <div className="mt-2 space-y-1">
+                <p className="whitespace-pre-wrap rounded-md border bg-card p-2.5 text-xs">
+                  {renderedBody}
+                </p>
+                {!appointment && /\{(date|time|service|datetime|day|price|vehicle)\}/.test(selected.body) ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    Some placeholders couldn't be filled — open this from a booking to auto-fill date/time/service.
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : null}

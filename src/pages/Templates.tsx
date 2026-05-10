@@ -18,6 +18,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { toast } from "sonner";
 import { useStore, makeId } from "@/store/store";
 import type { Template } from "@/lib/types";
+import { TEMPLATE_TOKENS } from "@/lib/messageTemplate";
 
 const TAGS = ["intro", "booking", "confirm", "follow_up", "other"];
 
@@ -184,9 +185,28 @@ function TemplateDialog({
               rows={6}
               value={form.body}
               onChange={(e) => setForm({ ...form, body: e.target.value })}
-              placeholder="The text customers will see…"
+              placeholder="Hi {name}! Confirming your detail on {date} at {time}…"
               required
             />
+            <div className="rounded-md border bg-muted/40 p-2.5 text-xs">
+              <p className="mb-1.5 font-medium text-foreground">
+                Placeholders — auto-fill when sent from a booking:
+              </p>
+              <div className="grid gap-x-3 gap-y-0.5 sm:grid-cols-2">
+                {TEMPLATE_TOKENS.map((t) => (
+                  <button
+                    key={t.token}
+                    type="button"
+                    onClick={() => setForm({ ...form, body: form.body + t.token })}
+                    className="flex items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left hover:bg-accent"
+                    title={`Insert ${t.token}`}
+                  >
+                    <code className="font-mono text-primary">{t.token}</code>
+                    <span className="truncate text-muted-foreground">{t.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -221,7 +221,10 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
 }
 
 interface BookingRequestsProps {
-  onReachOut: (contact: { name: string; phone: string; email?: string }) => void;
+  onReachOut: (
+    contact: { name: string; phone: string; email?: string },
+    appointment: Appointment
+  ) => void;
 }
 
 export function BookingRequests({ onReachOut }: BookingRequestsProps) {
@@ -279,7 +282,10 @@ export function BookingRequests({ onReachOut }: BookingRequestsProps) {
               onDecline={() => decline(appt)}
               onReachOut={() => {
                 if (!customer) return;
-                onReachOut({ name: customer.name, phone: customer.phone, email: customer.email });
+                onReachOut(
+                  { name: customer.name, phone: customer.phone, email: customer.email },
+                  appt
+                );
               }}
             />
           );
