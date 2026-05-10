@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
+import { Stat } from "@/components/ui/stat";
+import { CheckSquare, Clock, AlertTriangle } from "lucide-react";
 import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
 import { useStore } from "@/store/store";
 import { TASK_CATEGORIES, type Task, type TaskCategory } from "@/lib/types";
@@ -76,7 +78,7 @@ export function TasksPage() {
   }, [data.tasks]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SectionHeader
         title="Tasks"
         description="Supplies, follow-ups, maintenance, marketing — everything outside the job itself."
@@ -87,10 +89,26 @@ export function TasksPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <SmallStat label="Open tasks" value={counts.open} />
-        <SmallStat label="Due today" value={counts.today} tone="primary" />
-        <SmallStat label="Overdue" value={counts.overdue} tone={counts.overdue ? "danger" : "muted"} />
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        <Stat
+          label="Open tasks"
+          value={counts.open}
+          icon={<CheckSquare className="h-4 w-4" />}
+          hint={counts.open === 0 ? "All caught up" : "Still on the list"}
+        />
+        <Stat
+          label="Due today"
+          value={counts.today}
+          icon={<Clock className="h-4 w-4" />}
+          hint={counts.today === 0 ? "Nothing today" : "Get these done"}
+        />
+        <Stat
+          label="Overdue"
+          value={counts.overdue}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          trend={counts.overdue > 0 ? "down" : "up"}
+          hint={counts.overdue === 0 ? "On time" : "Past their date"}
+        />
       </div>
 
       <div className="space-y-3">
@@ -214,29 +232,35 @@ function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
   const cat = TASK_CATEGORIES.find((c) => c.value === task.category);
 
   return (
-    <div className={cn(
-      "group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent",
-      task.completed && "opacity-60"
-    )}>
-      <Checkbox checked={task.completed} onCheckedChange={onToggle} />
+    <div
+      className={cn(
+        "group flex items-center gap-3 rounded-md p-2.5 transition-colors duration-fast hover:bg-hover",
+        task.completed && "opacity-60"
+      )}
+    >
+      <Checkbox checked={task.completed} onCheckedChange={onToggle} className="mt-0.5" />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <p className={cn("text-sm font-medium", task.completed && "line-through text-muted-foreground")}>
+          <p
+            className={cn(
+              "text-sm font-medium leading-tight",
+              task.completed && "line-through text-muted-foreground"
+            )}
+          >
             {task.title}
           </p>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <PriorityDot priority={task.priority} />
-          </div>
+          <PriorityDot priority={task.priority} />
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-          {cat ? (
-            <Badge variant="outline" className="text-[10px]">{cat.label}</Badge>
-          ) : null}
+          {cat ? <Badge variant="outline">{cat.label}</Badge> : null}
           {task.dueDate ? (
-            <span className={cn(
-              overdue && "text-rose-600 font-medium dark:text-rose-300",
-              dueToday && "text-amber-600 font-medium dark:text-amber-300"
-            )}>
+            <span
+              className={cn(
+                "tabular-nums",
+                overdue && "text-rose-600 font-medium dark:text-rose-400",
+                dueToday && "text-amber-600 font-medium dark:text-amber-400"
+              )}
+            >
               {overdue
                 ? `Overdue · ${formatTaskDue(task.dueDate)}`
                 : dueToday
@@ -255,7 +279,7 @@ function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
       </div>
       <button
         onClick={onDelete}
-        className="opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive p-1"
+        className="opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive p-1 rounded-md"
         aria-label="Delete task"
       >
         <Trash2 className="h-4 w-4" />
@@ -267,24 +291,15 @@ function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
 function PriorityDot({ priority }: { priority: "low" | "medium" | "high" }) {
   const tone =
     priority === "high"
-      ? "bg-rose-500"
+      ? "bg-rose-500 ring-rose-500/30"
       : priority === "medium"
-      ? "bg-amber-500"
-      : "bg-slate-400";
-  return <span className={cn("h-2 w-2 rounded-full", tone)} title={`Priority: ${priority}`} />;
-}
-
-function SmallStat({ label, value, tone }: { label: string; value: number; tone?: "primary" | "danger" | "muted" }) {
+      ? "bg-amber-500 ring-amber-500/30"
+      : "bg-muted-foreground/40 ring-muted-foreground/20";
   return (
-    <div className="rounded-xl border bg-card p-4">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn(
-        "mt-1 text-2xl font-semibold tracking-tight",
-        tone === "primary" && "text-primary",
-        tone === "danger" && "text-rose-600 dark:text-rose-400"
-      )}>
-        {value}
-      </p>
-    </div>
+    <span
+      className={cn("h-2 w-2 shrink-0 rounded-full ring-2", tone)}
+      title={`Priority: ${priority}`}
+      aria-label={`Priority: ${priority}`}
+    />
   );
 }

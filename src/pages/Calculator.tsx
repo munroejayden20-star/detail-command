@@ -18,7 +18,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ReachOutDialog, type ReachOutContact } from "@/components/contact/ReachOutDialog";
 import { useStore } from "@/store/store";
-import { formatCurrency, vehicleStr } from "@/lib/utils";
+import { cn, formatCurrency, vehicleStr } from "@/lib/utils";
 import type { Service } from "@/lib/types";
 
 type VehicleSize =
@@ -320,18 +320,24 @@ export function CalculatorPage() {
                     return (
                       <label
                         key={a.id}
-                        className="flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-3 hover:border-primary/40"
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 rounded-md border p-3",
+                          "transition-[border-color,background-color] duration-fast",
+                          checked
+                            ? "border-primary/30 bg-primary/5"
+                            : "border-border/80 bg-card hover:bg-hover hover:border-border"
+                        )}
                       >
                         <Checkbox checked={checked} onCheckedChange={() => toggleAddon(a.id)} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{a.name}</p>
+                          <p className="text-sm font-medium leading-tight">{a.name}</p>
                           {a.description ? (
-                            <p className="text-[11px] text-muted-foreground line-clamp-1">
+                            <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">
                               {a.description}
                             </p>
                           ) : null}
                         </div>
-                        <span className="text-xs font-semibold">
+                        <span className="text-xs font-semibold tabular-nums">
                           +{formatCurrency(midPrice(a))}
                         </span>
                       </label>
@@ -414,16 +420,17 @@ export function CalculatorPage() {
                   <Row label="Subtotal" value={calc.subtotal} bold />
                 </div>
                 {taxRate > 0 ? <Row label={`Tax (${taxRate}%)`} value={calc.tax} muted /> : null}
-                <div className="rounded-lg bg-primary/10 px-3 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold">Estimated total</span>
-                    <span className="text-2xl font-bold text-primary">
+                <div className="rounded-md border border-primary/20 bg-primary/10 px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Estimated total
+                    </span>
+                    <span className="text-3xl font-semibold tracking-tight text-primary tabular-nums">
                       {formatCurrency(calc.total)}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Estimated time: ~{(calc.estMinutes / 60).toFixed(1)} hr (
-                    {calc.estMinutes} min)
+                  <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                    ~{(calc.estMinutes / 60).toFixed(1)} hr ({calc.estMinutes} min) on the job
                   </p>
                 </div>
                 {calc.depositActive && calc.deposit > 0 ? (
@@ -544,14 +551,14 @@ function Row({
 }) {
   return (
     <div
-      className={
-        "flex items-center justify-between py-0.5 " +
-        (muted ? "text-muted-foreground " : "") +
-        (bold ? "font-semibold" : "")
-      }
+      className={cn(
+        "flex items-center justify-between py-1",
+        muted && "text-muted-foreground",
+        bold && "font-semibold"
+      )}
     >
       <span>{label}</span>
-      <span>
+      <span className="tabular-nums">
         {value < 0 ? "−" : ""}
         {formatCurrency(Math.abs(value))}
       </span>

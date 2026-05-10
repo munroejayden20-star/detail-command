@@ -67,13 +67,25 @@ export function WorkPage() {
   if (!current) {
     return (
       <div className="space-y-5 px-1">
-        <h1 className="text-2xl font-bold tracking-tight">Work Mode</h1>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            Work Mode
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-tight">
+            Field tool
+          </h1>
+        </div>
         <Card>
-          <CardContent className="space-y-3 py-12 text-center">
-            <p className="text-base font-semibold">No job in progress</p>
-            <p className="text-sm text-muted-foreground">
-              Book an appointment to use Work Mode.
-            </p>
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md border border-border/70 bg-muted/40 text-muted-foreground">
+              <ListChecks className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-semibold">No job in progress</p>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Book an appointment to use Work Mode — big buttons, photo capture, and one-tap status updates.
+              </p>
+            </div>
             <Button asChild>
               <Link to="/calendar">
                 <Plus className="h-4 w-4" /> Open calendar
@@ -144,12 +156,12 @@ export function WorkPage() {
 
   return (
     <div className="space-y-4 px-1">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             Work Mode
           </p>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="mt-1 truncate text-2xl font-semibold leading-tight tracking-tight">
             {customerName}
           </h1>
         </div>
@@ -158,8 +170,8 @@ export function WorkPage() {
 
       {/* Hero card */}
       <Card>
-        <CardContent className="space-y-3 p-4">
-          <div className="flex items-center gap-2 text-sm">
+        <CardContent className="space-y-2.5 p-4">
+          <div className="flex items-center gap-2 text-sm tabular-nums">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">
               {formatBusinessDateTime(current.start)}
@@ -169,7 +181,10 @@ export function WorkPage() {
             <button
               type="button"
               onClick={openMaps}
-              className="flex w-full items-center gap-2 rounded-lg border bg-muted/30 p-3 text-left text-sm hover:border-primary/40"
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md border border-border/80 bg-muted/30 p-3 text-left text-sm",
+                "transition-colors duration-fast hover:border-primary/30 hover:bg-hover"
+              )}
             >
               <MapIcon className="h-4 w-4 shrink-0 text-primary" />
               <span className="flex-1 truncate">{current.address}</span>
@@ -177,19 +192,19 @@ export function WorkPage() {
             </button>
           ) : null}
           {current.vehicle?.make ? (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/30 p-3 text-sm">
+            <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 p-3 text-sm">
               <CarIcon className="h-4 w-4 text-muted-foreground" />
               <span className="truncate">{vehicleStr(current.vehicle)}</span>
             </div>
           ) : null}
           {services.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 pt-1">
               {services.map((s) => (
-                <Badge key={s.id} variant="soft" className="text-[11px]">
+                <Badge key={s.id} variant="soft">
                   {s.name}
                 </Badge>
               ))}
-              <Badge variant="outline" className="text-[11px]">
+              <Badge variant="outline">
                 Est. {formatCurrency(current.estimatedPrice)}
               </Badge>
             </div>
@@ -217,8 +232,9 @@ export function WorkPage() {
           )}
         </div>
       ) : (
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm font-medium text-emerald-700 dark:text-emerald-200">
-          ✓ This job is complete.
+        <div className="flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          This job is complete.
         </div>
       )}
 
@@ -335,7 +351,7 @@ export function WorkPage() {
       {upcoming.length > 1 ? (
         <Card>
           <CardContent className="space-y-2 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Up next
             </p>
             {upcoming
@@ -347,17 +363,20 @@ export function WorkPage() {
                   <Link
                     key={u.id}
                     to="/calendar"
-                    className="flex items-center justify-between rounded-lg border bg-muted/30 p-2.5 hover:border-primary/40"
+                    className={cn(
+                      "flex items-center justify-between rounded-md border border-border/80 bg-muted/30 p-2.5",
+                      "transition-colors duration-fast hover:border-border hover:bg-hover"
+                    )}
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
+                      <p className="truncate text-sm font-semibold leading-tight">
                         {c?.name ?? "Customer"}
                       </p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
                         {formatBusinessDate(u.start)} · {formatBusinessTime(u.start)}
                       </p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </Link>
                 );
               })}
@@ -383,16 +402,16 @@ export function WorkPage() {
 function StatusPill({ status }: { status: JobStatus }) {
   const tone =
     status === "completed"
-      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200"
+      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
       : status === "in_progress"
-      ? "bg-primary/10 text-primary"
+      ? "border-primary/20 bg-primary/10 text-primary"
       : status === "confirmed"
-      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200"
-      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200";
+      ? "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+      : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300";
   return (
     <span
       className={cn(
-        "rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize",
+        "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize tracking-tight",
         tone
       )}
     >
@@ -419,13 +438,16 @@ function BigButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-h-[64px] w-full items-center justify-center gap-3 rounded-xl border-2 px-4 py-3 text-base font-semibold shadow-soft transition-all active:scale-[0.98]",
+        "flex min-h-[64px] w-full items-center justify-center gap-3 rounded-md border px-4 py-3",
+        "text-base font-semibold shadow-soft",
+        "transition-[transform,box-shadow,background-color,border-color] duration-fast ease-snappy",
+        "active:scale-[0.97]",
         tone === "primary" &&
-          "border-primary bg-primary text-primary-foreground hover:opacity-90",
+          "border-primary bg-primary text-primary-foreground hover:bg-primary/92 hover:shadow-md",
         tone === "emerald" &&
-          "border-emerald-500 bg-emerald-500 text-white hover:opacity-90",
+          "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-600/92 hover:shadow-md",
         tone === "default" &&
-          "border-border bg-card hover:border-primary/40 hover:bg-accent"
+          "border-border/80 bg-card hover:border-border hover:bg-hover"
       )}
     >
       {icon}

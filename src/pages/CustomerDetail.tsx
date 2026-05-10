@@ -101,69 +101,80 @@ export function CustomerDetailPage() {
         </Link>
       </Button>
 
-      <div className="rounded-xl border bg-card p-6 shadow-soft">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-base font-semibold text-white shadow-soft">
-              {initials(customer.name)}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
-                {customer.isRepeat ? (
-                  <Badge variant="soft">
-                    <Star className="mr-1 h-3 w-3" /> Repeat
-                  </Badge>
-                ) : null}
-                {customer.isMonthlyMaintenance ? (
-                  <Badge variant="soft">
-                    <Repeat className="mr-1 h-3 w-3" /> Monthly
-                  </Badge>
-                ) : null}
+      <div className="overflow-hidden rounded-lg border border-border/80 bg-card shadow-soft">
+        <div className="p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-brand-600 to-brand-800 text-base font-semibold text-white shadow-soft">
+                {initials(customer.name)}
               </div>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                <a
-                  href={`tel:${customer.phone}`}
-                  className="inline-flex items-center gap-1.5 hover:text-foreground"
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  {phoneFmt(customer.phone)}
-                </a>
-                {customer.email ? (
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-semibold leading-tight tracking-tight">
+                    {customer.name}
+                  </h1>
+                  {customer.isRepeat ? (
+                    <Badge variant="warning">
+                      <Star className="h-3 w-3 fill-current" /> Repeat
+                    </Badge>
+                  ) : null}
+                  {customer.isMonthlyMaintenance ? (
+                    <Badge variant="success">
+                      <Repeat className="h-3 w-3" /> Monthly
+                    </Badge>
+                  ) : null}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
                   <a
-                    href={`mailto:${customer.email}`}
-                    className="inline-flex items-center gap-1.5 hover:text-foreground"
+                    href={`tel:${customer.phone}`}
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground tabular-nums"
                   >
-                    <Mail className="h-3.5 w-3.5" />
-                    {customer.email}
+                    <Phone className="h-3.5 w-3.5" />
+                    {phoneFmt(customer.phone)}
                   </a>
-                ) : null}
-                {customer.address ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {customer.address}
-                  </span>
-                ) : null}
+                  {customer.email ? (
+                    <a
+                      href={`mailto:${customer.email}`}
+                      className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      {customer.email}
+                    </a>
+                  ) : null}
+                  {customer.address ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {customer.address}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setReachOpen(true)}>
-              <MessageSquare className="h-4 w-4" /> Reach out
-            </Button>
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-4 w-4" /> Edit
-            </Button>
-            <Button onClick={() => setNewAppt(true)}>
-              <Plus className="h-4 w-4" /> Book job
-            </Button>
-            <Button variant="ghost" className="text-destructive" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex flex-wrap gap-1.5 shrink-0">
+              <Button variant="outline" size="sm" onClick={() => setReachOpen(true)}>
+                <MessageSquare className="h-4 w-4" /> Reach out
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                <Pencil className="h-4 w-4" /> Edit
+              </Button>
+              <Button size="sm" onClick={() => setNewAppt(true)}>
+                <Plus className="h-4 w-4" /> Book job
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={handleDelete}
+                aria-label="Delete customer"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {/* Stats strip — hairline-divided, runs full width like a profile band */}
+        <div className="grid grid-cols-3 border-t border-border/60 divide-x divide-border/60 bg-muted/20">
           <SimpleStat label="Lifetime revenue" value={formatCurrency(ltv)} />
           <SimpleStat label="Total jobs" value={count} />
           <SimpleStat
@@ -277,24 +288,24 @@ export function CustomerDetailPage() {
                 <button
                   key={r.id}
                   onClick={() => setSelectedReceipt(r)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40"
+                  className="flex w-full items-center justify-between gap-3 rounded-md border border-border/80 bg-card px-3 py-2.5 text-left text-sm transition-[border-color,background-color] duration-fast hover:border-border hover:bg-hover"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
+                    <p className="flex items-center gap-2 truncate font-medium leading-tight">
                       {r.receiptNumber}
                       {r.receiptStatus === "voided" ? (
-                        <span className="ml-2 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        <span className="inline-flex items-center rounded-full border border-slate-500/20 bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-300">
                           Voided
                         </span>
                       ) : null}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground tabular-nums">
                       {format(parseISO(r.createdAt), "MMM d, yyyy")} ·{" "}
                       {r.paymentMethod === "apple_pay" ? "Apple Pay" : r.paymentMethod} ·{" "}
                       {r.paymentStatus}
                     </p>
                   </div>
-                  <span className="font-mono text-sm font-semibold">
+                  <span className="font-mono text-sm font-semibold tabular-nums">
                     {formatCents(r.totalCents, r.currency)}
                   </span>
                 </button>
@@ -406,9 +417,13 @@ export function CustomerDetailPage() {
 
 function SimpleStat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
+    <div className="px-5 py-3.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-semibold leading-tight tabular-nums tracking-tight">
+        {value}
+      </p>
     </div>
   );
 }

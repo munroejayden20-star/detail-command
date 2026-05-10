@@ -44,11 +44,11 @@ const SOURCES: { value: LeadSource; label: string }[] = [
 ];
 
 const STATUS_COLUMNS: { value: LeadStatus; label: string; tone: string }[] = [
-  { value: "new", label: "New", tone: "border-blue-500/50" },
-  { value: "contacted", label: "Contacted", tone: "border-amber-500/50" },
-  { value: "waiting", label: "Waiting response", tone: "border-violet-500/50" },
-  { value: "booked", label: "Booked", tone: "border-emerald-500/50" },
-  { value: "lost", label: "Lost", tone: "border-rose-500/50" },
+  { value: "new", label: "New", tone: "bg-sky-500" },
+  { value: "contacted", label: "Contacted", tone: "bg-amber-500" },
+  { value: "waiting", label: "Waiting response", tone: "bg-violet-500" },
+  { value: "booked", label: "Booked", tone: "bg-emerald-500" },
+  { value: "lost", label: "Lost", tone: "bg-rose-500" },
 ];
 
 export function LeadsPage() {
@@ -81,7 +81,7 @@ export function LeadsPage() {
   }, [data.leads]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SectionHeader
         title="Leads"
         description="Track inquiries that haven't booked yet."
@@ -97,8 +97,10 @@ export function LeadsPage() {
         {STATUS_COLUMNS.map((col) => {
           const leads = grouped.get(col.value) ?? [];
           return (
-            <Card key={col.value} className={cn("border-t-2", col.tone)}>
-              <CardHeader className="pb-3">
+            <Card key={col.value} className="overflow-hidden">
+              {/* Top accent bar — replaces border-t-2 for cleaner color expression */}
+              <div className={cn("h-1 w-full", col.tone)} aria-hidden />
+              <CardHeader className="pb-3 pt-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">{col.label}</CardTitle>
                   <Badge variant="outline">{leads.length}</Badge>
@@ -106,7 +108,7 @@ export function LeadsPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {leads.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Empty</p>
+                  <p className="text-xs text-muted-foreground italic">Empty</p>
                 ) : (
                   leads.map((l) => (
                     <button
@@ -115,40 +117,47 @@ export function LeadsPage() {
                         setEditing(l);
                         setOpen(true);
                       }}
-                      className="w-full rounded-lg border bg-card p-3 text-left transition-all hover:border-primary/40 hover:shadow-soft"
+                      className={cn(
+                        "w-full rounded-md border border-border/80 bg-card p-3 text-left",
+                        "transition-[border-color,background-color,box-shadow] duration-fast",
+                        "hover:border-border hover:bg-hover hover:shadow-soft",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      )}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-semibold">{l.name}</p>
-                        <Badge variant="outline" className="capitalize text-[10px]">
+                        <p className="truncate text-sm font-semibold leading-tight">
+                          {l.name}
+                        </p>
+                        <Badge variant="outline" className="capitalize">
                           {l.source}
                         </Badge>
                       </div>
                       {l.vehicle ? (
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
                           {l.vehicle}
                         </p>
                       ) : null}
                       <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
                         <span
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 capitalize",
+                            "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 capitalize",
                             l.interest === "high"
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200"
+                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                               : l.interest === "medium"
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200"
-                              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                              ? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                              : "border-slate-500/20 bg-slate-500/10 text-slate-700 dark:text-slate-300"
                           )}
                         >
-                          {l.interest} interest
+                          {l.interest}
                         </span>
                         {l.followUpDate ? (
-                          <span>
-                            Follow up {format(parseISO(l.followUpDate), "MMM d")}
+                          <span className="tabular-nums">
+                            {format(parseISO(l.followUpDate), "MMM d")}
                           </span>
                         ) : null}
                       </div>
                       {l.notes ? (
-                        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground leading-relaxed">
                           {truncate(l.notes, 90)}
                         </p>
                       ) : null}

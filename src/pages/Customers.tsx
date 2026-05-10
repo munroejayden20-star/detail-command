@@ -10,7 +10,6 @@ import {
   Car,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -53,7 +52,7 @@ export function CustomersPage() {
   }, [data.customers, query, filter]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SectionHeader
         title="Customers"
         description="Your CRM. Search, filter, and track lifetime value."
@@ -83,13 +82,13 @@ export function CustomersPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1">
           {(
             [
-              { v: "all", label: `All (${data.customers.length})` },
-              { v: "repeat", label: `Repeat (${data.customers.filter((c) => c.isRepeat).length})` },
-              { v: "monthly", label: `Monthly (${data.customers.filter((c) => c.isMonthlyMaintenance).length})` },
-            ] as { v: Filter; label: string }[]
+              { v: "all", label: "All", count: data.customers.length },
+              { v: "repeat", label: "Repeat", count: data.customers.filter((c) => c.isRepeat).length },
+              { v: "monthly", label: "Monthly", count: data.customers.filter((c) => c.isMonthlyMaintenance).length },
+            ] as { v: Filter; label: string; count: number }[]
           ).map((f) => (
             <Button
               key={f.v}
@@ -98,6 +97,16 @@ export function CustomersPage() {
               onClick={() => setFilter(f.v)}
             >
               {f.label}
+              <span
+                className={cn(
+                  "rounded-full px-1.5 text-[10px] tabular-nums",
+                  filter === f.v
+                    ? "bg-primary-foreground/15 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {f.count}
+              </span>
             </Button>
           ))}
         </div>
@@ -126,53 +135,68 @@ export function CustomersPage() {
               <Link
                 key={c.id}
                 to={`/customers/${c.id}`}
-                className="group rounded-xl border bg-card p-4 transition-all hover:border-primary/40 hover:shadow-soft"
+                className={cn(
+                  "group rounded-md border border-border/80 bg-card p-4",
+                  "transition-[border-color,background-color,box-shadow] duration-fast",
+                  "hover:border-border hover:bg-hover hover:shadow-soft",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                )}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-semibold text-white shadow-soft">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-brand-600 to-brand-800 text-sm font-semibold text-white shadow-soft">
                     {initials(c.name)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className="truncate font-semibold">{c.name}</p>
+                      <p className="truncate font-semibold leading-tight">
+                        {c.name}
+                      </p>
                       {c.isRepeat ? (
-                        <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                        <Star
+                          className="h-3.5 w-3.5 shrink-0 text-amber-500 fill-amber-500"
+                          aria-label="Repeat customer"
+                        />
                       ) : null}
                       {c.isMonthlyMaintenance ? (
-                        <Repeat className="h-3.5 w-3.5 text-emerald-500" />
+                        <Repeat
+                          className="h-3.5 w-3.5 shrink-0 text-emerald-500"
+                          aria-label="Monthly maintenance"
+                        />
                       ) : null}
                     </div>
-                    <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
                       <Phone className="h-3 w-3" />
                       {phoneFmt(c.phone)}
                     </p>
                     {c.email ? (
-                      <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Mail className="h-3 w-3" />
-                        {c.email}
+                      <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground truncate max-w-full">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{c.email}</span>
                       </p>
                     ) : null}
                   </div>
                 </div>
                 {c.vehicles[0] ? (
-                  <div className="mt-3 flex items-center gap-1.5 rounded-md bg-muted/40 px-2.5 py-1.5 text-xs">
-                    <Car className="h-3.5 w-3.5 text-muted-foreground" />
+                  <div className="mt-3 flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs">
+                    <Car className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="truncate">{vehicleStr(c.vehicles[0])}</span>
                     {c.vehicles.length > 1 ? (
-                      <Badge variant="outline" className="ml-auto text-[10px]">
+                      <Badge variant="outline" className="ml-auto">
                         +{c.vehicles.length - 1}
                       </Badge>
                     ) : null}
                   </div>
                 ) : null}
-                <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Lifetime: </span>
-                    <span className="font-semibold text-foreground">
+                <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      LTV
+                    </span>
+                    <span className="font-semibold text-foreground tabular-nums">
                       {formatCurrency(ltv)}
                     </span>
                   </div>
-                  <div className={cn("text-muted-foreground")}>
+                  <div className="text-muted-foreground tabular-nums">
                     {count} appt{count === 1 ? "" : "s"}
                   </div>
                 </div>
