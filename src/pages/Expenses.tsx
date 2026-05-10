@@ -34,7 +34,7 @@ import { appointmentRevenue, totalExpenses, signedExpenseAmount } from "@/lib/se
 import { formatCurrency, formatCurrencyExact } from "@/lib/utils";
 
 export function ExpensesPage() {
-  const { data, dispatch } = useStore();
+  const { data, commit } = useStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
 
@@ -166,9 +166,9 @@ export function ExpensesPage() {
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (window.confirm("Delete this expense?"))
-                            dispatch({ type: "deleteExpense", id: e.id });
+                            await commit({ type: "deleteExpense", id: e.id });
                         }}
                         className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
                         aria-label="Delete"
@@ -197,7 +197,8 @@ function ExpenseDialog({
   onOpenChange: (v: boolean) => void;
   expense?: Expense;
 }) {
-  const { dispatch } = useStore();
+  const { commit } = useStore();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Expense>(() =>
     expense ?? {
       id: makeId(),
@@ -226,11 +227,15 @@ function ExpenseDialog({
 
   const isCredit = form.kind === "credit";
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (expense) dispatch({ type: "updateExpense", id: expense.id, patch: form });
-    else dispatch({ type: "addExpense", expense: form });
-    onOpenChange(false);
+    if (saving) return;
+    setSaving(true);
+    const r = expense
+      ? await commit({ type: "updateExpense", id: expense.id, patch: form })
+      : await commit({ type: "addExpense", expense: form });
+    setSaving(false);
+    if (r.ok) onOpenChange(false);
   }
 
   return (
@@ -329,8 +334,8 @@ function ExpenseDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              {expense ? "Save" : isCredit ? "Add credit" : "Add expense"}
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : expense ? "Save" : isCredit ? "Add credit" : "Add expense"}
             </Button>
           </DialogFooter>
         </form>

@@ -47,7 +47,7 @@ import { formatCents } from "@/lib/receipts";
 type ScopeFilter = "all" | "business" | "personal";
 
 export function MileagePage() {
-  const { data, dispatch } = useStore();
+  const { data, commit } = useStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<MileageEntry | undefined>();
   const [periodKey, setPeriodKey] = useState<TaxPeriodKey>("this_year");
@@ -237,9 +237,9 @@ export function MileagePage() {
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (window.confirm("Delete this trip?"))
-                        dispatch({ type: "deleteMileage", id: m.id });
+                        await commit({ type: "deleteMileage", id: m.id });
                     }}
                     className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
                     aria-label="Delete"
@@ -289,7 +289,8 @@ function MileageDialog({
   onOpenChange: (v: boolean) => void;
   entry?: MileageEntry;
 }) {
-  const { data, dispatch } = useStore();
+  const { data, commit } = useStore();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<MileageEntry>(() => entry ?? blankEntry());
 
   useEffect(() => {
@@ -303,8 +304,9 @@ function MileageDialog({
   const computedMiles =
     odoStart != null && odoEnd != null && odoEnd >= odoStart ? odoEnd - odoStart : null;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     const miles =
       computedMiles != null && (form.miles === 0 || form.miles == null)
         ? computedMiles
@@ -314,9 +316,12 @@ function MileageDialog({
       miles: Number(miles) || 0,
       updatedAt: new Date().toISOString(),
     };
-    if (entry) dispatch({ type: "updateMileage", id: entry.id, patch: payload });
-    else dispatch({ type: "addMileage", entry: payload });
-    onOpenChange(false);
+    setSaving(true);
+    const r = entry
+      ? await commit({ type: "updateMileage", id: entry.id, patch: payload })
+      : await commit({ type: "addMileage", entry: payload });
+    setSaving(false);
+    if (r.ok) onOpenChange(false);
   }
 
   return (
@@ -469,7 +474,9 @@ function MileageDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{entry ? "Save" : "Log trip"}</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : entry ? "Save" : "Log trip"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

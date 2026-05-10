@@ -37,7 +37,7 @@ function isDiscExpired(d: ServiceDiscount): boolean {
 }
 
 export function ServicesPage() {
-  const { data, dispatch } = useStore();
+  const { data, commit } = useStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Service | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -83,10 +83,10 @@ export function ServicesPage() {
               key={s.id}
               service={s}
               onEdit={() => { setEditing(s); setOpen(true); }}
-              onDelete={() => {
+              onDelete={async () => {
                 if (window.confirm(`Delete "${s.name}"?`)) {
-                  dispatch({ type: "deleteService", id: s.id });
-                  toast.success("Service deleted");
+                  const r = await commit({ type: "deleteService", id: s.id });
+                  if (r.ok) toast.success("Service deleted");
                 }
               }}
             />
@@ -106,10 +106,10 @@ export function ServicesPage() {
               key={s.id}
               service={s}
               onEdit={() => { setEditing(s); setOpen(true); }}
-              onDelete={() => {
+              onDelete={async () => {
                 if (window.confirm(`Delete add-on "${s.name}"?`)) {
-                  dispatch({ type: "deleteService", id: s.id });
-                  toast.success("Add-on deleted");
+                  const r = await commit({ type: "deleteService", id: s.id });
+                  if (r.ok) toast.success("Add-on deleted");
                 }
               }}
             />
@@ -231,7 +231,8 @@ function ServiceDialog({
   onOpenChange: (open: boolean) => void;
   service?: Service;
 }) {
-  const { dispatch } = useStore();
+  const { commit } = useStore();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Service>(() =>
     service ? { ...service } : { ...BLANK_SERVICE, id: makeId() }
   );
@@ -242,8 +243,9 @@ function ServiceDialog({
     }
   }, [open, service]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     const cleaned = {
       ...form,
       discount:
@@ -253,14 +255,15 @@ function ServiceDialog({
           ? { ...form.discount, active: false }
           : undefined,
     };
-    if (service) {
-      dispatch({ type: "updateService", id: service.id, patch: cleaned });
-      toast.success("Service saved");
-    } else {
-      dispatch({ type: "addService", service: cleaned });
-      toast.success("Service added");
+    setSaving(true);
+    const r = service
+      ? await commit({ type: "updateService", id: service.id, patch: cleaned })
+      : await commit({ type: "addService", service: cleaned });
+    setSaving(false);
+    if (r.ok) {
+      toast.success(service ? "Service saved" : "Service added");
+      onOpenChange(false);
     }
-    onOpenChange(false);
   }
 
   const disc = form.discount;
@@ -453,7 +456,9 @@ function ServiceDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{service ? "Save" : "Add service"}</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : service ? "Save" : "Add service"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
