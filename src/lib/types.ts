@@ -144,6 +144,11 @@ export interface Appointment {
   reviewRequestSent?: boolean;
   reviewRequestSentAt?: string;
   reviewRequestMethod?: "sms" | "email" | "copied" | "manual";
+  // Phase I — Work Mode job timer
+  /** Wall-clock start when "Start job" was pressed in Work Mode. */
+  actualStartAt?: string;
+  /** Wall-clock end when "Mark complete" was pressed in Work Mode. */
+  actualEndAt?: string;
   createdAt: string;
 }
 

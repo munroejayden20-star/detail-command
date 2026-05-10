@@ -1,10 +1,11 @@
-import { Clock, MapPin, Droplets, Plug, AlertTriangle } from "lucide-react";
+import { Clock, MapPin, Droplets, Plug, AlertTriangle, Timer } from "lucide-react";
 import { formatBusinessDate, getAppointmentDisplayRange } from "@/lib/datetime";
 import { useState } from "react";
 import type { Appointment } from "@/lib/types";
 import { useStore } from "@/store/store";
 import { StatusPill } from "@/components/ui/status-pill";
 import { cn, formatCurrency, vehicleStr } from "@/lib/utils";
+import { jobDurationMinutes, formatDurationMinutes } from "@/lib/selectors";
 import { AppointmentDialog } from "./AppointmentDialog";
 
 interface AppointmentRowProps {
@@ -23,6 +24,7 @@ export function AppointmentRow({ appointment, compact, className }: AppointmentR
     .filter(Boolean)
     .join(" · ");
   const accessIssue = !appointment.waterAccess || !appointment.powerAccess;
+  const actualDurationMin = jobDurationMinutes(appointment);
 
   return (
     <>
@@ -80,6 +82,13 @@ export function AppointmentRow({ appointment, compact, className }: AppointmentR
 
           {!compact ? (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              {actualDurationMin != null ? (
+                <Tag
+                  tone="positive"
+                  icon={<Timer className="h-3 w-3" />}
+                  label={`${formatDurationMinutes(actualDurationMin)} on job`}
+                />
+              ) : null}
               {appointment.waterAccess ? (
                 <Tag tone="positive" icon={<Droplets className="h-3 w-3" />} label="Water" />
               ) : (

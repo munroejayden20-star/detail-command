@@ -9,6 +9,23 @@ import {
 } from "date-fns";
 import type { Appointment, AppData } from "./types";
 
+/** Job duration in minutes from the timer (Start/Mark complete in Work Mode).
+ *  Returns null if the job hasn't been timed end-to-end. */
+export function jobDurationMinutes(a: Appointment): number | null {
+  if (!a.actualStartAt || !a.actualEndAt) return null;
+  const ms = parseISO(a.actualEndAt).getTime() - parseISO(a.actualStartAt).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return null;
+  return Math.round(ms / 60000);
+}
+
+/** Format a minute count as "1h 23m" (or "45m" under an hour). */
+export function formatDurationMinutes(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
 export function appointmentsOnDay(data: AppData, day: Date): Appointment[] {
   return data.appointments
     .filter((a) => isSameDay(parseISO(a.start), day))

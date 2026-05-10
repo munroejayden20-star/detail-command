@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Camera,
@@ -36,7 +36,10 @@ import { WorkChecklistDialog } from "@/components/work/WorkChecklistDialog";
 import {
   appointmentsOnDay,
   upcomingAppointments,
+  jobDurationMinutes,
+  formatDurationMinutes,
 } from "@/lib/selectors";
+import { Timer, RotateCcw } from "lucide-react";
 import { cn, formatCurrency, phoneFmt, vehicleStr } from "@/lib/utils";
 import type { Appointment, JobStatus, PaymentStatus } from "@/lib/types";
 
@@ -114,18 +117,40 @@ export function WorkPage() {
 
   function setStatus(status: JobStatus) {
     if (!current) return;
+    const patch: Partial<Appointment> = { status };
+    const now = new Date().toISOString();
+    // Stamp the timer on the matching transitions. Don't overwrite an
+    // existing actualStartAt — preserves the original start time if the
+    // detailer toggles statuses around mid-job.
+    if (status === "in_progress" && !current.actualStartAt) {
+      patch.actualStartAt = now;
+    }
+    if (status === "completed" && current.actualStartAt && !current.actualEndAt) {
+      patch.actualEndAt = now;
+    }
     dispatch({
       type: "updateAppointment",
       id: current.id,
-      patch: { status },
+      patch,
     });
     toast.success(
       status === "in_progress"
-        ? "Job started"
+        ? "Job started — timer running"
         : status === "completed"
         ? "Job completed"
         : `Status: ${status}`
     );
+  }
+
+  function resetTimer() {
+    if (!current) return;
+    if (!window.confirm("Reset the timer for this job? The start/end times will be cleared.")) return;
+    dispatch({
+      type: "updateAppointment",
+      id: current.id,
+      patch: { actualStartAt: undefined, actualEndAt: undefined },
+    });
+    toast.success("Timer reset");
   }
 
   function setPayment(p: PaymentStatus) {
@@ -211,6 +236,15 @@ export function WorkPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      {/* Job timer — visible whenever a start time has been recorded */}
+      {current.actualStartAt ? (
+        <JobTimer
+          startAt={current.actualStartAt}
+          endAt={current.actualEndAt}
+          onReset={resetTimer}
+        />
+      ) : null}
 
       {/* Big primary action: start / complete */}
       {current.status !== "completed" ? (
@@ -395,6 +429,94 @@ export function WorkPage() {
         appointmentId={current.id}
         customerId={current.customerId}
       />
+    </div>
+  );
+}
+
+function JobTimer({
+  startAt,
+  endAt,
+  onReset,
+}: {
+  startAt: string;
+  endAt?: string;
+  onReset: () => void;
+}) {
+  const startMs = parseISO(startAt).getTime();
+  const endMs = endAt ? parseISO(endAt).getTime() : null;
+  const running = !endMs;
+
+  // Tick once a second while running so the elapsed display advances live.
+  // When the job is finished, render the final duration without a ticker.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  const elapsedMs = (endMs ?? now) - startMs;
+  const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const display = h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${m}:${String(s).padStart(2, "0")}`;
+
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-md border p-4",
+        running
+          ? "border-primary/30 bg-primary/5"
+          : "border-border/80 bg-card"
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+              running ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+            )}
+          >
+            <Timer className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              {running ? "Job timer" : "Total time"}
+            </p>
+            <p className="text-2xl font-semibold leading-tight tracking-tight tabular-nums">
+              {display}
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {running ? (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+              </span>
+              Running
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+            aria-label="Reset timer"
+            title="Reset timer"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground tabular-nums">
+        Started {format(parseISO(startAt), "MMM d · h:mm a")}
+        {endAt ? ` · Ended ${format(parseISO(endAt), "h:mm a")}` : ""}
+      </p>
     </div>
   );
 }

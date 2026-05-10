@@ -33,8 +33,10 @@ import { useStore } from "@/store/store";
 import {
   customerAppointmentCount,
   customerLifetimeValue,
+  jobDurationMinutes,
+  formatDurationMinutes,
 } from "@/lib/selectors";
-import { formatCurrency, initials, phoneFmt, vehicleStr } from "@/lib/utils";
+import { cn, formatCurrency, initials, phoneFmt, vehicleStr } from "@/lib/utils";
 
 export function CustomerDetailPage() {
   const { id } = useParams();
@@ -85,6 +87,13 @@ export function CustomerDetailPage() {
   );
   const ltv = customerLifetimeValue(data, customer.id);
   const count = customerAppointmentCount(data, customer.id);
+  // Average job time across this customer's timed jobs (Work Mode timer).
+  const timedDurations = appts
+    .map((a) => jobDurationMinutes(a))
+    .filter((m): m is number => m != null);
+  const avgJobMinutes = timedDurations.length
+    ? Math.round(timedDurations.reduce((s, m) => s + m, 0) / timedDurations.length)
+    : null;
 
   function handleDelete() {
     if (window.confirm(`Delete ${customer!.name}? Appointments will remain but reference a missing customer.`)) {
@@ -174,7 +183,12 @@ export function CustomerDetailPage() {
         </div>
 
         {/* Stats strip — hairline-divided, runs full width like a profile band */}
-        <div className="grid grid-cols-3 border-t border-border/60 divide-x divide-border/60 bg-muted/20">
+        <div
+          className={cn(
+            "grid border-t border-border/60 divide-x divide-border/60 bg-muted/20",
+            avgJobMinutes != null ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"
+          )}
+        >
           <SimpleStat label="Lifetime revenue" value={formatCurrency(ltv)} />
           <SimpleStat label="Total jobs" value={count} />
           <SimpleStat
@@ -190,6 +204,12 @@ export function CustomerDetailPage() {
                 : "—"
             }
           />
+          {avgJobMinutes != null ? (
+            <SimpleStat
+              label="Avg job time"
+              value={formatDurationMinutes(avgJobMinutes)}
+            />
+          ) : null}
         </div>
       </div>
 

@@ -115,6 +115,8 @@ export function appointmentToRow(a: Appointment, userId: string) {
     review_request_sent: !!a.reviewRequestSent,
     review_request_sent_at: a.reviewRequestSentAt ?? null,
     review_request_method: a.reviewRequestMethod ?? null,
+    actual_start_at: a.actualStartAt ?? null,
+    actual_end_at: a.actualEndAt ?? null,
     created_at: a.createdAt,
   };
 }
@@ -157,6 +159,8 @@ export function appointmentPatchToRow(p: Partial<Appointment>): Record<string, u
   if (p.reviewRequestSent !== undefined) out.review_request_sent = !!p.reviewRequestSent;
   if (p.reviewRequestSentAt !== undefined) out.review_request_sent_at = p.reviewRequestSentAt ?? null;
   if (p.reviewRequestMethod !== undefined) out.review_request_method = p.reviewRequestMethod ?? null;
+  if (p.actualStartAt !== undefined) out.actual_start_at = p.actualStartAt ?? null;
+  if (p.actualEndAt !== undefined) out.actual_end_at = p.actualEndAt ?? null;
   return out;
 }
 
@@ -199,6 +203,8 @@ export function appointmentFromRow(r: any): Appointment {
     reviewRequestSent: !!r.review_request_sent,
     reviewRequestSentAt: r.review_request_sent_at ?? undefined,
     reviewRequestMethod: r.review_request_method ?? undefined,
+    actualStartAt: r.actual_start_at ?? undefined,
+    actualEndAt: r.actual_end_at ?? undefined,
     createdAt: r.created_at,
   };
 }
