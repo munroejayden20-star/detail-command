@@ -22,13 +22,16 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         disabled={disabled}
         onClick={() => onCheckedChange?.(!checked)}
         className={cn(
-          "peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-focus disabled:cursor-not-allowed disabled:opacity-50 transition-colors flex items-center justify-center",
-          checked && "bg-primary text-primary-foreground",
-          !checked && "bg-transparent",
+          "peer h-4 w-4 shrink-0 rounded border ring-focus",
+          "transition-[background-color,border-color] duration-fast",
+          "disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center",
+          checked
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-input bg-background hover:border-primary/50",
           className
         )}
       >
-        {checked ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+        {checked ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
       </button>
     );
   }

@@ -115,17 +115,34 @@ export function CalendarPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => go(-1)} aria-label="Previous">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => go(1)} aria-label="Next">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setCursor(new Date())}>
-            Today
-          </Button>
-          <h2 className="ml-2 text-xl font-semibold tracking-tight">
+        <div className="flex items-center gap-1.5">
+          {/* Joined nav arrows + today */}
+          <div className="flex items-center rounded-md border border-border/80 bg-card overflow-hidden">
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              aria-label="Previous"
+              className="px-2 py-2 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCursor(new Date())}
+              className="border-x border-border/80 px-3 py-1.5 text-xs font-medium tracking-tight transition-colors hover:bg-hover"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              aria-label="Next"
+              className="px-2 py-2 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          <h2 className="ml-2 text-xl font-semibold leading-tight tracking-tight tabular-nums">
             {view === "month"
               ? format(cursor, "MMMM yyyy")
               : view === "week"
@@ -146,7 +163,7 @@ export function CalendarPage() {
           </Tabs>
           <Button variant="outline" size="sm" onClick={() => setBlockOpen(true)}>
             <Ban className="h-4 w-4" />
-            Block time
+            Block
           </Button>
           <Button size="sm" onClick={() => openCreate(cursor)}>
             <Plus className="h-4 w-4" />
@@ -207,19 +224,22 @@ function Legend() {
     <Card>
       <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-5">
         {items.map((i) => (
-          <div key={i.value} className="flex items-center gap-1.5 text-xs">
+          <div
+            key={i.value}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+          >
             <span
               className={cn(
-                "h-2.5 w-2.5 rounded-full",
+                "h-2 w-2 shrink-0 rounded-full ring-2 ring-current/15",
                 `status-bar-${i.value.replace("_", "-")}`
               )}
             />
-            <span className="text-muted-foreground">{i.label}</span>
+            <span>{i.label}</span>
           </div>
         ))}
-        <div className="ml-auto flex items-center gap-1.5 text-xs">
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-400/60" />
-          <span className="text-muted-foreground">Blocked / day job</span>
+        <div className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-slate-400/60 ring-2 ring-slate-400/15" />
+          <span>Blocked / day job</span>
         </div>
       </CardContent>
     </Card>
@@ -256,9 +276,9 @@ function MonthView({
 
   return (
     <Card className="overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-border bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="grid grid-cols-7 border-b border-border/60 bg-muted/30 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="px-3 py-2">
+          <div key={d} className="px-3 py-2.5">
             {d}
           </div>
         ))}
@@ -323,30 +343,31 @@ function DayCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "group relative min-h-[110px] cursor-pointer border-b border-r border-border p-2 text-left transition-colors",
-        dim && "bg-muted/30 text-muted-foreground",
-        weekend && !dim && "bg-emerald-50/40 dark:bg-emerald-900/10",
-        isOver && "bg-primary/10 ring-1 ring-primary/40"
+        "group relative min-h-[110px] cursor-pointer border-b border-r border-border/60 p-2 text-left",
+        "transition-colors duration-fast hover:bg-hover/50",
+        dim && "bg-muted/20 text-muted-foreground",
+        weekend && !dim && "bg-emerald-500/5",
+        isOver && "bg-primary/10 ring-1 ring-primary/40 ring-inset"
       )}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
         <span
           className={cn(
-            "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
-            today && "bg-primary text-primary-foreground"
+            "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+            today && "bg-primary text-primary-foreground shadow-soft"
           )}
         >
           {format(date, "d")}
         </span>
         <div className="flex items-center gap-1">
           {blocked ? (
-            <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[9px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+            <span className="rounded-full border border-slate-500/20 bg-slate-500/10 px-1.5 py-0.5 text-[9px] font-medium text-slate-700 dark:text-slate-300">
               Day job
             </span>
           ) : null}
           {totalEst > 0 ? (
-            <span className="text-[10px] font-medium text-muted-foreground">
+            <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
               {formatCurrency(totalEst)}
             </span>
           ) : null}
@@ -356,7 +377,7 @@ function DayCell({
               e.stopPropagation();
               onCreate();
             }}
-            className="opacity-0 group-hover:opacity-100 rounded-full p-0.5 hover:bg-accent"
+            className="opacity-0 group-hover:opacity-100 rounded-full p-0.5 transition-opacity hover:bg-accent"
             aria-label="Add appointment"
           >
             <Plus className="h-3 w-3" />
@@ -403,16 +424,18 @@ function DraggableChip({
       {...attributes}
       onClick={onClick}
       className={cn(
-        "relative cursor-grab active:cursor-grabbing rounded-md bg-card pl-2 pr-1 py-0.5 text-[10px] font-medium shadow-sm border border-border/60 hover:border-primary/40 transition-colors truncate"
+        "relative truncate cursor-grab active:cursor-grabbing rounded-sm bg-card pl-2 pr-1 py-0.5 text-[10px] font-medium",
+        "border border-border/60 shadow-xs",
+        "transition-[border-color,box-shadow] duration-fast hover:border-primary/40 hover:shadow-soft"
       )}
     >
       <span
         className={cn(
-          "absolute inset-y-0 left-0 w-1 rounded-l-md",
+          "absolute inset-y-0 left-0 w-1 rounded-l-sm",
           `status-bar-${appointment.status.replace("_", "-")}`
         )}
       />
-      <span className="ml-1.5 truncate">
+      <span className="ml-1.5 truncate tabular-nums">
         {formatBusinessTime(appointment.start)} ·{" "}
         {appointment.vehicle.make || "Job"}
       </span>
@@ -437,7 +460,7 @@ function WeekView({
 
   return (
     <Card className="overflow-hidden">
-      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border bg-muted/40">
+      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/60 bg-muted/30">
         <div />
         {days.map((d) => {
           const today = isSameDay(d, new Date());
@@ -446,17 +469,17 @@ function WeekView({
             <div
               key={d.toISOString()}
               className={cn(
-                "px-3 py-2 text-center",
-                weekend && "bg-emerald-50/60 dark:bg-emerald-900/10"
+                "px-3 py-2.5 text-center",
+                weekend && "bg-emerald-500/5"
               )}
             >
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {format(d, "EEE")}
               </p>
               <p
                 className={cn(
-                  "mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold",
-                  today && "bg-primary text-primary-foreground"
+                  "mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
+                  today && "bg-primary text-primary-foreground shadow-soft"
                 )}
               >
                 {format(d, "d")}
@@ -471,7 +494,7 @@ function WeekView({
           {HOURS.map((h) => (
             <div
               key={h}
-              className="h-14 border-b border-border/60 px-2 text-right text-[10px] text-muted-foreground"
+              className="h-14 border-b border-border/40 px-2 pt-1 text-right text-[10px] tabular-nums text-muted-foreground"
             >
               {format(new Date(0, 0, 0, h), "h a")}
             </div>
@@ -534,8 +557,8 @@ function WeekDayCol({
     <div
       ref={setNodeRef}
       className={cn(
-        "relative border-l border-border/60",
-        weekend && "bg-emerald-50/40 dark:bg-emerald-900/10",
+        "relative border-l border-border/40",
+        weekend && "bg-emerald-500/5",
         isOver && "bg-primary/5"
       )}
       style={{ height: totalHeight }}
@@ -549,7 +572,7 @@ function WeekDayCol({
             d.setHours(h, 0, 0, 0);
             onCreate(d);
           }}
-          className="block h-14 w-full border-b border-border/40 hover:bg-accent/40 transition-colors"
+          className="block h-14 w-full border-b border-border/30 transition-colors duration-fast hover:bg-hover/60"
         />
       ))}
 
@@ -559,7 +582,7 @@ function WeekDayCol({
         return (
           <div
             key={i}
-            className="absolute left-0 right-0 mx-1 rounded-md bg-slate-200/80 px-2 py-1 text-[10px] font-medium text-slate-700 dark:bg-slate-700/50 dark:text-slate-300 backdrop-blur"
+            className="absolute left-0 right-0 mx-1 rounded-md border border-slate-500/20 bg-slate-500/15 px-2 py-1 text-[10px] font-medium text-slate-700 dark:text-slate-300 backdrop-blur"
             style={{ top, height }}
           >
             <div className="flex items-center gap-1">
@@ -618,17 +641,22 @@ function WeekEvent({
       {...listeners}
       {...attributes}
       onClick={() => onEdit(appointment)}
-      className="absolute left-1 right-1 cursor-grab active:cursor-grabbing overflow-hidden rounded-md bg-card border border-border shadow-soft hover:shadow-lift transition-shadow"
+      className={cn(
+        "absolute left-1 right-1 cursor-grab active:cursor-grabbing overflow-hidden rounded-sm bg-card border border-border/80 shadow-xs",
+        "transition-[box-shadow,border-color] duration-fast hover:border-primary/30 hover:shadow-soft"
+      )}
     >
       <div className={cn("absolute inset-y-0 left-0 w-1", cls)} />
       <div className="pl-2 pr-1.5 py-1.5">
-        <p className="truncate text-[11px] font-semibold">{customer?.name ?? "—"}</p>
-        <p className="truncate text-[10px] text-muted-foreground">
+        <p className="truncate text-[11px] font-semibold leading-tight">
+          {customer?.name ?? "—"}
+        </p>
+        <p className="mt-0.5 truncate text-[10px] text-muted-foreground tabular-nums">
           {formatBusinessTime(appointment.start)} ·{" "}
           {vehicleStr(appointment.vehicle) || "Vehicle"}
         </p>
         {height > 60 ? (
-          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+          <p className="mt-0.5 truncate text-[10px] font-medium text-foreground/80 tabular-nums">
             {formatCurrency(appointment.finalPrice ?? appointment.estimatedPrice)}
           </p>
         ) : null}
@@ -673,15 +701,18 @@ function DayView({
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
       <Card className="overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-base">{format(cursor, "EEEE, MMMM d")}</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle>{format(cursor, "EEEE, MMMM d")}</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {dayAppts.length} job{dayAppts.length === 1 ? "" : "s"} on the schedule
+          </p>
         </CardHeader>
         <div className="relative grid grid-cols-[60px_1fr] max-h-[70vh] overflow-y-auto scrollbar-thin">
           <div>
             {HOURS.map((h) => (
               <div
                 key={h}
-                className="h-16 border-b border-border/60 px-2 text-right text-[10px] text-muted-foreground"
+                className="h-16 border-b border-border/40 px-2 pt-1 text-right text-[10px] tabular-nums text-muted-foreground"
               >
                 {format(new Date(0, 0, 0, h), "h a")}
               </div>
@@ -697,13 +728,13 @@ function DayView({
                   d.setHours(h, 0, 0, 0);
                   onCreate(d);
                 }}
-                className="block h-16 w-full border-b border-border/40 hover:bg-accent/40 transition-colors"
+                className="block h-16 w-full border-b border-border/30 transition-colors duration-fast hover:bg-hover/60"
               />
             ))}
             {dayBlocks.map((b, i) => (
               <div
                 key={i}
-                className="absolute left-1 right-1 rounded-md bg-slate-200/80 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-700/50 dark:text-slate-300"
+                className="absolute left-1 right-1 rounded-md border border-slate-500/20 bg-slate-500/15 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300"
                 style={{ top: eventTop(b.start), height: eventHeight(b.start, b.end) }}
               >
                 <div className="flex items-center gap-1">
@@ -726,31 +757,47 @@ function DayView({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Day plan</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle>Day plan</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            One-tap to open any job
+          </p>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           {dayAppts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No jobs scheduled.</p>
+            <p className="rounded-md border border-dashed border-border/60 bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+              No jobs scheduled
+            </p>
           ) : (
             dayAppts.map((a) => {
               const customer = data.customers.find((c) => c.id === a.customerId);
               return (
                 <button
                   key={a.id}
-                  className="w-full rounded-lg border bg-card p-3 text-left transition-all hover:border-primary/40 hover:shadow-soft"
+                  className={cn(
+                    "w-full rounded-md border border-border/80 bg-card p-3 text-left",
+                    "transition-[border-color,background-color,box-shadow] duration-fast",
+                    "hover:border-border hover:bg-hover hover:shadow-soft",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  )}
                   onClick={() => onEdit(a)}
                 >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">{customer?.name}</p>
-                    <Badge variant="soft">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-semibold leading-tight">
+                      {customer?.name}
+                    </p>
+                    <Badge variant="soft" className="shrink-0 tabular-nums">
                       {formatBusinessTime(a.start)}
                     </Badge>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
                     {vehicleStr(a.vehicle)}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">{a.address}</p>
+                  {a.address ? (
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {a.address}
+                    </p>
+                  ) : null}
                 </button>
               );
             })
@@ -781,7 +828,10 @@ function DayEvent({
   return (
     <button
       onClick={() => onEdit(appointment)}
-      className="absolute left-2 right-2 overflow-hidden rounded-md bg-card border border-border shadow-soft hover:shadow-lift transition-all text-left"
+      className={cn(
+        "absolute left-2 right-2 overflow-hidden rounded-md bg-card border border-border/80 shadow-xs text-left",
+        "transition-[box-shadow,border-color] duration-fast hover:border-primary/30 hover:shadow-md"
+      )}
       style={{ top, height }}
     >
       <div
@@ -791,13 +841,15 @@ function DayEvent({
         )}
       />
       <div className="pl-3 pr-2 py-2">
-        <p className="text-sm font-semibold">{customer?.name}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm font-semibold leading-tight">{customer?.name}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
           {getAppointmentDisplayRange(appointment.start, appointment.end)} ·{" "}
           {vehicleStr(appointment.vehicle)}
         </p>
         {height > 70 ? (
-          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{appointment.address}</p>
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+            {appointment.address}
+          </p>
         ) : null}
       </div>
     </button>
