@@ -56,6 +56,14 @@ function midPrice(s: Service): number {
   return (s.priceLow + s.priceHigh) / 2;
 }
 
+/** Comma-join with an Oxford "and" — "A", "A and B", or "A, B, and C". */
+function listJoin(items: string[]): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
 export function CalculatorPage() {
   const { data } = useStore();
   const packages = data.services.filter((s) => !s.isAddon);
@@ -148,39 +156,89 @@ export function CalculatorPage() {
   }
 
   const summary = useMemo(() => {
-    if (!pkg) return "No package selected.";
+    if (!pkg) return "Pick a service package above and your quote will show up here.";
+
+    // Customer first name keeps the greeting natural ("Hey Sarah" vs "Hey Sarah Johnson")
+    const summaryCustomer = customerId
+      ? data.customers.find((c) => c.id === customerId)
+      : null;
+    const firstName = summaryCustomer?.name?.split(/\s+/)[0] ?? "";
+    const greeting = firstName ? `Hey ${firstName}!` : "Hey!";
+
+    // Owner name for sign-off, falling back to business name
+    const owner =
+      data.settings.ownerName ||
+      data.settings.businessName ||
+      "";
+
     const sizeLabel = vehMeta.label.toLowerCase();
     const condLabel = condMeta.label.toLowerCase();
-    const includes = pkg.description ?? "interior + exterior detailing";
     const addonNames = [...addonIds]
       .map((id) => addons.find((a) => a.id === id)?.name)
-      .filter(Boolean)
-      .join(", ");
-    const hours = (calc.estMinutes / 60).toFixed(1);
-    const lines = [
-      `Based on your ${sizeLabel} in ${condLabel} condition, I'd recommend the ${pkg.name}.`,
-      `Estimated total: ${formatCurrency(calc.total)}${
-        addonNames ? ` (includes ${addonNames})` : ""
-      }.`,
-    ];
+      .filter(Boolean) as string[];
+    const hours = calc.estMinutes / 60;
+    const hoursLabel =
+      hours >= 1
+        ? `about ${hours.toFixed(hours % 1 === 0 ? 0 : 1)} hr`
+        : `around ${calc.estMinutes} min`;
+
+    const lines: string[] = [];
+
+    // Opening — friendly, with context about why this package
+    lines.push(
+      `${greeting} Thanks for reaching out — here's a quick quote for your ${sizeLabel}.`
+    );
+    lines.push("");
+    lines.push(
+      `Based on the ${condLabel} condition, I'd go with the ${pkg.name} — runs about ${formatCurrency(calc.total)} all in${
+        addonNames.length
+          ? ` (with the ${listJoin(addonNames)} add${addonNames.length === 1 ? "" : "s"} included)`
+          : ""
+      }. Plan on ${hoursLabel} on-site.`
+    );
+
+    // Deposit — softened from the original blunt "non-refundable" line
     if (calc.depositActive && calc.deposit > 0) {
+      lines.push("");
       if (depositAppliesToTotal) {
         lines.push(
-          `A ${formatCurrency(calc.deposit)} deposit is paid online to reserve your spot — applied to your total. Balance due at job: ${formatCurrency(calc.balanceDue)}.`,
+          `To lock in your spot it's a ${formatCurrency(calc.deposit)} deposit online — that comes off the total, so you'd owe ${formatCurrency(calc.balanceDue)} when I'm done.`
         );
       } else {
         lines.push(
-          `A ${formatCurrency(calc.deposit)} non-refundable deposit is paid online to reserve your spot.`,
+          `To lock in your spot it's a ${formatCurrency(calc.deposit)} booking deposit online (separate from the detail price above).`
         );
       }
     }
+
+    // Honest expectation-set
+    lines.push("");
     lines.push(
-      `Service includes: ${includes}.`,
-      `Estimated time: ~${hours} hr.`,
-      `Final price may vary if the vehicle condition is heavier than expected.`,
+      `Heads up — if the inside or outside is rougher than what we talked about, the price might bump a little once I see it in person. I'll always let you know before I start.`
     );
+
+    // Sign-off
+    lines.push("");
+    lines.push(
+      owner
+        ? `Let me know what works and I'll get you on the books. — ${owner}`
+        : `Let me know what works and I'll get you on the books.`
+    );
+
     return lines.join("\n");
-  }, [pkg, vehMeta, condMeta, addonIds, addons, calc, depositAppliesToTotal]);
+  }, [
+    pkg,
+    vehMeta,
+    condMeta,
+    addonIds,
+    addons,
+    calc,
+    depositAppliesToTotal,
+    customerId,
+    data.customers,
+    data.settings.ownerName,
+    data.settings.businessName,
+  ]);
 
   async function copySummary() {
     try {
@@ -466,7 +524,7 @@ export function CalculatorPage() {
                 <CardTitle>Quote summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Textarea readOnly rows={7} value={summary} className="text-xs" />
+                <Textarea readOnly rows={11} value={summary} className="text-xs leading-relaxed" />
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={copySummary}>
                     <Copy className="h-4 w-4" /> Copy
