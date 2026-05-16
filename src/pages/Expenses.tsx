@@ -25,6 +25,7 @@ import {
 import { SectionHeader } from "@/components/ui/section-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useStore, makeId } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import {
   EXPENSE_CATEGORIES,
   type Expense,
@@ -35,6 +36,7 @@ import { cn, formatCurrency, formatCurrencyExact } from "@/lib/utils";
 
 export function ExpensesPage() {
   const { data, commit } = useStore();
+  useRegisterIrisContext({ page: "expenses", label: "Expenses" });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
 

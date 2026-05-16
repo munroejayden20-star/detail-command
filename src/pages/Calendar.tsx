@@ -37,6 +37,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { BlockDialog } from "@/components/calendar/BlockDialog";
 import type { Appointment, JobStatus } from "@/lib/types";
@@ -48,6 +49,12 @@ export function CalendarPage() {
   const { data, dispatch } = useStore();
   const [view, setView] = useState<ViewMode>("week");
   const [cursor, setCursor] = useState(new Date());
+  useRegisterIrisContext({
+    page: "calendar",
+    label: `Calendar · ${format(cursor, "MMM yyyy")} (${view})`,
+    entity: { type: "date", iso: cursor.toISOString() },
+    extra: { view },
+  });
   const [editAppt, setEditAppt] = useState<Appointment | undefined>();
   const [editOpen, setEditOpen] = useState(false);
   const [createDate, setCreateDate] = useState<Date | undefined>();

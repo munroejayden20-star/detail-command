@@ -17,7 +17,9 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ReachOutDialog, type ReachOutContact } from "@/components/contact/ReachOutDialog";
+import { PricingDriftCard } from "@/components/intelligence/PricingDriftCard";
 import { useStore } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { cn, formatCurrency, vehicleStr } from "@/lib/utils";
 import type { Service } from "@/lib/types";
 
@@ -93,6 +95,17 @@ export function CalculatorPage() {
   const pkg = packages.find((p) => p.id === packageId);
   const vehMeta = VEHICLE_SIZES.find((v) => v.value === vehicleSize)!;
   const condMeta = CONDITIONS.find((c) => c.value === condition)!;
+
+  useRegisterIrisContext(
+    pkg
+      ? {
+          page: "calculator",
+          label: `Calculator · ${pkg.name} (${vehMeta.label})`,
+          entity: { type: "service", id: pkg.id, name: pkg.name, vehicleSize },
+          extra: { condition, addonCount: addonIds.size },
+        }
+      : { page: "calculator", label: "Calculator" },
+  );
 
   const calc = useMemo(() => {
     const base = pkg ? midPrice(pkg) : 0;
@@ -491,6 +504,11 @@ export function CalculatorPage() {
                     ~{(calc.estMinutes / 60).toFixed(1)} hr ({calc.estMinutes} min) on the job
                   </p>
                 </div>
+                {/* Pricing drift advisory — only shown when both service + vehicle size are set */}
+                {packageId ? (
+                  <PricingDriftCard serviceId={packageId} vehicleSize={vehicleSize} />
+                ) : null}
+
                 {calc.depositActive && calc.deposit > 0 ? (
                   <div className="space-y-1 pt-1">
                     <Row

@@ -34,7 +34,9 @@ import {
   Receipt as ReceiptIcon,
   Smartphone,
   MessageSquare,
+  Plug,
 } from "lucide-react";
+import { IntegrationsSection } from "@/components/settings/IntegrationsSection";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +49,7 @@ import { Separator } from "@/components/ui/separator";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { PhotoImage } from "@/components/photos/PhotoImage";
 import { useStore, makeId } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { uploadBookingPhoto } from "@/lib/booking-api";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/auth/AuthProvider";
@@ -205,6 +208,7 @@ function Field({
 ───────────────────────────────────────────── */
 export function SettingsPage() {
   const { data, dispatch } = useStore();
+  useRegisterIrisContext({ page: "settings", label: "Settings" });
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const s = data.settings;
@@ -1130,6 +1134,19 @@ export function SettingsPage() {
               ) : null}
             </div>
           </Field>
+        </SettingsSection>
+      ) : null}
+
+      {/* ── Integrations (Phase H3) ───────────────────────── */}
+      {matches("integrations", "command core", "ai", "web", "search", "weather", "tavily", "open-meteo", "external") ? (
+        <SettingsSection
+          id="integrations"
+          title="Integrations"
+          description="Web search, weather, and (later) Google services Iris uses for fresh information."
+          icon={Plug}
+          badge="Iris"
+        >
+          <IntegrationsSection />
         </SettingsSection>
       ) : null}
 

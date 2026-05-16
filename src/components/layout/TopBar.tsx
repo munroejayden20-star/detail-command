@@ -10,6 +10,7 @@ import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { format } from "date-fns";
 import { UserMenu } from "@/auth/UserMenu";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { IrisLauncher } from "@/components/iris/IrisLauncher";
 import { openCommandPalette } from "@/components/search/CommandPalette";
 
 interface TopBarProps {
@@ -143,6 +144,7 @@ export function TopBar({ onMenu }: TopBarProps) {
               className={`h-4 w-4 ${refreshing || loading ? "animate-spin" : ""}`}
             />
           </Button>
+          <IrisLauncher className="hidden sm:inline-flex" />
           <NotificationCenter />
           <Button
             variant="ghost"

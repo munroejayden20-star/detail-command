@@ -35,6 +35,7 @@ const TaxCenterPage = lazy(() => import("@/pages/TaxCenter").then((m) => ({ defa
 const MileagePage = lazy(() => import("@/pages/Mileage").then((m) => ({ default: m.MileagePage })));
 const WorkPage = lazy(() => import("@/pages/Work").then((m) => ({ default: m.WorkPage })));
 const TemplatesPage = lazy(() => import("@/pages/Templates").then((m) => ({ default: m.TemplatesPage })));
+const IrisPage = lazy(() => import("@/pages/Iris").then((m) => ({ default: m.IrisPage })));
 
 function PageFallback() {
   return (
@@ -146,6 +147,7 @@ export default function App() {
           <Route path="/tax-center" element={lazyRoute(<TaxCenterPage />)} />
           <Route path="/mileage" element={lazyRoute(<MileagePage />)} />
           <Route path="/work" element={lazyRoute(<WorkPage />)} />
+          <Route path="/iris" element={lazyRoute(<IrisPage />)} />
           <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

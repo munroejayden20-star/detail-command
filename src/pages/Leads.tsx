@@ -26,6 +26,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { useStore, makeId } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { ReachOutDialog } from "@/components/contact/ReachOutDialog";
 import {
   LEAD_STATUSES,
@@ -53,6 +54,7 @@ const STATUS_COLUMNS: { value: LeadStatus; label: string; tone: string }[] = [
 
 export function LeadsPage() {
   const { data, dispatch } = useStore();
+  useRegisterIrisContext({ page: "leads", label: "Leads" });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();

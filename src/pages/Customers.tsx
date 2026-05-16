@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { useStore } from "@/store/store";
 import {
   customerAppointmentCount,
@@ -26,6 +27,7 @@ type Filter = "all" | "repeat" | "monthly";
 
 export function CustomersPage() {
   const { data } = useStore();
+  useRegisterIrisContext({ page: "customers", label: "Customers" });
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [filter, setFilter] = useState<Filter>("all");

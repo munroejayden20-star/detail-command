@@ -31,6 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useStore, makeId } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { PhotoUploader } from "@/components/photos/PhotoUploader";
 import { WorkChecklistDialog } from "@/components/work/WorkChecklistDialog";
 import { MarkCompleteDialog } from "@/components/receipts/MarkCompleteDialog";
@@ -64,6 +65,14 @@ export function WorkPage() {
     if (next) return next;
     return upcoming[0] ?? null;
   }, [todays, upcoming]);
+
+  useRegisterIrisContext({
+    page: "work",
+    label: current
+      ? `Work mode · ${data.customers.find((c) => c.id === current.customerId)?.name ?? "current job"}`
+      : "Work mode",
+    entity: current ? { type: "appointment", id: current.id } : undefined,
+  });
 
   const [noteOpen, setNoteOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);

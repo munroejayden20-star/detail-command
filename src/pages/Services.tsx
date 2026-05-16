@@ -19,6 +19,7 @@ import {
 import { SectionHeader } from "@/components/ui/section-header";
 import { toast } from "sonner";
 import { useStore, makeId } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { cn } from "@/lib/utils";
 import type { Service, ServiceDiscount } from "@/lib/types";
 
@@ -38,6 +39,7 @@ function isDiscExpired(d: ServiceDiscount): boolean {
 
 export function ServicesPage() {
   const { data, commit } = useStore();
+  useRegisterIrisContext({ page: "services", label: "Services" });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Service | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();

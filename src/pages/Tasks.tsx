@@ -31,11 +31,13 @@ import { Stat } from "@/components/ui/stat";
 import { CheckSquare, Clock, AlertTriangle } from "lucide-react";
 import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
 import { useStore } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { TASK_CATEGORIES, type Task, type TaskCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function TasksPage() {
   const { data, dispatch } = useStore();
+  useRegisterIrisContext({ page: "tasks", label: "Tasks" });
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "open" | "done">("open");
   const [category, setCategory] = useState<TaskCategory | "all">("all");

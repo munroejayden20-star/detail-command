@@ -40,6 +40,7 @@ import { Stat } from "@/components/ui/stat";
 import { SectionHeader } from "@/components/ui/section-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useStore } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { appointmentRevenue, signedExpenseAmount } from "@/lib/selectors";
 import { formatCurrency, cn } from "@/lib/utils";
 
@@ -55,6 +56,7 @@ const tooltipStyle = {
 
 export function RevenuePage() {
   const { data } = useStore();
+  useRegisterIrisContext({ page: "revenue", label: "Revenue" });
   const [revTab, setRevTab] = useState<"weekly" | "monthly">("monthly");
 
   const nonCanceled = useMemo(

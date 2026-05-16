@@ -127,12 +127,89 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        // ─── Iris HUD ───────────────────────────────────────────────
+        "iris-ring-spin": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        "iris-ring-spin-rev": {
+          from: { transform: "rotate(360deg)" },
+          to: { transform: "rotate(0deg)" },
+        },
+        "iris-scanline": {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100vh)" },
+        },
+        "iris-grid-drift": {
+          "0%": { backgroundPosition: "0 0" },
+          "100%": { backgroundPosition: "40px 40px" },
+        },
+        "iris-fade-up": {
+          from: { opacity: "0", transform: "translateY(12px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "iris-cursor-blink": {
+          "0%, 50%": { opacity: "1" },
+          "51%, 100%": { opacity: "0" },
+        },
+        "iris-bracket-draw": {
+          from: { strokeDashoffset: "40" },
+          to: { strokeDashoffset: "0" },
+        },
+        // ─── Iris orb (Phase H6) ────────────────────────────────────
+        "orb-breathe": {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.85" },
+          "50%": { transform: "scale(1.06)", opacity: "1" },
+        },
+        "orb-breathe-fast": {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.9" },
+          "50%": { transform: "scale(1.1)", opacity: "1" },
+        },
+        "orb-spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        "orb-spin-reverse": {
+          from: { transform: "rotate(360deg)" },
+          to: { transform: "rotate(0deg)" },
+        },
+        "orb-shimmer": {
+          "0%": { transform: "rotate(0deg) scale(1)" },
+          "50%": { transform: "rotate(180deg) scale(1.05)" },
+          "100%": { transform: "rotate(360deg) scale(1)" },
+        },
+        "orb-pulse-out": {
+          "0%": { transform: "scale(0.95)", opacity: "0.6" },
+          "100%": { transform: "scale(1.4)", opacity: "0" },
+        },
+        "orb-flare": {
+          "0%, 100%": { opacity: "0.4" },
+          "50%": { opacity: "0.9" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.2s cubic-bezier(0.32, 0.72, 0, 1)",
         "slide-up": "slide-up 0.25s cubic-bezier(0.32, 0.72, 0, 1)",
         "scale-in": "scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
         shimmer: "shimmer 1.6s linear infinite",
+        // Iris HUD
+        "iris-ring-spin-slow": "iris-ring-spin 60s linear infinite",
+        "iris-ring-spin-med": "iris-ring-spin-rev 90s linear infinite",
+        "iris-ring-spin-fast": "iris-ring-spin 32s linear infinite",
+        "iris-scanline": "iris-scanline 8s linear infinite",
+        "iris-grid-drift": "iris-grid-drift 12s linear infinite",
+        "iris-fade-up": "iris-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "iris-cursor-blink": "iris-cursor-blink 1s steps(1, end) infinite",
+        "iris-bracket-draw": "iris-bracket-draw 0.6s ease-out forwards",
+        // Iris orb
+        "orb-breathe": "orb-breathe 4.5s cubic-bezier(0.45, 0, 0.55, 1) infinite",
+        "orb-breathe-fast": "orb-breathe-fast 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite",
+        "orb-spin-slow": "orb-spin-slow 22s linear infinite",
+        "orb-spin-reverse": "orb-spin-reverse 16s linear infinite",
+        "orb-spin-fast": "orb-spin-slow 7s linear infinite",
+        "orb-shimmer": "orb-shimmer 9s ease-in-out infinite",
+        "orb-pulse-out": "orb-pulse-out 2.4s ease-out infinite",
+        "orb-flare": "orb-flare 3s ease-in-out infinite",
       },
     },
   },

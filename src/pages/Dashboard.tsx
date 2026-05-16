@@ -32,6 +32,8 @@ import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
 import { ReachOutDialog, type ReachOutContact } from "@/components/contact/ReachOutDialog";
 import { BookingRequests } from "@/components/dashboard/BookingRequests";
 import { ReviewsDueWidget } from "@/components/reviews/ReviewsDueWidget";
+import { WeatherWatchCard } from "@/components/intelligence/WeatherWatchCard";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { useStore } from "@/store/store";
 import { vehicleStr } from "@/lib/utils";
 import {
@@ -46,6 +48,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 
 export function DashboardPage() {
   const { data, dispatch } = useStore();
+  useRegisterIrisContext({ page: "dashboard", label: "Dashboard" });
   const [appOpen, setAppOpen] = useState(false);
   const [custOpen, setCustOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
@@ -169,6 +172,11 @@ export function DashboardPage() {
 
       {/* Reviews due (Phase F) */}
       <ReviewsDueWidget />
+
+      {/* Iris — Weather Watch (Phase H3) */}
+      {/* (Needs Attention + Recent Insights live on /iris to keep the
+          dashboard focused on today's operational view.) */}
+      <WeatherWatchCard />
 
       {/* Two-column grid */}
       <div className="grid gap-5 lg:grid-cols-3">

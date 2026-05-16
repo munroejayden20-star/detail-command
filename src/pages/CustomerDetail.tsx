@@ -23,6 +23,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { ReachOutDialog } from "@/components/contact/ReachOutDialog";
+import { CustomerIntelligencePanel } from "@/components/intelligence/CustomerIntelligencePanel";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { PhotoGallery } from "@/components/photos/PhotoGallery";
 import { PhotoUploader } from "@/components/photos/PhotoUploader";
 import { AppointmentRow } from "@/components/appointments/AppointmentRow";
@@ -43,6 +45,15 @@ export function CustomerDetailPage() {
   const navigate = useNavigate();
   const { data, dispatch } = useStore();
   const customer = data.customers.find((c) => c.id === id);
+  useRegisterIrisContext(
+    customer
+      ? {
+          page: "customer-detail",
+          label: `Customer · ${customer.name}`,
+          entity: { type: "customer", id: customer.id, name: customer.name },
+        }
+      : null,
+  );
   const [editOpen, setEditOpen] = useState(false);
   const [newAppt, setNewAppt] = useState(false);
   const [reachOpen, setReachOpen] = useState(false);
@@ -241,6 +252,8 @@ export function CustomerDetailPage() {
         </Card>
 
         <div className="space-y-5">
+          <CustomerIntelligencePanel customerId={customer.id} />
+
           <Card>
             <CardHeader>
               <CardTitle>Vehicles</CardTitle>
