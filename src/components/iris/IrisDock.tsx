@@ -137,13 +137,18 @@ export function IrisDock() {
           onClick={() => setOpen(true)}
           aria-label="Open Iris"
           className={cn(
-            "fixed z-30 right-4 md:right-6",
-            "bottom-20 md:bottom-6",
+            "fixed z-30 right-4 md:right-6 md:!bottom-6",
             "inline-flex items-center gap-2 rounded-full pl-1.5 pr-3 py-1.5",
             "border border-primary/30 bg-card/95 backdrop-blur-md shadow-lg",
             "hover:border-primary/50 hover:shadow-xl",
             "transition-all duration-fast",
           )}
+          // Mobile: sit ABOVE the bottom-nav "+" FAB (which lives at
+          // ~bottom 4.5rem + safe-area). 9rem clears its 3.5rem height
+          // plus a small gap. md+ uses bottom-6 via the !important class.
+          style={{
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 9rem)",
+          }}
         >
           <IrisOrb size="sm" state={orbState} noHalo />
           <span className="text-xs font-semibold tracking-tight">Ask Iris</span>
