@@ -33,12 +33,20 @@ import {
   submitPublicBooking,
   uploadBookingPhoto,
   createDepositCheckout,
+  getCustomerPortal,
   type PublicBookingInfo,
   type PublicService,
   type PublicBookingFaq,
   type PublicFeaturedPhoto,
   type PublicDepositInfo,
+  type CustomerPortalData,
 } from "@/lib/booking-api";
+import {
+  getCustomerToken,
+  saveCustomerToken,
+  clearCustomerToken,
+} from "@/lib/customer-portal-storage";
+import { CustomerPortalPanel } from "@/components/booking/CustomerPortalPanel";
 
 /* ==========================================================================
    Form Types & Constants
@@ -342,11 +350,16 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
   );
 }
 
+/**
+ * Customer-facing "starting from" price — uses priceLow so the estimate
+ * matches the "Starting at $X" framing on the service cards. Discount is
+ * applied on top so the number lines up with what the customer was shown.
+ */
 function midPrice(s: PublicService) {
-  const mid = Math.round((s.priceLow + s.priceHigh) / 2);
+  const base = s.priceLow;
   const d = activeDiscount(s);
-  if (!d) return mid;
-  return applyDiscount(mid, d);
+  if (!d) return base;
+  return applyDiscount(base, d);
 }
 
 function fmtDuration(minutes: number) {
@@ -2337,6 +2350,10 @@ export function BookingPage() {
   const [submitError, setSubmitError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  // Phase K — returning-customer portal
+  const [portal, setPortal] = useState<CustomerPortalData | null>(null);
+  const [justBooked, setJustBooked] = useState(false);
+
   // Hide the floating mobile CTA when the user has scrolled into the form
   const [inFormSection, setInFormSection] = useState(false);
 
@@ -2350,6 +2367,63 @@ export function BookingPage() {
       .catch((e) => setInfoError(e?.message ?? "Failed to load booking info"))
       .finally(() => setInfoLoading(false));
   }, []);
+
+  // Phase K — hydrate returning-customer portal from localStorage token.
+  // Don't clear the token on a null response — a transient RPC failure
+  // (network blip, function reload, RLS hiccup) would orphan the user
+  // permanently. Only "Not you?" clears the token explicitly.
+  useEffect(() => {
+    const token = getCustomerToken();
+    if (!token) return;
+    getCustomerPortal(token).then((d) => {
+      if (d) setPortal(d);
+    });
+  }, []);
+
+  async function refreshPortal(): Promise<CustomerPortalData | null> {
+    const token = getCustomerToken();
+    if (!token) return null;
+    const d = await getCustomerPortal(token);
+    if (d) setPortal(d);
+    return d;
+  }
+
+  // Auto-refresh portal while it's mounted so the customer sees status flips
+  // (pending → confirmed, etc.) without manually reloading. Customer is anon,
+  // so we can't use Supabase Realtime (RLS blocks anon reads of appointments).
+  // Instead: poll every 30s + immediate refresh whenever the tab regains focus.
+  useEffect(() => {
+    if (!portal) return;
+    const tick = () => {
+      if (document.visibilityState === "visible") void refreshPortal();
+    };
+    const onFocus = () => void refreshPortal();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refreshPortal();
+    };
+    const id = window.setInterval(tick, 30_000);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [portal]);
+
+  // When the portal first appears after a fresh submit, snap to the top so the
+  // expanded panel is the first thing the customer sees.
+  useEffect(() => {
+    if (justBooked && portal) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [justBooked, portal]);
+
+  function handlePortalSignOut() {
+    clearCustomerToken();
+    setPortal(null);
+    setJustBooked(false);
+  }
 
   // Scroll to the top of the booking form card on every step change
   useEffect(() => {
@@ -2512,7 +2586,17 @@ export function BookingPage() {
         return; // unreachable, but keeps TS happy
       }
 
-      await submitPublicBooking(payload);
+      const result = await submitPublicBooking(payload);
+      if (result.customerToken) {
+        saveCustomerToken(result.customerToken);
+      }
+      // Reset the form so the page returns to a fresh state behind the portal.
+      setFormRaw(EMPTY_FORM);
+      setStep(1);
+      // Pull portal BEFORE flipping `submitted` so the panel is ready on the
+      // very next render (avoids a flash of the standalone success page).
+      await refreshPortal();
+      setJustBooked(true);
       setSubmitted(true);
     } catch (e: any) {
       console.error("[booking] Submission failed:", e);
@@ -2543,12 +2627,26 @@ export function BookingPage() {
   }
   if (infoError) return <BookingUnavailable />;
   if (!info?.settings?.bookingPageEnabled) return <BookingUnavailable />;
-  if (submitted) return <BookingSuccess businessName={info.settings.businessName} />;
+  // Fall back to the standalone success screen only if portal hydration failed —
+  // normal path leaves the customer on /book with the portal panel expanded.
+  if (submitted && !portal) return <BookingSuccess businessName={info.settings.businessName} />;
 
   const settings = info.settings;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white antialiased scroll-smooth">
+      {portal ? (
+        <CustomerPortalPanel
+          key={justBooked ? "expanded" : "collapsed"}
+          data={portal}
+          defaultExpanded={justBooked}
+          onSignOut={handlePortalSignOut}
+          onRefresh={async () => {
+            await refreshPortal();
+          }}
+        />
+      ) : null}
+
       <TopNav
         businessName={settings.businessName}
         logoUrl={settings.logoUrl}

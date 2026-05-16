@@ -152,6 +152,56 @@ function ruleDepositPaidNotApproved(data: AppData, now: Date): AttentionItem[] {
     });
 }
 
+/**
+ * Customer-initiated cancels (within the last 7 days, still unread by you).
+ * Surfaces each cancellation as a high-priority attention item so you can
+ * decide whether to call the customer, offer a new slot, refund a deposit,
+ * or just acknowledge and move on.
+ */
+function ruleCustomerCanceledAppointment(
+  data: AppData,
+  now: Date,
+): AttentionItem[] {
+  const cutoff = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  return (data.notifications ?? [])
+    .filter((n) => n.type === "appointment_canceled_by_customer" && !n.read)
+    .filter((n) => {
+      const t = parseISO(n.createdAt).getTime();
+      return Number.isFinite(t) && t >= cutoff;
+    })
+    .map<AttentionItem>((n) => {
+      const meta = (n.metadata ?? {}) as {
+        appointmentId?: string;
+        customerId?: string;
+        customerName?: string;
+      };
+      const apptId = meta.appointmentId;
+      const cust = meta.customerName || customerName(data, meta.customerId);
+      const appt = apptId
+        ? data.appointments.find((a) => a.id === apptId)
+        : undefined;
+      const depositInfo =
+        appt && depositPaidFor(appt)
+          ? ` Deposit of ${dollars(appt.depositAmountCents ?? 0)} was paid — may need a refund.`
+          : "";
+      return {
+        id: attId("customer_canceled_appointment", n.id),
+        type: "customer_canceled_appointment",
+        category: "bookings",
+        priority: depositInfo ? "critical" : "high",
+        source: "rule",
+        title: `${cust} canceled their appointment`,
+        why: `${n.message ?? "Customer canceled via their portal."}${depositInfo}`,
+        action: appt
+          ? { label: "Open calendar", linkUrl: "/calendar" }
+          : undefined,
+        entityType: "appointment",
+        entityId: apptId,
+        detectedAt: n.createdAt,
+      };
+    });
+}
+
 /* ─────────────────────────────────────────────
    Jobs
 ───────────────────────────────────────────── */
@@ -504,6 +554,7 @@ function ruleSalesTaxNoRate(data: AppData, now: Date): AttentionItem[] {
 const ALL_RULES: Array<(d: AppData, now: Date) => AttentionItem[]> = [
   rulePendingBookingStale,
   ruleDepositPaidNotApproved,
+  ruleCustomerCanceledAppointment,
   ruleCompletedNoFinalPrice,
   ruleCompletedNoReceipt,
   ruleCompletedNoReviewRequest,

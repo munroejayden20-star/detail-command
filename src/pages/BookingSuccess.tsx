@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, Loader2, Mail, Phone, Calendar, AlertCircle } from "lucide-react";
 import { getPaymentStatusBySession, type PublicPaymentStatus } from "@/lib/booking-api";
+import { saveCustomerToken } from "@/lib/customer-portal-storage";
 
 /**
  * /booking/success — customer arrives here after Stripe Checkout completes.
@@ -28,6 +29,7 @@ export function BookingSuccessPage() {
       try {
         const s = await getPaymentStatusBySession(sessionId!);
         if (cancelled) return;
+        if (s.customerToken) saveCustomerToken(s.customerToken);
         setStatus(s);
         attempts++;
         setPollCount(attempts);

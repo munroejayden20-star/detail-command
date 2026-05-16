@@ -51,6 +51,7 @@ import { PhotoImage } from "@/components/photos/PhotoImage";
 import { useStore, makeId } from "@/store/store";
 import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { uploadBookingPhoto } from "@/lib/booking-api";
+import { getSignedPhotoUrl } from "@/lib/photos";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/auth/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -1732,6 +1733,7 @@ function FeaturedPhotosPicker({
   const { data, dispatch } = useStore();
   const photos = data.photos ?? [];
   const [uploading, setUploading] = useState(false);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -1743,12 +1745,59 @@ function FeaturedPhotosPicker({
     .map((id) => photos.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
 
-  function toggle(id: string) {
+  /** Copy a private photo into the public booking-uploads bucket so it can
+   *  render on the public /book page. Updates the photo's storage_path so all
+   *  other consumers (gallery, customer detail) continue to work via the same
+   *  PhotoImage component. */
+  async function publishPrivatePhoto(photoId: string): Promise<boolean> {
+    const photo = photos.find((p) => p.id === photoId);
+    if (!photo) return false;
+    if (isPublic(photo.storagePath)) return true;
+
+    const confirmed = window.confirm(
+      "Publish this photo to your booking page? It will become publicly visible to anyone who visits /book.",
+    );
+    if (!confirmed) return false;
+
+    setPublishingId(photoId);
+    try {
+      const signedUrl = await getSignedPhotoUrl(photo.storagePath);
+      if (!signedUrl) throw new Error("Could not access the original file");
+      const res = await fetch(signedUrl);
+      if (!res.ok) throw new Error("Could not download the original file");
+      const blob = await res.blob();
+      const ext = (photo.storagePath.split(".").pop() || "jpg").toLowerCase();
+      const file = new File([blob], `featured-${photoId}.${ext}`, {
+        type: blob.type || "image/jpeg",
+      });
+      const publicUrl = await uploadBookingPhoto(file);
+      dispatch({
+        type: "updatePhoto",
+        id: photoId,
+        patch: { storagePath: publicUrl },
+      });
+      toast.success("Photo published to your booking page");
+      return true;
+    } catch (e) {
+      console.error("[featured] publish failed", e);
+      toast.error(e instanceof Error ? e.message : "Could not publish photo");
+      return false;
+    } finally {
+      setPublishingId(null);
+    }
+  }
+
+  async function toggle(id: string) {
     if (selectedIds.includes(id)) {
       onChange(selectedIds.filter((x) => x !== id));
-    } else {
-      onChange([...selectedIds, id]);
+      return;
     }
+    const photo = photos.find((p) => p.id === id);
+    if (photo && !isPublic(photo.storagePath)) {
+      const ok = await publishPrivatePhoto(id);
+      if (!ok) return;
+    }
+    onChange([...selectedIds, id]);
   }
 
   function move(idx: number, dir: -1 | 1) {
@@ -1920,24 +1969,33 @@ function FeaturedPhotosPicker({
       ) : (
         <div>
           <p className="text-[11px] text-muted-foreground mb-2">
-            All photos ({photos.length}) — {eligibleCount} eligible for /book
+            All photos ({photos.length}). Private photos publish to /book when you pick them.
           </p>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
             {photos.map((p) => {
               const selected = selectedIds.includes(p.id);
               const pub = isPublic(p.storagePath);
+              const publishing = publishingId === p.id;
               return (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => toggle(p.id)}
+                  disabled={publishing}
                   className={cn(
                     "relative aspect-square rounded-md overflow-hidden text-left transition-all",
                     selected
                       ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                      : "border border-border hover:border-foreground/30"
+                      : "border border-border hover:border-foreground/30",
+                    publishing && "opacity-60 cursor-wait",
                   )}
-                  title={pub ? "Public photo — will render on /book" : "Private photo — won't render until bucket is updated"}
+                  title={
+                    publishing
+                      ? "Publishing…"
+                      : pub
+                        ? "Public — renders on /book"
+                        : "Private — click to publish to /book"
+                  }
                 >
                   <PhotoImage
                     storagePath={p.storagePath}
@@ -1948,9 +2006,13 @@ function FeaturedPhotosPicker({
                       ✓
                     </span>
                   ) : null}
-                  {!pub ? (
+                  {publishing ? (
+                    <span className="absolute inset-0 grid place-items-center bg-black/40">
+                      <Loader2 className="h-5 w-5 animate-spin text-white" />
+                    </span>
+                  ) : !pub ? (
                     <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-amber-300 text-center py-0.5 font-medium">
-                      Private
+                      Private · click to publish
                     </span>
                   ) : null}
                 </button>

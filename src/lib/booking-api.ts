@@ -105,7 +105,7 @@ export async function getPublicBookingInfo(): Promise<PublicBookingInfo> {
   return data as PublicBookingInfo;
 }
 
-export async function submitPublicBooking(payload: BookingPayload): Promise<{ appointmentId: string; customerId: string }> {
+export async function submitPublicBooking(payload: BookingPayload): Promise<{ appointmentId: string; customerId: string; customerToken?: string }> {
   if (!supabase) throw new Error("Supabase not configured");
   const { data, error } = await supabase.rpc("submit_public_booking", {
     p_customer_name: payload.customerName,
@@ -136,7 +136,7 @@ export async function submitPublicBooking(payload: BookingPayload): Promise<{ ap
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
-  return data as { appointmentId: string; customerId: string };
+  return data as { appointmentId: string; customerId: string; customerToken?: string };
 }
 
 export async function uploadBookingPhoto(file: File): Promise<string> {
@@ -207,6 +207,118 @@ export interface PublicPaymentStatus {
   businessName?: string;
   bookingStatus?: string;
   preferredDate?: string;
+  customerToken?: string;
+}
+
+/* ─────────────────────────────────────────────
+   Phase K: customer portal
+───────────────────────────────────────────── */
+
+export interface PortalVehicle {
+  year?: string;
+  make?: string;
+  model?: string;
+  color?: string;
+  size?: string;
+}
+
+export interface PortalServiceItem {
+  name: string;
+  priceLow: number;
+  priceHigh: number;
+  isAddon: boolean;
+  discount?: {
+    active?: boolean;
+    type?: "percent" | "fixed";
+    value?: number;
+    label?: string;
+    expiry?: string;
+  } | null;
+}
+
+export interface PortalAppointment {
+  id: string;
+  startAt: string;
+  endAt?: string;
+  status: string;
+  paymentStatus?: string;
+  depositPaid?: boolean;
+  estimatedPrice?: number;
+  finalPrice?: number | null;
+  vehicle?: PortalVehicle;
+  address?: string;
+  serviceNames: string[];
+  serviceItems?: PortalServiceItem[];
+}
+
+export interface PortalReceipt {
+  receiptNumber: string;
+  publicReceiptToken: string;
+  createdAt: string;
+  totalCents: number;
+  amountPaidCents: number;
+  currency: string;
+  paymentStatus: string;
+}
+
+export interface CustomerPortalData {
+  customer: {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    preferredContact?: string;
+    vehicles: PortalVehicle[];
+  };
+  business: {
+    name?: string;
+    reviewLink?: string;
+  };
+  upcoming: PortalAppointment[];
+  past: PortalAppointment[];
+  receipts: PortalReceipt[];
+}
+
+export async function getCustomerPortal(token: string): Promise<CustomerPortalData | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("get_customer_portal_by_token", { p_token: token });
+  if (error) {
+    console.warn("[portal] fetch failed", error);
+    return null;
+  }
+  if (!data || data.error) return null;
+  return data as CustomerPortalData;
+}
+
+export async function cancelAppointmentByToken(
+  token: string,
+  appointmentId: string,
+): Promise<void> {
+  if (!supabase) throw new Error("Supabase not configured");
+  const { data, error } = await supabase.rpc("cancel_appointment_by_token", {
+    p_token: token,
+    p_appointment_id: appointmentId,
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+}
+
+export async function rescheduleAppointmentByToken(
+  token: string,
+  appointmentId: string,
+  newDate: string,
+  newTime: string,
+): Promise<void> {
+  if (!supabase) throw new Error("Supabase not configured");
+  const { data, error } = await supabase.rpc("reschedule_appointment_by_token", {
+    p_token: token,
+    p_appointment_id: appointmentId,
+    p_new_date: newDate,
+    p_new_time: newTime,
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 }
 
 /**

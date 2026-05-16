@@ -665,6 +665,8 @@ export type NotificationType =
   | "appointment_tomorrow"
   | "appointment_needs_confirm"
   | "appointment_completed"
+  | "appointment_canceled_by_customer"
+  | "appointment_rescheduled_by_customer"
   | "appointment_missing_payment"
   | "follow_up_due"
   | "review_due"
@@ -692,6 +694,8 @@ export const NOTIFICATION_TYPE_META: Record<
   appointment_tomorrow: { label: "Tomorrow's appointment", icon: "CalendarDays", tone: "primary", group: "appointments" },
   appointment_needs_confirm: { label: "Needs confirmation", icon: "AlertCircle", tone: "amber", group: "appointments" },
   appointment_completed: { label: "Appointment completed", icon: "CheckCircle2", tone: "emerald", group: "appointments" },
+  appointment_canceled_by_customer: { label: "Customer canceled appointment", icon: "XCircle", tone: "rose", group: "appointments" },
+  appointment_rescheduled_by_customer: { label: "Customer rescheduled appointment", icon: "CalendarClock", tone: "amber", group: "appointments" },
   appointment_missing_payment: { label: "Missing payment", icon: "DollarSign", tone: "amber", group: "payments" },
   follow_up_due: { label: "Follow-up due", icon: "Bell", tone: "violet", group: "followups" },
   review_due: { label: "Review request", icon: "Star", tone: "amber", group: "reviews" },
