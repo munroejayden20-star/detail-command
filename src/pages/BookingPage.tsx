@@ -2329,8 +2329,18 @@ function BookingUnavailable() {
         <AlertCircle className="h-8 w-8 text-zinc-400" />
       </div>
       <h1 className="text-2xl font-bold text-white mb-2">Booking Unavailable</h1>
+      <p className="text-white text-base font-bold max-w-xs mb-3">
+        Refresh the page to try again.
+      </p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="mb-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+      >
+        Refresh
+      </button>
       <p className="text-zinc-400 text-sm max-w-xs">
-        Online booking isn't available right now. Please reach out directly to schedule an appointment.
+        If it keeps showing this, please reach out directly to schedule an appointment.
       </p>
     </div>
   );
