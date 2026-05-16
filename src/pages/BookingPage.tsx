@@ -2372,10 +2372,36 @@ export function BookingPage() {
   }
 
   useEffect(() => {
-    getPublicBookingInfo()
-      .then((d) => setInfo(d))
-      .catch((e) => setInfoError(e?.message ?? "Failed to load booking info"))
-      .finally(() => setInfoLoading(false));
+    // Retry the public RPC up to 3 times before giving up. The first call
+    // often races with Supabase cold-start or the auth session bootstrap,
+    // and a 400-800ms wait is enough to clear it. Customer never sees the
+    // "unavailable" screen unless the RPC actually stays broken.
+    let cancelled = false;
+    (async () => {
+      let lastErr: unknown = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const d = await getPublicBookingInfo();
+          if (cancelled) return;
+          setInfo(d);
+          setInfoLoading(false);
+          return;
+        } catch (e) {
+          lastErr = e;
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+          }
+        }
+      }
+      if (cancelled) return;
+      setInfoError(
+        lastErr instanceof Error ? lastErr.message : "Failed to load booking info",
+      );
+      setInfoLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Phase K — hydrate returning-customer portal from localStorage token.
