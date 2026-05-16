@@ -63,6 +63,13 @@ export function QuickViewPage() {
     return () => window.clearInterval(id);
   }, []);
 
+  // Strip the body background while Quick View is mounted so the panel reads
+  // as a floating widget. Restored on unmount.
+  useEffect(() => {
+    document.body.classList.add("quick-view-active");
+    return () => document.body.classList.remove("quick-view-active");
+  }, []);
+
   const attention = useMemo(() => runAttentionRules(data, now), [data, now]);
   const visibleAttention = useMemo(
     () => attention.filter((i) => !isHidden(i.id, snoozeState)),
@@ -151,34 +158,21 @@ export function QuickViewPage() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
-      {/* HUD background */}
+    <div className="quick-view-page relative min-h-screen text-foreground">
       <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+        className={cn(
+          "relative mx-auto my-3 flex max-w-xl flex-col gap-4 px-4 py-5",
+          "rounded-2xl border border-primary/40",
+          "bg-background/55 backdrop-blur-xl",
+          "shadow-[0_0_0_1px_hsl(var(--primary)/0.18),0_24px_60px_-12px_rgba(220,38,38,0.4)]",
+        )}
+        style={{
+          background: `
+            linear-gradient(180deg, hsl(var(--background) / 0.55) 0%, hsl(var(--background) / 0.45) 100%),
+            radial-gradient(ellipse 80% 60% at 50% 0%, hsl(var(--primary) / 0.18) 0%, transparent 65%)
+          `,
+        }}
       >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--primary) / 0.16) 0%, transparent 65%),
-              radial-gradient(ellipse 100% 60% at 50% 100%, hsl(var(--primary) / 0.06) 0%, transparent 70%)
-            `,
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage: `
-              linear-gradient(hsl(var(--primary) / 0.7) 1px, transparent 1px),
-              linear-gradient(90deg, hsl(var(--primary) / 0.7) 1px, transparent 1px)
-            `,
-            backgroundSize: "32px 32px",
-          }}
-        />
-      </div>
-
-      <div className="mx-auto flex max-w-xl flex-col gap-4 px-4 py-5">
         {/* ── Header ─────────────────────────────────────── */}
         <header className="flex items-center gap-3">
           <IrisOrb state={orbState} size="md" />

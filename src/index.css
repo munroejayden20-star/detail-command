@@ -111,6 +111,15 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Quick View widget mode — body becomes transparent so the bordered
+     panel reads as a floating window. */
+  body.quick-view-active {
+    background: transparent !important;
+  }
+  body.quick-view-active::before {
+    display: none;
+  }
+
   /* Atmospheric backdrop — subtle radial wash so the field doesn't read as flat
      gray. Performance-cheap (one fixed gradient, no animation). */
   body::before {
