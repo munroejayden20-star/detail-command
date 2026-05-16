@@ -53,6 +53,7 @@ export interface BuildReceiptInput {
   depositPaidCents?: number;
   discountCents?: number;
   taxCents?: number;
+  tipCents?: number;
   paymentMethod: ReceiptPaymentMethod;
   paymentStatus?: ReceiptPaymentStatus;
   notes?: string;
@@ -68,6 +69,7 @@ export function buildReceiptFromAppointment(input: BuildReceiptInput): Omit<Rece
     depositPaidCents = 0,
     discountCents = 0,
     taxCents = 0,
+    tipCents = 0,
     paymentMethod,
     paymentStatus,
     notes,
@@ -113,12 +115,12 @@ export function buildReceiptFromAppointment(input: BuildReceiptInput): Omit<Rece
   const lineSum = lineItems.reduce((sum, li) => sum + li.totalCents, 0);
   const subtotalCents = finalPriceCents > 0 ? finalPriceCents : lineSum;
 
-  const totalCents = Math.max(0, subtotalCents - discountCents + taxCents);
+  const totalCents = Math.max(0, subtotalCents - discountCents + taxCents + tipCents);
   const amountPaidCents =
     paymentStatus === "unpaid"
-      ? depositPaidCents
+      ? depositPaidCents + tipCents
       : paymentStatus === "partial"
-      ? depositPaidCents
+      ? depositPaidCents + tipCents
       : totalCents;
   const remainingBalanceCents = Math.max(0, totalCents - amountPaidCents);
 
@@ -172,6 +174,7 @@ export function buildReceiptFromAppointment(input: BuildReceiptInput): Omit<Rece
     subtotalCents,
     discountCents,
     taxCents,
+    tipCents,
     depositPaidCents,
     totalCents,
     amountPaidCents,

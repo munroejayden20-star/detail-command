@@ -86,6 +86,7 @@ function receipt(overrides: Partial<Receipt>): Receipt {
     subtotalCents: 0,
     discountCents: 0,
     taxCents: 0,
+    tipCents: 0,
     depositPaidCents: 0,
     totalCents: 0,
     amountPaidCents: 0,

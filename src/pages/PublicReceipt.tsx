@@ -12,6 +12,7 @@ interface PublicReceiptResponse {
   subtotalCents?: number;
   discountCents?: number;
   taxCents?: number;
+  tipCents?: number;
   depositPaidCents?: number;
   totalCents?: number;
   amountPaidCents?: number;
@@ -72,6 +73,7 @@ export function PublicReceiptPage() {
               subtotalCents: resp.subtotalCents ?? 0,
               discountCents: resp.discountCents ?? 0,
               taxCents: resp.taxCents ?? 0,
+              tipCents: resp.tipCents ?? 0,
               depositPaidCents: resp.depositPaidCents ?? 0,
               totalCents: resp.totalCents ?? 0,
               amountPaidCents: resp.amountPaidCents ?? 0,

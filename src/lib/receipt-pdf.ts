@@ -238,6 +238,9 @@ export async function downloadReceiptPdf(
   if (receipt.taxCents > 0) {
     row("Sales tax", formatCents(receipt.taxCents, receipt.currency));
   }
+  if (receipt.tipCents > 0) {
+    row("Tip", formatCents(receipt.tipCents, receipt.currency));
+  }
   if (receipt.depositPaidCents > 0) {
     row(
       "Deposit paid",

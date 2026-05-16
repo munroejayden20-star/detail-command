@@ -143,6 +143,13 @@ export function ReceiptView({ receipt }: ReceiptViewProps) {
         {receipt.taxCents > 0 ? (
           <RowLine label="Sales tax" value={formatCents(receipt.taxCents, receipt.currency)} />
         ) : null}
+        {receipt.tipCents > 0 ? (
+          <RowLine
+            label="Tip"
+            value={formatCents(receipt.tipCents, receipt.currency)}
+            tone="emerald"
+          />
+        ) : null}
         {receipt.depositPaidCents > 0 ? (
           <RowLine
             label="Deposit paid"

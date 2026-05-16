@@ -67,6 +67,7 @@ export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteD
   const [finalPrice, setFinalPrice] = useState<string>(String(defaultPriceDollars));
   const [discount, setDiscount] = useState<string>("0");
   const [tax, setTax] = useState<string>("0");
+  const [tip, setTip] = useState<string>("0");
   // Tracks whether the user manually edited the tax field; if they have, we
   // stop auto-calculating so we don't clobber their override.
   const [taxOverridden, setTaxOverridden] = useState(false);
@@ -141,6 +142,7 @@ export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteD
         finalPriceCents,
         discountCents: dollarsToCents(Number(discount)),
         taxCents: dollarsToCents(Number(tax)),
+        tipCents: dollarsToCents(Number(tip)),
         depositPaidCents: dollarsToCents(Number(deposit)),
         paymentMethod,
         paymentStatus,
@@ -242,6 +244,17 @@ export function MarkCompleteDialog({ open, appointment, onClose }: MarkCompleteD
                 setTax(e.target.value);
                 setTaxOverridden(true);
               }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tip">Tip</Label>
+            <Input
+              id="tip"
+              type="number"
+              min="0"
+              step="0.01"
+              value={tip}
+              onChange={(e) => setTip(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">

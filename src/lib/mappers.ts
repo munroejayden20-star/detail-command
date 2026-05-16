@@ -232,6 +232,7 @@ export function receiptToRow(r: Receipt, userId: string) {
     subtotal_cents: r.subtotalCents,
     discount_cents: r.discountCents,
     tax_cents: r.taxCents,
+    tip_cents: r.tipCents,
     deposit_paid_cents: r.depositPaidCents,
     total_cents: r.totalCents,
     amount_paid_cents: r.amountPaidCents,
@@ -263,6 +264,7 @@ export function receiptPatchToRow(p: Partial<Receipt>): Record<string, unknown> 
   if (p.subtotalCents !== undefined) out.subtotal_cents = p.subtotalCents;
   if (p.discountCents !== undefined) out.discount_cents = p.discountCents;
   if (p.taxCents !== undefined) out.tax_cents = p.taxCents;
+  if (p.tipCents !== undefined) out.tip_cents = p.tipCents;
   if (p.depositPaidCents !== undefined) out.deposit_paid_cents = p.depositPaidCents;
   if (p.totalCents !== undefined) out.total_cents = p.totalCents;
   if (p.amountPaidCents !== undefined) out.amount_paid_cents = p.amountPaidCents;
@@ -293,6 +295,7 @@ export function receiptFromRow(r: any): Receipt {
     subtotalCents: Number(r.subtotal_cents ?? 0),
     discountCents: Number(r.discount_cents ?? 0),
     taxCents: Number(r.tax_cents ?? 0),
+    tipCents: Number(r.tip_cents ?? 0),
     depositPaidCents: Number(r.deposit_paid_cents ?? 0),
     totalCents: Number(r.total_cents ?? 0),
     amountPaidCents: Number(r.amount_paid_cents ?? 0),

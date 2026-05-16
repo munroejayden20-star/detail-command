@@ -268,6 +268,7 @@ export interface Receipt {
   subtotalCents: number;
   discountCents: number;
   taxCents: number;
+  tipCents: number;
   depositPaidCents: number;
   totalCents: number;
   amountPaidCents: number;

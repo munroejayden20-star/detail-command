@@ -16,6 +16,7 @@ const rPaid: Receipt = {
   subtotalCents: 25000,
   discountCents: 0,
   taxCents: 2000,
+  tipCents: 0,
   depositPaidCents: 0,
   totalCents: 27000,
   amountPaidCents: 27000,
