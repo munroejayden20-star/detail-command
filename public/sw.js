@@ -20,6 +20,10 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// No-op fetch handler — required for Chrome/Edge to consider the app
+// installable. We don't cache; just pass through to the network.
+self.addEventListener("fetch", () => {});
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {

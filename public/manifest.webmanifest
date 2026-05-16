@@ -1,16 +1,16 @@
 {
-  "name": "JMDetailing — Detail Command",
-  "short_name": "Detail Command",
-  "description": "Mobile auto detailing business hub — bookings, customers, jobs, photos.",
-  "start_url": "/",
+  "name": "Iris — Detail Command",
+  "short_name": "Iris",
+  "description": "Iris quick view — at-a-glance jobs, attention, and revenue with direct chat access to the Detail Command intelligence layer.",
+  "start_url": "/quick",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#09090b",
   "theme_color": "#dc2626",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/iris-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -19,6 +19,29 @@
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Full Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open the full Detail Command dashboard.",
+      "url": "/",
+      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Ask Iris",
+      "short_name": "Iris",
+      "description": "Open the full Iris intelligence panel.",
+      "url": "/iris",
+      "icons": [{ "src": "/iris-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Today's calendar",
+      "short_name": "Calendar",
+      "description": "Jump to today's appointments.",
+      "url": "/calendar",
+      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ]
 }

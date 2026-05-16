@@ -1,6 +1,6 @@
 import { lazy, Suspense, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Toaster } from "sonner";
 import { StoreProvider, useStore } from "@/store/store";
@@ -36,6 +36,7 @@ const MileagePage = lazy(() => import("@/pages/Mileage").then((m) => ({ default:
 const WorkPage = lazy(() => import("@/pages/Work").then((m) => ({ default: m.WorkPage })));
 const TemplatesPage = lazy(() => import("@/pages/Templates").then((m) => ({ default: m.TemplatesPage })));
 const IrisPage = lazy(() => import("@/pages/Iris").then((m) => ({ default: m.IrisPage })));
+const QuickViewPage = lazy(() => import("@/pages/QuickView").then((m) => ({ default: m.QuickViewPage })));
 
 function PageFallback() {
   return (
@@ -117,6 +118,20 @@ export default function App() {
         <Route path="/booking/success" element={lazyRoute(<BookingSuccessPage />)} />
         <Route path="/booking/cancel" element={lazyRoute(<BookingCancelPage />)} />
         <Route path="/receipt/:token" element={lazyRoute(<PublicReceiptPage />)} />
+        {/* Chromeless admin routes (Quick View widget) — auth + data, no Layout shell. */}
+        <Route
+          element={
+            <AuthGuard>
+              <StoreProvider>
+                <DataGate>
+                  <Outlet />
+                </DataGate>
+              </StoreProvider>
+            </AuthGuard>
+          }
+        >
+          <Route path="/quick" element={lazyRoute(<QuickViewPage />)} />
+        </Route>
         <Route
           element={
             <AuthGuard>
