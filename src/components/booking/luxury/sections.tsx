@@ -407,24 +407,6 @@ export function Hero({
           </Reveal>
         </div>
 
-        {/* RIGHT — small frosted spec card tucked into the bottom-right.
-         *  Hidden on mobile (image takes the breathing room there). */}
-        <div className="hidden self-end justify-self-end md:col-span-5 md:flex md:flex-col md:items-end lg:col-span-5">
-          <Reveal delay={0.55}>
-            <div className="relative max-w-[280px] overflow-hidden border border-white/10 bg-obsidian-950/55 px-5 py-4 backdrop-blur-md">
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -top-px left-0 h-px w-1/2 bg-gradient-to-r from-ember-400/70 to-transparent"
-              />
-              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-3">
-                <SpecRow k="Mode"    v="Mobile · we arrive" />
-                <SpecRow k="Region"  v={serviceArea ?? "WA / OR"} />
-                <SpecRow k="Built"   v="By one detailer" />
-                <SpecRow k="Booking" v="Direct, no agent" />
-              </div>
-            </div>
-          </Reveal>
-        </div>
       </div>
 
       {/* ─── L15 — bottom bleed: hero dissolves into next section ────────── */}
@@ -629,15 +611,6 @@ function HeroAmbient() {
         />
       )}
     </div>
-  );
-}
-
-function SpecRow({ k, v }: { k: string; v: string }) {
-  return (
-    <>
-      <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-ember-300">{k}</span>
-      <span className="text-[12.5px] tracking-wide text-platinum-100">{v}</span>
-    </>
   );
 }
 
