@@ -78,6 +78,8 @@ export interface Customer {
   email?: string;
   address?: string;
   preferredContact?: string;
+  /** Phase K — stable customer-portal access token for the /book page. */
+  customerAccessToken?: string;
   vehicles: Vehicle[];
   notes?: string;
   isRepeat?: boolean;

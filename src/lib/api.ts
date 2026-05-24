@@ -347,6 +347,12 @@ export const api = {
     const sb = sbOrThrow();
     return sb.storage.from("photos").remove([path]);
   },
+  /** Remove any file from any bucket — used for published booking photos that
+   *  live in `booking-uploads`. Caller resolves the bucket + path. */
+  removeStorageFile: async (bucket: string, path: string) => {
+    const sb = sbOrThrow();
+    return sb.storage.from(bucket).remove([path]);
+  },
   signPhotoUrl: async (path: string, expiresIn = 3600) => {
     const sb = sbOrThrow();
     return sb.storage.from("photos").createSignedUrl(path, expiresIn);

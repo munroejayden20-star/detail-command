@@ -35,6 +35,7 @@ export function customerToRow(c: Customer, userId: string) {
     email: c.email ?? null,
     address: c.address ?? null,
     preferred_contact: c.preferredContact ?? null,
+    customer_access_token: c.customerAccessToken ?? null,
     vehicles: c.vehicles ?? [],
     notes: c.notes ?? null,
     is_repeat: !!c.isRepeat,
@@ -54,6 +55,7 @@ export function customerPatchToRow(p: Partial<Customer>): Record<string, unknown
   if (p.isRepeat !== undefined) out.is_repeat = !!p.isRepeat;
   if (p.isMonthlyMaintenance !== undefined) out.is_monthly_maintenance = !!p.isMonthlyMaintenance;
   if (p.preferredContact !== undefined) out.preferred_contact = p.preferredContact ?? null;
+  if (p.customerAccessToken !== undefined) out.customer_access_token = p.customerAccessToken ?? null;
   return out;
 }
 
@@ -65,6 +67,7 @@ export function customerFromRow(r: any): Customer {
     email: r.email ?? undefined,
     address: r.address ?? undefined,
     preferredContact: r.preferred_contact ?? undefined,
+    customerAccessToken: r.customer_access_token ?? undefined,
     vehicles: r.vehicles ?? [],
     notes: r.notes ?? undefined,
     isRepeat: !!r.is_repeat,

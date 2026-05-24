@@ -164,8 +164,33 @@ export async function uploadPhoto(
 }
 
 /** Delete the file from Storage (best-effort) and clear cache. Caller dispatches
- *  `deletePhoto` separately for the metadata row. */
+ *  `deletePhoto` separately for the metadata row.
+ *
+ *  Handles two cases:
+ *    1. Private path (`<user_id>/<photo_id>.<ext>`) → photos bucket
+ *    2. Public URL (`https://.../storage/v1/object/public/<bucket>/<path>`) →
+ *       parsed and deleted from the original bucket (typically booking-uploads
+ *       for photos that were published via Featured Photos picker).
+ */
 export async function removePhotoFile(path: string): Promise<void> {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    const parsed = parsePublicStorageUrl(path);
+    if (parsed) {
+      await api.removeStorageFile(parsed.bucket, parsed.path);
+    }
+    clearSignedUrlCache(path);
+    return;
+  }
   await api.removePhotoFile(path);
   clearSignedUrlCache(path);
+}
+
+/** Extract `{bucket, path}` from a Supabase public-storage URL.
+ *  Returns null if the URL doesn't match the expected pattern. */
+function parsePublicStorageUrl(
+  url: string,
+): { bucket: string; path: string } | null {
+  const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/);
+  if (!m) return null;
+  return { bucket: m[1], path: decodeURIComponent(m[2]) };
 }
