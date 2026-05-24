@@ -1754,12 +1754,11 @@ function FeaturedPhotosPicker({
     if (!photo) return false;
     if (isPublic(photo.storagePath)) return true;
 
-    const confirmed = window.confirm(
-      "Publish this photo to your booking page? It will become publicly visible to anyone who visits /book.",
-    );
-    if (!confirmed) return false;
-
+    // No confirm dialog — the user already explicitly tapped this photo to
+    // feature it, which is the consent. The "publishes to public bucket"
+    // semantics are documented in the picker's helper text above.
     setPublishingId(photoId);
+    const toastId = toast.loading("Publishing photo to booking page…");
     try {
       const signedUrl = await getSignedPhotoUrl(photo.storagePath);
       if (!signedUrl) throw new Error("Could not access the original file");
@@ -1780,13 +1779,14 @@ function FeaturedPhotosPicker({
         // commit() already toasted + refetched. Returning false keeps the
         // photo out of the featured list so we never reference a row whose
         // storage_path didn't make it to the server.
+        toast.dismiss(toastId);
         return false;
       }
-      toast.success("Photo published to your booking page");
+      toast.success("Photo published — it will appear on /book", { id: toastId });
       return true;
     } catch (e) {
       console.error("[featured] publish failed", e);
-      toast.error(e instanceof Error ? e.message : "Could not publish photo");
+      toast.error(e instanceof Error ? e.message : "Could not publish photo", { id: toastId });
       return false;
     } finally {
       setPublishingId(null);
@@ -1869,7 +1869,7 @@ function FeaturedPhotosPicker({
           Featured photos
         </p>
         <p className="text-[11px] text-muted-foreground mt-1">
-          Drop images here or click to upload — they'll appear on /book in the gallery. You can also pick from existing photos below.
+          Drop images here or click to upload — they'll appear on /book in the gallery. You can also tap any photo below to feature it; private job photos are auto-published to the public booking bucket when you pick them.
         </p>
       </div>
 
