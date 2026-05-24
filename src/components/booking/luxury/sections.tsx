@@ -322,30 +322,40 @@ export function Hero({
       id="home"
       className="relative isolate overflow-hidden bg-obsidian-950 text-platinum-50"
     >
-      {/* Background — layered gradient + ember corner + mouse spotlight + grid */}
-      <div aria-hidden className="absolute inset-0">
+      {/* ─── L0 — base atmosphere ───────────────────────────────────────────
+       * Deep gradient + faint animated grid + carbon weave + film grain.
+       * Sits at the very back of the stacking context; every other layer
+       * (image, ambient, content) paints on top. */}
+      <div aria-hidden className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_0%,#0f1218_0%,#06070a_55%,#040506_100%)]" />
         <div
-          className="absolute inset-0 opacity-[0.18] animate-lx-grid-pan"
+          className="absolute inset-0 opacity-[0.14] animate-lx-grid-pan"
           style={{
             backgroundImage:
               "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
           }}
         />
-        <CarbonWeave opacity={0.4} />
+        <CarbonWeave opacity={0.35} />
         <GrainOverlay opacity={0.10} />
       </div>
-      <MouseSpotlight />
 
-      {/* Top-corner ember orb */}
-      <div className="pointer-events-none absolute -right-32 -top-20 opacity-90">
+      {/* ─── L1 — hero image as a full-bleed backdrop ─────────────────────── */}
+      <HeroImagePlate heroImageUrl={heroImageUrl} />
+
+      {/* ─── L2 — cinematic ambient: rays, smoke, scanline ─────────────────── */}
+      <HeroAmbient />
+
+      {/* ─── L3 — interactive accents ─────────────────────────────────────── */}
+      <MouseSpotlight color="rgba(221,41,20,0.22)" size={620} />
+      <div className="pointer-events-none absolute -right-32 -top-20 z-[3] opacity-90">
         <EmberOrb size={520} />
       </div>
 
-      <div className="relative mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-12 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-20 md:pt-36">
+      {/* ─── L10 — content (text + spec corner) ──────────────────────────── */}
+      <div className="relative z-10 mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-16 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-24 md:pt-36">
         {/* LEFT — editorial headline */}
-        <div className="md:col-span-8">
+        <div className="md:col-span-7 lg:col-span-7">
           <Reveal delay={0.05}>
             <div className="flex items-center gap-3 text-platinum-300/80">
               <span className="font-mono text-[11px] tracking-[0.32em] text-ember-300">N 45°37′ · W 122°40′</span>
@@ -359,12 +369,12 @@ export function Hero({
               text={headlineRaw}
               italics={italicIdx}
               as="h1"
-              className="font-sans text-[clamp(2.7rem,9vw,7.4rem)] font-extralight leading-[0.96] tracking-[-0.02em] text-platinum-50"
+              className="font-sans text-[clamp(2.7rem,9vw,7.4rem)] font-extralight leading-[0.96] tracking-[-0.02em] text-platinum-50 [text-shadow:0_2px_30px_rgba(0,0,0,0.7)]"
             />
           </div>
 
           <Reveal delay={0.45} y={18}>
-            <p className="mt-8 max-w-[44ch] text-[15px] leading-relaxed text-platinum-200/85 md:text-base">
+            <p className="mt-8 max-w-[44ch] text-[15px] leading-relaxed text-platinum-200/90 md:text-base [text-shadow:0_1px_10px_rgba(0,0,0,0.6)]">
               {sub}
             </p>
           </Reveal>
@@ -384,7 +394,7 @@ export function Hero({
 
           {/* Marquee row */}
           <Reveal delay={0.75}>
-            <div className="mt-14 border-y border-white/10 py-5">
+            <div className="mt-14 border-y border-white/10 bg-obsidian-950/35 py-5 backdrop-blur-[2px]">
               <Marquee speed="slow">
                 {MANIFESTO_LINES.map((t, i) => (
                   <span key={i} className="flex items-center gap-12">
@@ -397,54 +407,34 @@ export function Hero({
           </Reveal>
         </div>
 
-        {/* RIGHT — vertical spec column + photographic plate */}
-        <div className="md:col-span-4">
-          <ParallaxLayer speed={0.12}>
-            <div className="relative">
-              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-4 pb-8">
-                <SpecRow k="Mode"   v="Mobile · we arrive" />
-                <SpecRow k="Region" v={serviceArea ?? "WA / OR"} />
-                <SpecRow k="Built"  v="By one detailer" />
+        {/* RIGHT — small frosted spec card tucked into the bottom-right.
+         *  Hidden on mobile (image takes the breathing room there). */}
+        <div className="hidden self-end justify-self-end md:col-span-5 md:flex md:flex-col md:items-end lg:col-span-5">
+          <Reveal delay={0.55}>
+            <div className="relative max-w-[280px] overflow-hidden border border-white/10 bg-obsidian-950/55 px-5 py-4 backdrop-blur-md">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-px left-0 h-px w-1/2 bg-gradient-to-r from-ember-400/70 to-transparent"
+              />
+              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-3">
+                <SpecRow k="Mode"    v="Mobile · we arrive" />
+                <SpecRow k="Region"  v={serviceArea ?? "WA / OR"} />
+                <SpecRow k="Built"   v="By one detailer" />
                 <SpecRow k="Booking" v="Direct, no agent" />
               </div>
-
-              {/*
-               * No border, no rounded corners, no corner tags — the image is
-               * masked with a radial gradient so its edges dissolve into the
-               * obsidian hero background instead of sitting in a framed plate.
-               * The mask is applied to the *outer* container so both the
-               * <img> and any fallback content share the same soft outline.
-               */}
-              <div
-                className="group relative aspect-[4/5] overflow-hidden"
-                style={{
-                  WebkitMaskImage:
-                    "radial-gradient(ellipse 78% 88% at 55% 45%, #000 50%, rgba(0,0,0,0.6) 75%, transparent 100%)",
-                  maskImage:
-                    "radial-gradient(ellipse 78% 88% at 55% 45%, #000 50%, rgba(0,0,0,0.6) 75%, transparent 100%)",
-                }}
-              >
-                {heroImageUrl ? (
-                  <img
-                    src={heroImageUrl}
-                    alt=""
-                    loading="eager"
-                    className="absolute inset-0 h-full w-full object-cover transition-transform [transition-duration:1600ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
-                  />
-                ) : (
-                  <HeroPlateFallback />
-                )}
-                {/* Subtle bottom-fade so any text underneath still reads even
-                 *  when the photo is bright on its lower half. */}
-                <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950/55 via-transparent to-transparent" />
-              </div>
             </div>
-          </ParallaxLayer>
+          </Reveal>
         </div>
       </div>
 
-      {/* scroll cue */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center md:bottom-10">
+      {/* ─── L15 — bottom bleed: hero dissolves into next section ────────── */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[15] h-40 bg-gradient-to-b from-transparent via-obsidian-950/60 to-obsidian-950"
+      />
+
+      {/* scroll cue — z-20, above everything */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center md:bottom-10">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -461,6 +451,167 @@ export function Hero({
         </motion.div>
       </div>
     </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * HeroImagePlate — full-bleed photographic backdrop.
+ *
+ * Lives at z-[1] behind the content but above the base atmosphere. The image
+ * anchors to the right of the viewport, takes 60% width on desktop, and uses
+ * a radial mask + edge vignette + top/bottom linear fades so it never reads
+ * as a rectangle — it dissolves into the surrounding obsidian on every side
+ * and bleeds smoothly into the next section at the bottom.
+ *
+ * Behind the image we paint a large ember bloom — this gives the impression
+ * of a taillight glow blowing out from the focal area even if the photo
+ * doesn't have its own lights doing the work.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+function HeroImagePlate({ heroImageUrl }: { heroImageUrl?: string }) {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+      {/* Ember bloom behind the right portion of the image — the "taillight"
+       *  glow that bleeds onto the page atmosphere. */}
+      <div
+        className="absolute right-[2%] top-[28%] h-[65vh] w-[65vh] rounded-full blur-3xl animate-lx-ember-pulse"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(221,41,20,0.30) 0%, rgba(248,114,72,0.08) 35%, transparent 65%)",
+        }}
+      />
+      {/* Cooler copper backbloom — depth opposite the ember side */}
+      <div
+        className="absolute right-[28%] top-[10%] h-[45vh] w-[45vh] rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(168,114,70,0.10) 0%, transparent 65%)",
+        }}
+      />
+
+      <ParallaxLayer speed={0.16}>
+        <div
+          className="absolute inset-y-0 right-0 w-full opacity-[0.92] md:w-[68%] lg:w-[60%]"
+          style={{
+            WebkitMaskImage:
+              "radial-gradient(ellipse 72% 78% at 62% 50%, #000 32%, rgba(0,0,0,0.55) 65%, transparent 100%)",
+            maskImage:
+              "radial-gradient(ellipse 72% 78% at 62% 50%, #000 32%, rgba(0,0,0,0.55) 65%, transparent 100%)",
+          }}
+        >
+          {heroImageUrl ? (
+            <img
+              src={heroImageUrl}
+              alt=""
+              loading="eager"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover object-[60%_45%]"
+            />
+          ) : (
+            <HeroPlateFallback />
+          )}
+
+          {/* Edge vignette — darkens corners so the car commands focus */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_110%_85%_at_55%_55%,transparent_28%,rgba(6,7,10,0.5)_72%,#06070a_100%)]" />
+
+          {/* Selective contrast/saturation: dark overlay on the OPPOSITE side
+           *  of the focal point (left edge of the plate, near the text) so the
+           *  headline stays readable on top of bright photos. */}
+          <div className="absolute inset-y-0 left-0 w-2/5 bg-gradient-to-r from-obsidian-950/85 via-obsidian-950/35 to-transparent" />
+
+          {/* Top fade — image dissolves into the upper atmosphere */}
+          <div className="absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-obsidian-950/95 via-obsidian-950/40 to-transparent" />
+
+          {/* Bottom fade — image dissolves into the next section */}
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent via-obsidian-950/55 to-obsidian-950" />
+        </div>
+      </ParallaxLayer>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * HeroAmbient — cinematic atmosphere layer above the image, below content.
+ *
+ * Four ingredients:
+ *   1. Two volumetric light rays — conic gradients descending from off-screen,
+ *      masked to fade as they fall. Reads as a single soft "skylight" lane.
+ *   2. Three drifting fog/smoke blobs — large blurred radials moving on
+ *      independent slow loops via framer-motion. transform-only animations.
+ *   3. A one-shot scanline that traverses the section on page load.
+ *
+ * Reduced motion: animations are gated so the smoke + scanline freeze. The
+ * static rays remain because they don't move — they're just light.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+function HeroAmbient() {
+  const reduced = useReducedMotion();
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-[2] overflow-hidden">
+      {/* Volumetric ray 1 — warm ember from upper-right */}
+      <div
+        className="absolute -top-[10%] right-[18%] h-[130vh] w-[100vh] opacity-[0.32] mix-blend-screen"
+        style={{
+          background:
+            "conic-gradient(from 200deg at 50% 0%, transparent 0deg, rgba(248,114,72,0.18) 12deg, rgba(248,114,72,0.04) 22deg, transparent 32deg)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at 50% 0%, black 0%, black 28%, transparent 70%)",
+          maskImage:
+            "radial-gradient(ellipse at 50% 0%, black 0%, black 28%, transparent 70%)",
+        }}
+      />
+      {/* Volumetric ray 2 — neutral, wider, secondary */}
+      <div
+        className="absolute -top-[20%] right-[36%] h-[110vh] w-[80vh] opacity-[0.18] mix-blend-screen"
+        style={{
+          background:
+            "conic-gradient(from 215deg at 50% 0%, transparent 0deg, rgba(255,255,255,0.07) 7deg, transparent 16deg)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at 50% 0%, black 0%, transparent 60%)",
+          maskImage:
+            "radial-gradient(ellipse at 50% 0%, black 0%, transparent 60%)",
+        }}
+      />
+
+      {/* Drifting smoke — independent slow loops. transform-only for GPU. */}
+      <motion.div
+        className="absolute left-[6%] top-[12%] h-[60vh] w-[60vh] rounded-full blur-3xl will-change-transform"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(168,114,70,0.10) 0%, transparent 65%)",
+        }}
+        animate={reduced ? undefined : { x: [0, 38, -18, 0], y: [0, -28, 14, 0] }}
+        transition={{ duration: 36, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-[10%] right-[20%] h-[50vh] w-[50vh] rounded-full blur-3xl will-change-transform"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(221,41,20,0.07) 0%, transparent 60%)",
+        }}
+        animate={reduced ? undefined : { x: [0, -30, 16, 0], y: [0, 20, -10, 0] }}
+        transition={{ duration: 42, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-[24%] left-[34%] h-[42vh] w-[42vh] rounded-full blur-2xl will-change-transform"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,255,255,0.025) 0%, transparent 72%)",
+        }}
+        animate={reduced ? undefined : { x: [0, 22, -16, 0], y: [0, -16, 12, 0] }}
+        transition={{ duration: 48, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* One-shot scanline — sweeps top → bottom once on load. */}
+      {!reduced && (
+        <motion.div
+          className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-ember-400/65 to-transparent will-change-transform"
+          initial={{ top: "18%", opacity: 0 }}
+          animate={{ top: "72%", opacity: [0, 0.6, 0] }}
+          transition={{ duration: 2.6, ease: [0.16, 1, 0.3, 1], delay: 0.6 }}
+        />
+      )}
+    </div>
   );
 }
 
