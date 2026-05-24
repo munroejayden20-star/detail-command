@@ -719,7 +719,7 @@ function VehicleImagePlate({ selected }: { selected: string }) {
                 }}
               />
               <p className="relative font-mono text-[10.5px] uppercase tracking-[0.34em] text-platinum-300/55">
-                Select a size to render the plate
+                Select a size to show the reference vehicle
               </p>
             </motion.div>
           )}
