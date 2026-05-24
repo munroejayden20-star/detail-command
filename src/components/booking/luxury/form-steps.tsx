@@ -314,6 +314,79 @@ function ToggleRow({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * ExpandableDescription — clamped paragraph + "Read more" toggle.
+ *
+ * The toggle only renders when the clamped paragraph actually overflows. We
+ * measure scrollHeight vs clientHeight on every resize via ResizeObserver so
+ * the affordance stays correct across viewport changes. The toggle stops
+ * propagation so it never triggers the parent tile's select/toggle.
+ *
+ * Designed to live inside a clickable card wrapper rendered as
+ * <div role="button">, since a real <button> inside another <button> is
+ * invalid HTML — the package/add-on tiles use role-button wrappers for that
+ * reason.
+ *
+ * `clampClass` lets the caller pick line-clamp-2 (compact addons) or
+ * line-clamp-3 (more breathing room on packages).
+ */
+function ExpandableDescription({
+  text,
+  clampClass = "line-clamp-2",
+}: {
+  text: string;
+  clampClass?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const descRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    if (!text) return;
+    function measure() {
+      const el = descRef.current;
+      if (!el) return;
+      if (el.dataset.clamped === "true") {
+        setOverflows(el.scrollHeight - 1 > el.clientHeight);
+      }
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (descRef.current) ro.observe(descRef.current);
+    return () => ro.disconnect();
+  }, [text]);
+
+  return (
+    <>
+      <p
+        ref={descRef}
+        data-clamped={!expanded}
+        className={`whitespace-pre-line text-[13px] leading-relaxed text-platinum-300/85 ${
+          expanded ? "" : clampClass
+        }`}
+      >
+        {text}
+      </p>
+      {overflows ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded((v) => !v);
+          }}
+          className="mt-1.5 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.26em] text-ember-300 transition-colors hover:text-ember-200"
+        >
+          {expanded ? "Show less" : "Read more"}
+          <ChevronDown
+            className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * STEP 1 — Service
  * ──────────────────────────────────────────────────────────────────────── */
 
@@ -343,20 +416,33 @@ function Step1Service({
             const disc = activeDiscount(s);
             const lo = disc ? applyDiscount(s.priceLow, disc) : s.priceLow;
             const hi = disc ? applyDiscount(s.priceHigh, disc) : s.priceHigh;
+            const toggle = () => {
+              // Toggle in/out of the selection. Same pattern as add-ons —
+              // the submit RPC already accepts an array of service ids.
+              const next = selected
+                ? form.serviceIds.filter((id) => id !== s.id)
+                : [...form.serviceIds, s.id];
+              set({ serviceIds: next });
+            };
             return (
               <li key={s.id}>
-                <button
-                  type="button"
+                {/*
+                 * role="button" instead of a real <button> so the description's
+                 * "Read more" toggle (a real <button>) can nest legally. Outer
+                 * div is keyboard-accessible via tabIndex + onKeyDown.
+                 */}
+                <div
+                  role="button"
+                  tabIndex={0}
                   aria-pressed={selected}
-                  onClick={() => {
-                    // Toggle in/out of the selection. Same pattern as add-ons —
-                    // the submit RPC already accepts an array of service ids.
-                    const next = selected
-                      ? form.serviceIds.filter((id) => id !== s.id)
-                      : [...form.serviceIds, s.id];
-                    set({ serviceIds: next });
+                  onClick={toggle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggle();
+                    }
                   }}
-                  className={`group relative w-full overflow-hidden border p-5 text-left transition-all md:p-6 ${
+                  className={`group relative w-full overflow-hidden border p-5 text-left transition-all md:p-6 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-400/70 ${
                     selected
                       ? "border-ember-400/70 bg-ember-500/[0.06]"
                       : "border-white/10 bg-white/[0.015] hover:border-white/25"
@@ -386,9 +472,9 @@ function Step1Service({
                         </span>
                       </h4>
                       {s.description ? (
-                        <p className="mt-2 line-clamp-2 max-w-[56ch] whitespace-pre-line text-[13.5px] leading-relaxed text-platinum-300/85">
-                          {s.description}
-                        </p>
+                        <div className="mt-2 max-w-[56ch]">
+                          <ExpandableDescription text={s.description} clampClass="line-clamp-3" />
+                        </div>
                       ) : null}
                       <p className="mt-3 font-mono text-[10.5px] uppercase tracking-[0.22em] text-platinum-300/70">
                         Est. {fmtDuration(s.durationMinutes)} · Mobile
@@ -411,7 +497,7 @@ function Step1Service({
                     aria-hidden
                     className={`absolute bottom-0 left-0 h-px bg-ember-400 transition-all duration-700 ${selected ? "w-full" : "w-0 group-hover:w-1/4"}`}
                   />
-                </button>
+                </div>
               </li>
             );
           })}
@@ -456,17 +542,26 @@ function Step2Addons({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {addons.map((s) => {
             const checked = form.addonIds.includes(s.id);
+            const toggle = () => {
+              const ids = checked
+                ? form.addonIds.filter((id) => id !== s.id)
+                : [...form.addonIds, s.id];
+              set({ addonIds: ids });
+            };
             return (
-              <button
+              <div
                 key={s.id}
-                type="button"
-                onClick={() => {
-                  const ids = checked
-                    ? form.addonIds.filter((id) => id !== s.id)
-                    : [...form.addonIds, s.id];
-                  set({ addonIds: ids });
+                role="button"
+                tabIndex={0}
+                aria-pressed={checked}
+                onClick={toggle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggle();
+                  }
                 }}
-                className={`group relative flex items-start justify-between gap-4 overflow-hidden border p-4 text-left transition-all ${
+                className={`group relative flex items-start justify-between gap-4 overflow-hidden border p-4 text-left transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-400/70 ${
                   checked
                     ? "border-ember-400/70 bg-ember-500/[0.06]"
                     : "border-white/10 bg-white/[0.015] hover:border-white/25"
@@ -485,13 +580,15 @@ function Step2Addons({
                     <span className="font-sans text-[14.5px] text-platinum-50">{s.name}</span>
                   </span>
                   {s.description ? (
-                    <p className="ml-8 mt-1 line-clamp-2 text-[12.5px] text-platinum-300/85">{s.description}</p>
+                    <div className="ml-8 mt-1">
+                      <ExpandableDescription text={s.description} clampClass="line-clamp-2" />
+                    </div>
                   ) : null}
                 </span>
                 <span className="shrink-0 font-mono text-[12px] uppercase tracking-[0.22em] text-platinum-100">
                   +{fmtPrice(s.priceLow, s.priceHigh)}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
