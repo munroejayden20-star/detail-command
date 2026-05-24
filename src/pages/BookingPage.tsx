@@ -290,7 +290,7 @@ export function BookingPage() {
         stains: form.stains,
         heavyDirt: form.heavyDirt,
         vehicleNotes: form.vehicleNotes || undefined,
-        serviceIds: form.serviceId ? [form.serviceId] : [],
+        serviceIds: form.serviceIds,
         addonIds: form.addonIds,
         estimatedPrice,
         preferredDate: form.preferredDate || undefined,
@@ -336,7 +336,15 @@ export function BookingPage() {
   }
 
   function selectServiceAndJump(serviceId: string) {
-    set({ serviceId });
+    // Append to the current selection (now multi-select). If the customer
+    // already has this package selected and clicks "Configure" on the same
+    // tile, this is a no-op rather than a deselect — landing-page clicks are
+    // always additive; the configurator step itself is where you can remove.
+    set({
+      serviceIds: form.serviceIds.includes(serviceId)
+        ? form.serviceIds
+        : [...form.serviceIds, serviceId],
+    });
     setStep(2);
     setTimeout(() => scrollToId("book"), 50);
   }

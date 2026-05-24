@@ -31,7 +31,9 @@ import { EmberCTA, LiquidProgress, Reveal } from "./primitives";
  * ──────────────────────────────────────────────────────────────────────── */
 
 export interface FormState {
-  serviceId: string;
+  /** Selected package services. Multi-select — customers can stack packages
+   *  the same way they stack add-ons. The submit RPC already accepts a list. */
+  serviceIds: string[];
   addonIds: string[];
   vehicleSize: string;
   vehicleYear: string;
@@ -58,7 +60,7 @@ export interface FormState {
 }
 
 export const EMPTY_FORM: FormState = {
-  serviceId: "",
+  serviceIds: [],
   addonIds: [],
   vehicleSize: "",
   vehicleYear: "",
@@ -329,15 +331,15 @@ function Step1Service({
     <div className="space-y-7">
       <StepHeader
         kicker="Step one"
-        title="Choose your level."
-        body="Pick the closest fit. We'll tune the rest together."
+        title="Choose your packages."
+        body="Pick anything that applies — tap to add, tap again to remove."
       />
       {packages.length === 0 ? (
         <p className="text-platinum-300/70">No packages available right now. Check back soon.</p>
       ) : (
         <ul className="space-y-3">
           {packages.map((s) => {
-            const selected = form.serviceId === s.id;
+            const selected = form.serviceIds.includes(s.id);
             const disc = activeDiscount(s);
             const lo = disc ? applyDiscount(s.priceLow, disc) : s.priceLow;
             const hi = disc ? applyDiscount(s.priceHigh, disc) : s.priceHigh;
@@ -345,7 +347,15 @@ function Step1Service({
               <li key={s.id}>
                 <button
                   type="button"
-                  onClick={() => set({ serviceId: s.id })}
+                  aria-pressed={selected}
+                  onClick={() => {
+                    // Toggle in/out of the selection. Same pattern as add-ons —
+                    // the submit RPC already accepts an array of service ids.
+                    const next = selected
+                      ? form.serviceIds.filter((id) => id !== s.id)
+                      : [...form.serviceIds, s.id];
+                    set({ serviceIds: next });
+                  }}
                   className={`group relative w-full overflow-hidden border p-5 text-left transition-all md:p-6 ${
                     selected
                       ? "border-ember-400/70 bg-ember-500/[0.06]"
@@ -353,7 +363,18 @@ function Step1Service({
                   }`}
                   style={{ borderRadius: 2 }}
                 >
-                  <div className="grid grid-cols-[1fr_auto] items-start gap-6">
+                  <div className="grid grid-cols-[auto_1fr_auto] items-start gap-4">
+                    {/* check indicator — left rail, mirrors the addon UI so the
+                     *  "multi-select" affordance reads immediately. */}
+                    <span
+                      className={`mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border transition-colors ${
+                        selected ? "border-ember-400 bg-ember-500/40" : "border-white/30"
+                      }`}
+                      aria-hidden
+                    >
+                      {selected ? <CheckCircle2 className="h-3.5 w-3.5 text-platinum-50" /> : null}
+                    </span>
+
                     <div>
                       <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-ember-300">
                         Package
@@ -396,6 +417,12 @@ function Step1Service({
           })}
         </ul>
       )}
+
+      {form.serviceIds.length > 1 ? (
+        <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-platinum-300/65">
+          {form.serviceIds.length} packages selected
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -524,26 +551,22 @@ function Step2Addons({
  */
 const VEHICLE_IMAGE_SOURCES: Record<
   string,
-  { label: string; subtitle: string; sources: string[] }
+  { label: string; sources: string[] }
 > = {
   compact: {
     label: "COMPACT",
-    subtitle: "Prius · ref",
     sources: ["/cars/compact.webp", "/cars/compact.jpg", "/cars/compact.png"],
   },
   sedan: {
     label: "SEDAN",
-    subtitle: "Model 3 · ref",
     sources: ["/cars/sedan.webp", "/cars/sedan.jpg", "/cars/sedan.png"],
   },
   suv_truck: {
     label: "SUV / TRUCK",
-    subtitle: "Urus · ref",
     sources: ["/cars/suv_truck.webp", "/cars/suv_truck.jpg", "/cars/suv_truck.png"],
   },
   van_xl: {
     label: "VAN / XL",
-    subtitle: "Box van · ref",
     sources: ["/cars/van_xl.webp", "/cars/van_xl.jpg", "/cars/van_xl.png"],
   },
 };
@@ -556,10 +579,12 @@ function VehicleImagePlate({ selected }: { selected: string }) {
       className="relative overflow-hidden border border-white/10 bg-gradient-to-b from-obsidian-850/85 via-obsidian-900/80 to-obsidian-950/90"
       style={{ borderRadius: 2 }}
     >
-      {/* top callouts */}
+      {/* top callouts — brand-name reference removed; only neutral chrome */}
       <div className="relative z-10 flex items-baseline justify-between px-5 pt-5 font-mono text-[10px] uppercase tracking-[0.32em] text-platinum-300/75">
         <span>plate · {hasSelection ? selected.toUpperCase() : "—"}</span>
-        <span className="text-ember-300/85">{hasSelection ? slot.subtitle : "select a size"}</span>
+        <span className="text-platinum-300/55">
+          {hasSelection ? "ref" : "select a size"}
+        </span>
       </div>
 
       {/* image stage */}
@@ -1074,10 +1099,10 @@ function Step7Review({
   disclaimer?: string;
   deposit?: PublicDepositInfo;
 }) {
-  const selectedService = services.find((s) => s.id === form.serviceId);
-  const selectedAddons  = services.filter((s) => form.addonIds.includes(s.id));
-  const selectedSize    = VEHICLE_SIZES.find((s) => s.value === form.vehicleSize);
-  const selectedTime    = timeSlotsForDate(form.preferredDate).find((t) => t.value === form.preferredTime);
+  const selectedServices = services.filter((s) => form.serviceIds.includes(s.id));
+  const selectedAddons   = services.filter((s) => form.addonIds.includes(s.id));
+  const selectedSize     = VEHICLE_SIZES.find((s) => s.value === form.vehicleSize);
+  const selectedTime     = timeSlotsForDate(form.preferredDate).find((t) => t.value === form.preferredTime);
 
   return (
     <div className="space-y-8">
@@ -1100,7 +1125,10 @@ function Step7Review({
         </div>
 
         <ReviewBlock kicker="Service">
-          <ReviewRow k="Package"        v={selectedService?.name} />
+          <ReviewRow
+            k={selectedServices.length > 1 ? "Packages" : "Package"}
+            v={selectedServices.map((s) => s.name).join(", ") || undefined}
+          />
           {selectedAddons.length > 0 ? (
             <ReviewRow k="Add-ons"      v={selectedAddons.map((a) => a.name).join(", ")} />
           ) : null}
@@ -1188,7 +1216,7 @@ function ReviewRow({ k, v }: { k: string; v?: ReactNode }) {
 
 function hashConfig(f: FormState): number {
   // Tiny stable hash for the "build number" label. Cosmetic only.
-  const s = `${f.serviceId}|${f.addonIds.join(",")}|${f.vehicleSize}|${f.preferredDate}|${f.preferredTime}|${f.name}|${f.phone}`;
+  const s = `${f.serviceIds.join(",")}|${f.addonIds.join(",")}|${f.vehicleSize}|${f.preferredDate}|${f.preferredTime}|${f.name}|${f.phone}`;
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -1418,7 +1446,7 @@ export function makeCanProceed(
   bookedSlots: { start: string; end: string }[],
 ): boolean {
   switch (step) {
-    case 1: return !!form.serviceId;
+    case 1: return form.serviceIds.length > 0;
     case 2: return true;
     case 3: return !!form.vehicleSize;
     case 4: {
@@ -1439,8 +1467,12 @@ export function makeCanProceed(
 
 export function estimatedPriceOf(form: FormState, services: PublicService[]): number {
   let total = 0;
-  const pkg = services.find((s) => s.id === form.serviceId);
-  if (pkg) total += midPrice(pkg);
+  // Packages — sum across every selected service id (multi-select).
+  for (const id of form.serviceIds) {
+    const pkg = services.find((s) => s.id === id);
+    if (pkg) total += midPrice(pkg);
+  }
+  // Add-ons.
   for (const id of form.addonIds) {
     const a = services.find((s) => s.id === id);
     if (a) total += midPrice(a);
