@@ -1730,7 +1730,7 @@ function FeaturedPhotosPicker({
   selectedIds: string[];
   onChange: (ids: string[]) => void;
 }) {
-  const { data, dispatch } = useStore();
+  const { data, commit } = useStore();
   const photos = data.photos ?? [];
   const [uploading, setUploading] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
@@ -1771,11 +1771,17 @@ function FeaturedPhotosPicker({
         type: blob.type || "image/jpeg",
       });
       const publicUrl = await uploadBookingPhoto(file);
-      dispatch({
+      const res2 = await commit({
         type: "updatePhoto",
         id: photoId,
         patch: { storagePath: publicUrl },
       });
+      if (!res2.ok) {
+        // commit() already toasted + refetched. Returning false keeps the
+        // photo out of the featured list so we never reference a row whose
+        // storage_path didn't make it to the server.
+        return false;
+      }
       toast.success("Photo published to your booking page");
       return true;
     } catch (e) {
@@ -1823,7 +1829,7 @@ function FeaturedPhotosPicker({
         try {
           const url = await uploadBookingPhoto(file);
           const id = makeId();
-          dispatch({
+          const res = await commit({
             type: "addPhoto",
             photo: {
               id,
@@ -1834,6 +1840,11 @@ function FeaturedPhotosPicker({
               createdAt: new Date().toISOString(),
             },
           });
+          if (!res.ok) {
+            // commit() already toasted + refetched. Skip this ID so we don't
+            // reference a photo row that didn't land on the server.
+            continue;
+          }
           newIds.push(id);
         } catch (err) {
           console.error("Upload failed:", file.name, err);
