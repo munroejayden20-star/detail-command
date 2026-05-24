@@ -668,72 +668,55 @@ const VEHICLE_IMAGE_SOURCES: Record<
   },
 };
 
+/**
+ * Renders the photographic plate for the selected vehicle size. Caller is
+ * responsible for only mounting this when `selected` is set — there is no
+ * empty-state branch any more, the parent (`Step3Vehicle`) gates the mount.
+ *
+ * Width-capped at 460px so the plate sits comfortably inside the configurator
+ * column without dominating the form. Aspect stays 16/9 for letterbox feel.
+ */
 function VehicleImagePlate({ selected }: { selected: string }) {
   const slot = VEHICLE_IMAGE_SOURCES[selected];
-  const hasSelection = !!slot;
+  // Hard guard — if the parent ever calls with an unknown key, render nothing
+  // instead of crashing on `slot.sources`. Should not happen in practice.
+  if (!slot) return null;
+
   return (
     <div
-      className="relative overflow-hidden border border-white/10 bg-gradient-to-b from-obsidian-850/85 via-obsidian-900/80 to-obsidian-950/90"
+      className="relative w-full max-w-[460px] overflow-hidden border border-white/10 bg-gradient-to-b from-obsidian-850/85 via-obsidian-900/80 to-obsidian-950/90"
       style={{ borderRadius: 2 }}
     >
-      {/* top callouts — brand-name reference removed; only neutral chrome */}
-      <div className="relative z-10 flex items-baseline justify-between px-5 pt-5 font-mono text-[10px] uppercase tracking-[0.32em] text-platinum-300/75">
-        <span>plate · {hasSelection ? selected.toUpperCase() : "—"}</span>
-        <span className="text-platinum-300/55">
-          {hasSelection ? "ref" : "select a size"}
-        </span>
+      {/* top callouts */}
+      <div className="relative z-10 flex items-baseline justify-between px-4 pt-4 font-mono text-[9.5px] uppercase tracking-[0.32em] text-platinum-300/75">
+        <span>plate · {selected.toUpperCase()}</span>
+        <span className="text-platinum-300/55">ref</span>
       </div>
 
       {/* image stage */}
-      <div className="relative mt-4 aspect-[16/9] w-full overflow-hidden">
+      <div className="relative mt-3 aspect-[16/9] w-full overflow-hidden">
         <AnimatePresence mode="wait" initial={false}>
-          {hasSelection ? (
-            <motion.div
-              key={selected}
-              className="absolute inset-0"
-              initial={{ opacity: 0, scale: 1.04, filter: "blur(14px)" }}
-              animate={{ opacity: 1, scale: 1,    filter: "blur(0)"  }}
-              exit   ={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <VehicleImage sources={slot.sources} label={slot.label} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              className="absolute inset-0 flex items-center justify-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-50"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)",
-                  backgroundSize: "14px 14px",
-                  maskImage:
-                    "radial-gradient(ellipse 70% 55% at 50% 50%, black 30%, transparent 80%)",
-                }}
-              />
-              <p className="relative font-mono text-[10.5px] uppercase tracking-[0.34em] text-platinum-300/55">
-                Select a size to show the reference vehicle
-              </p>
-            </motion.div>
-          )}
+          <motion.div
+            key={selected}
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.04, filter: "blur(14px)" }}
+            animate={{ opacity: 1, scale: 1,    filter: "blur(0)"  }}
+            exit   ={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <VehicleImage sources={slot.sources} label={slot.label} />
+          </motion.div>
         </AnimatePresence>
 
         {/* top + bottom gradient scrims — fade image into page */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-obsidian-900/95 via-obsidian-900/40 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-obsidian-950/95 via-obsidian-950/40 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-obsidian-900/95 via-obsidian-900/40 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-obsidian-950/95 via-obsidian-950/40 to-transparent" />
 
-        {/* corner ember brackets */}
-        <span aria-hidden className="pointer-events-none absolute left-3 top-3 h-4 w-4 border-l border-t border-ember-400/55" />
-        <span aria-hidden className="pointer-events-none absolute right-3 top-3 h-4 w-4 border-r border-t border-ember-400/55" />
-        <span aria-hidden className="pointer-events-none absolute left-3 bottom-3 h-4 w-4 border-l border-b border-ember-400/55" />
-        <span aria-hidden className="pointer-events-none absolute right-3 bottom-3 h-4 w-4 border-r border-b border-ember-400/55" />
+        {/* corner ember brackets — slightly tighter for the smaller plate */}
+        <span aria-hidden className="pointer-events-none absolute left-2.5 top-2.5 h-3 w-3 border-l border-t border-ember-400/55" />
+        <span aria-hidden className="pointer-events-none absolute right-2.5 top-2.5 h-3 w-3 border-r border-t border-ember-400/55" />
+        <span aria-hidden className="pointer-events-none absolute left-2.5 bottom-2.5 h-3 w-3 border-l border-b border-ember-400/55" />
+        <span aria-hidden className="pointer-events-none absolute right-2.5 bottom-2.5 h-3 w-3 border-r border-b border-ember-400/55" />
 
         {/* subtle film grain overlay so the photo feels developed, not stock */}
         <div
@@ -748,10 +731,10 @@ function VehicleImagePlate({ selected }: { selected: string }) {
       </div>
 
       {/* bottom callouts */}
-      <div className="relative z-10 flex items-baseline justify-between px-5 pb-5 pt-2 font-mono text-[10px] uppercase tracking-[0.32em] text-platinum-300/85">
-        <span>{hasSelection ? slot.label : "—"}</span>
+      <div className="relative z-10 flex items-baseline justify-between px-4 pb-4 pt-1.5 font-mono text-[9.5px] uppercase tracking-[0.32em] text-platinum-300/85">
+        <span>{slot.label}</span>
         <span className="text-platinum-300/55">
-          {hasSelection ? `class · 0${Object.keys(VEHICLE_IMAGE_SOURCES).indexOf(selected) + 1}` : "class · —"}
+          class · 0{Object.keys(VEHICLE_IMAGE_SOURCES).indexOf(selected) + 1}
         </span>
       </div>
     </div>
@@ -845,7 +828,25 @@ function Step3Vehicle({
         body="Helps me load the right products and set realistic time."
       />
 
-      <VehicleImagePlate selected={form.vehicleSize} />
+      {/*
+       * Plate is gated on selection — it only mounts once the user has picked
+       * a size. AnimatePresence handles a smooth fade+lift entrance so the
+       * layout doesn't pop. The plate never unmounts after that (size chips
+       * can only switch values, not clear them).
+       */}
+      <AnimatePresence initial={false}>
+        {form.vehicleSize ? (
+          <motion.div
+            key="vehicle-plate"
+            initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0,  filter: "blur(0)" }}
+            exit   ={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <VehicleImagePlate selected={form.vehicleSize} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
 
       <div>
