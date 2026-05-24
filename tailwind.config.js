@@ -22,6 +22,9 @@ export default {
           "Roboto",
           "sans-serif",
         ],
+        // Editorial display — used only on the public booking page.
+        display: ["Fraunces", "ui-serif", "Georgia", "serif"],
+        mono: ["\"JetBrains Mono\"", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,6 +69,46 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // Luxury booking page palette — public /book only.
+        // Obsidian / graphite blacks, ember red, copper warm-metallic, platinum.
+        // Specific values chosen to avoid the stock "dark-mode + blue" look.
+        obsidian: {
+          950: "#06070a",
+          900: "#0a0c10",
+          850: "#0f1116",
+          800: "#13161c",
+          750: "#191c24",
+          700: "#22262f",
+          600: "#2e333d",
+          500: "#3d434f",
+        },
+        ember: {
+          50:  "#fff3ee",
+          100: "#ffd9c8",
+          200: "#ff9d7a",
+          300: "#f87248",
+          400: "#ed5226",
+          500: "#dd2914", // primary accent
+          600: "#b91d0a",
+          700: "#8c1606",
+          800: "#5d0d03",
+        },
+        copper: {
+          50:  "#fbf3e8",
+          100: "#efddbf",
+          200: "#e2c096",
+          300: "#d2a26d",
+          400: "#c4895a",
+          500: "#a87246",
+          600: "#825539",
+        },
+        platinum: {
+          50:  "#f6f3ee",
+          100: "#e7e3da",
+          200: "#c9c4ba",
+          300: "#a7a298",
+          400: "#80807a",
         },
         // Brand — refined neutral charcoal palette (was blue).
         // Used for avatar gradients and other neutral-accent surfaces.
@@ -186,6 +229,39 @@ export default {
           "0%, 100%": { opacity: "0.4" },
           "50%": { opacity: "0.9" },
         },
+        // ─── Luxury booking page (lx-*) ─────────────────────────────
+        "lx-marquee": {
+          from: { transform: "translate3d(0,0,0)" },
+          to:   { transform: "translate3d(-50%,0,0)" },
+        },
+        "lx-marquee-rev": {
+          from: { transform: "translate3d(-50%,0,0)" },
+          to:   { transform: "translate3d(0,0,0)" },
+        },
+        "lx-ember-pulse": {
+          "0%, 100%": { opacity: "0.55", transform: "scale(1)" },
+          "50%":      { opacity: "0.85", transform: "scale(1.08)" },
+        },
+        "lx-grid-pan": {
+          "0%":   { backgroundPosition: "0% 0%" },
+          "100%": { backgroundPosition: "100% 100%" },
+        },
+        "lx-shine": {
+          "0%":   { transform: "translateX(-120%) skewX(-12deg)" },
+          "100%": { transform: "translateX(220%) skewX(-12deg)" },
+        },
+        "lx-rise": {
+          from: { opacity: "0", transform: "translate3d(0,24px,0)" },
+          to:   { opacity: "1", transform: "translate3d(0,0,0)" },
+        },
+        "lx-blur-in": {
+          from: { opacity: "0", filter: "blur(10px)" },
+          to:   { opacity: "1", filter: "blur(0)" },
+        },
+        "lx-conic-spin": {
+          from: { transform: "rotate(0deg)" },
+          to:   { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.2s cubic-bezier(0.32, 0.72, 0, 1)",
@@ -210,6 +286,16 @@ export default {
         "orb-shimmer": "orb-shimmer 9s ease-in-out infinite",
         "orb-pulse-out": "orb-pulse-out 2.4s ease-out infinite",
         "orb-flare": "orb-flare 3s ease-in-out infinite",
+        // Luxury booking page
+        "lx-marquee":       "lx-marquee 38s linear infinite",
+        "lx-marquee-rev":   "lx-marquee-rev 42s linear infinite",
+        "lx-marquee-slow":  "lx-marquee 64s linear infinite",
+        "lx-ember-pulse":   "lx-ember-pulse 5.5s cubic-bezier(0.45, 0, 0.55, 1) infinite",
+        "lx-grid-pan":      "lx-grid-pan 28s linear infinite alternate",
+        "lx-shine":         "lx-shine 2.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        "lx-rise":          "lx-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "lx-blur-in":       "lx-blur-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "lx-conic-spin":    "lx-conic-spin 14s linear infinite",
       },
     },
   },

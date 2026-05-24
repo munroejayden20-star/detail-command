@@ -37,3 +37,9 @@ pnpm-debug.log*
 # Misc
 coverage
 *.bak
+
+# Claude Code — machine-specific harness settings
+.claude/
+
+# Supabase CLI scratch
+supabase/.temp/
