@@ -469,8 +469,27 @@ export function Hero({
  * ──────────────────────────────────────────────────────────────────────── */
 
 function HeroImagePlate({ heroImageUrl }: { heroImageUrl?: string }) {
+  /*
+   * Parallax is applied directly on the image wrapper instead of routing
+   * through <ParallaxLayer> — the latter sets `position: relative` on a
+   * wrapper with no intrinsic size, which would collapse an absolutely
+   * positioned child to zero. Driving the transform inline keeps the
+   * absolute layout intact and the parallax tied to scroll progress.
+   */
+  const ref = useRef<HTMLDivElement | null>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const reduced = useReducedMotion();
+  const y = useTransform(scrollYProgress, [0, 1], ["32px", "-32px"]);
+
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+    <div
+      ref={ref}
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+    >
       {/* Ember bloom behind the right portion of the image — the "taillight"
        *  glow that bleeds onto the page atmosphere. */}
       <div
@@ -489,43 +508,41 @@ function HeroImagePlate({ heroImageUrl }: { heroImageUrl?: string }) {
         }}
       />
 
-      <ParallaxLayer speed={0.16}>
-        <div
-          className="absolute inset-y-0 right-0 w-full opacity-[0.92] md:w-[68%] lg:w-[60%]"
-          style={{
-            WebkitMaskImage:
-              "radial-gradient(ellipse 72% 78% at 62% 50%, #000 32%, rgba(0,0,0,0.55) 65%, transparent 100%)",
-            maskImage:
-              "radial-gradient(ellipse 72% 78% at 62% 50%, #000 32%, rgba(0,0,0,0.55) 65%, transparent 100%)",
-          }}
-        >
-          {heroImageUrl ? (
-            <img
-              src={heroImageUrl}
-              alt=""
-              loading="eager"
-              decoding="async"
-              className="absolute inset-0 h-full w-full object-cover object-[60%_45%]"
-            />
-          ) : (
-            <HeroPlateFallback />
-          )}
+      <motion.div
+        className="absolute inset-y-0 right-0 w-full opacity-[0.92] md:w-[68%] lg:w-[60%]"
+        style={{
+          y: reduced ? 0 : y,
+          WebkitMaskImage:
+            "radial-gradient(ellipse 72% 78% at 62% 50%, #000 32%, rgba(0,0,0,0.55) 65%, transparent 100%)",
+          maskImage:
+            "radial-gradient(ellipse 72% 78% at 62% 50%, #000 32%, rgba(0,0,0,0.55) 65%, transparent 100%)",
+        }}
+      >
+        {heroImageUrl ? (
+          <img
+            src={heroImageUrl}
+            alt=""
+            loading="eager"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover object-[60%_45%]"
+          />
+        ) : (
+          <HeroPlateFallback />
+        )}
 
-          {/* Edge vignette — darkens corners so the car commands focus */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_110%_85%_at_55%_55%,transparent_28%,rgba(6,7,10,0.5)_72%,#06070a_100%)]" />
+        {/* Edge vignette — darkens corners so the car commands focus */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_110%_85%_at_55%_55%,transparent_28%,rgba(6,7,10,0.5)_72%,#06070a_100%)]" />
 
-          {/* Selective contrast/saturation: dark overlay on the OPPOSITE side
-           *  of the focal point (left edge of the plate, near the text) so the
-           *  headline stays readable on top of bright photos. */}
-          <div className="absolute inset-y-0 left-0 w-2/5 bg-gradient-to-r from-obsidian-950/85 via-obsidian-950/35 to-transparent" />
+        {/* Left-side darken — the side adjacent to the headline. Holds text
+         *  contrast even when the photo is bright on that edge. */}
+        <div className="absolute inset-y-0 left-0 w-2/5 bg-gradient-to-r from-obsidian-950/85 via-obsidian-950/35 to-transparent" />
 
-          {/* Top fade — image dissolves into the upper atmosphere */}
-          <div className="absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-obsidian-950/95 via-obsidian-950/40 to-transparent" />
+        {/* Top fade — image dissolves into the upper atmosphere */}
+        <div className="absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-obsidian-950/95 via-obsidian-950/40 to-transparent" />
 
-          {/* Bottom fade — image dissolves into the next section */}
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent via-obsidian-950/55 to-obsidian-950" />
-        </div>
-      </ParallaxLayer>
+        {/* Bottom fade — image dissolves into the next section */}
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent via-obsidian-950/55 to-obsidian-950" />
+      </motion.div>
     </div>
   );
 }
