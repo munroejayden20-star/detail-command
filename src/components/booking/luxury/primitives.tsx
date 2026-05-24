@@ -495,6 +495,228 @@ export function EmberCTA({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * GlassCTA — visionOS-style layered glass button used in the hero.
+ *
+ * Architecture (back-to-front, all GPU-only — transform + opacity):
+ *   1. Outer bloom               — large radial glow that intensifies on hover
+ *   2. Magnetic motion holder    — cursor-attracted nudge via useSpring(x,y)
+ *   3. Glass body                — backdrop-blur + vertical gradient + inset
+ *                                  shadows for top highlight + bottom shade
+ *   4. Top specular highlight    — gradient from white/20 → transparent
+ *   5. Cursor-reactive light     — radial gradient that follows pointer (CSS
+ *                                  variables driven by motion values)
+ *   6. Diagonal sheen sweep      — `animate-lx-shine` keyframe on hover
+ *   7. Hairline gradient border  — slightly brighter at top, darker at bottom
+ *   8. Content                   — text + icon, always on top (z-10)
+ *
+ * Two variants:
+ *   - primary  ("Configure")  : ember-tinted bloom + warm top sheen + brighter
+ *                               edge accent; the dominant CTA
+ *   - secondary ("See work")  : smoked glass, neutral white-on-dark; reads as
+ *                               supportive without competing for attention
+ *
+ * Reduced motion: magnetic pull + cursor light freeze; press / focus styling
+ * still works. Outer bloom remains static at base opacity.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export function GlassCTA({
+  children,
+  onClick,
+  variant = "primary",
+  size = "lg",
+  disabled,
+  type = "button",
+  ariaLabel,
+  className = "",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  variant?: "primary" | "secondary";
+  size?: "md" | "lg";
+  disabled?: boolean;
+  type?: "button" | "submit";
+  ariaLabel?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLButtonElement | null>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 220, damping: 18, mass: 0.7 });
+  const sy = useSpring(y, { stiffness: 220, damping: 18, mass: 0.7 });
+  // Cursor position inside the button, in %. Drives the radial light layer.
+  const cx = useMotionValue(50);
+  const cy = useMotionValue(50);
+  const lightX = useTransform(cx, (v) => `${v}%`);
+  const lightY = useTransform(cy, (v) => `${v}%`);
+  const reduced = useReducedMotion();
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+
+  function handleMove(e: ReactMouseEvent<HTMLButtonElement>) {
+    if (reduced || disabled) return;
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+    const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    // Gentle magnetic pull — under 10px at the extremes so the button never
+    // pulls dramatically away from the cursor.
+    x.set(Math.max(-1, Math.min(1, dx)) * 9);
+    y.set(Math.max(-1, Math.min(1, dy)) * 9);
+    cx.set(((e.clientX - r.left) / r.width) * 100);
+    cy.set(((e.clientY - r.top) / r.height) * 100);
+  }
+
+  function reset() {
+    x.set(0);
+    y.set(0);
+    setHovered(false);
+  }
+
+  const isPrimary = variant === "primary";
+  const sizeCls =
+    size === "lg" ? "px-8 py-4 text-[12px]" : "px-6 py-3 text-[11.5px]";
+
+  return (
+    <button
+      ref={ref}
+      type={type}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onMouseMove={handleMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => {
+        reset();
+        setPressed(false);
+      }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      onClick={onClick}
+      className={`group/glass relative isolate inline-flex items-center justify-center font-medium uppercase tracking-[0.2em] transition-opacity disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    >
+      {/* L1 — outer bloom. Tied to hover, animated with framer-motion so the
+       *  intensity ramps smoothly on enter/exit. */}
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute -inset-6 rounded-full blur-2xl"
+        style={{
+          background: isPrimary
+            ? "radial-gradient(circle, rgba(221,41,20,0.50) 0%, rgba(248,114,72,0.18) 38%, transparent 70%)"
+            : "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 40%, transparent 70%)",
+        }}
+        animate={{
+          opacity: hovered ? 1 : isPrimary ? 0.55 : 0.35,
+          scale: hovered ? 1.06 : 1,
+        }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      />
+
+      {/* L2 — magnetic content holder. Inner press scale composes with the
+       *  spring-driven x/y so the press feels grounded. */}
+      <motion.span
+        className="relative inline-flex"
+        style={{ x: sx, y: sy }}
+        animate={{ scale: pressed ? 0.96 : hovered ? 1.02 : 1 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {/* L3 — glass body. backdrop-blur for the real glass effect; the
+         *  vertical gradient + dual inset shadows fake a top highlight + a
+         *  bottom shade so the surface reads as curved, not flat. */}
+        <span
+          className={`group/glass-body relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full backdrop-blur-2xl ${sizeCls}`}
+          style={{
+            background: isPrimary
+              ? "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.05) 45%, rgba(221,41,20,0.22) 100%)"
+              : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.06) 100%)",
+            boxShadow: isPrimary
+              ? "0 22px 50px -18px rgba(221,41,20,0.55), 0 6px 18px -8px rgba(0,0,0,0.45), inset 0 1px 0 0 rgba(255,225,210,0.32), inset 0 -1px 0 0 rgba(0,0,0,0.42)"
+              : "0 22px 50px -22px rgba(0,0,0,0.75), 0 4px 14px -6px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.18), inset 0 -1px 0 0 rgba(0,0,0,0.45)",
+          }}
+        >
+          {/* L4 — top specular highlight. Sits in the top half so the curve
+           *  reads as a glass surface catching light from above. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-full"
+            style={{
+              background: isPrimary
+                ? "linear-gradient(180deg, rgba(255,235,220,0.30) 0%, rgba(255,235,220,0.06) 55%, transparent 100%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 55%, transparent 100%)",
+            }}
+          />
+
+          {/* L5 — cursor-reactive light. CSS variables (--gx / --gy) are
+           *  driven by framer-motion motion values, so the radial follows
+           *  the cursor smoothly without re-renders. */}
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full transition-opacity duration-300"
+            style={{
+              opacity: hovered ? 1 : 0,
+              background: isPrimary
+                ? "radial-gradient(180px circle at var(--gx) var(--gy), rgba(255,200,170,0.40), transparent 65%)"
+                : "radial-gradient(180px circle at var(--gx) var(--gy), rgba(255,255,255,0.18), transparent 65%)",
+              ["--gx" as never]: lightX,
+              ["--gy" as never]: lightY,
+            } as CSSProperties}
+          />
+
+          {/* L6 — diagonal sheen sweep. Plays on hover-enter via animate-lx-
+           *  shine; sits in an overflow-hidden parent so it never spills. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 overflow-hidden rounded-full"
+          >
+            <span
+              className={`absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-0 ${
+                hovered ? "animate-lx-shine opacity-100" : ""
+              }`}
+            />
+          </span>
+
+          {/* L7 — hairline gradient border. Slightly warmer at top (catches
+           *  light) and cooler at bottom (catches shadow), mimicking the
+           *  bevel on a real glass element. Drawn via mask so it stays
+           *  exactly 1px regardless of zoom. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background: isPrimary
+                ? "linear-gradient(180deg, rgba(255,210,180,0.55) 0%, rgba(255,210,180,0.10) 40%, rgba(0,0,0,0.35) 100%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.06) 45%, rgba(0,0,0,0.40) 100%)",
+              padding: "1px",
+              WebkitMask:
+                "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+              WebkitMaskComposite: "xor",
+              maskComposite: "exclude",
+            }}
+          />
+
+          {/* L8 — content. Always on top via z-10. Color leans warm-white on
+           *  primary so it picks up the ember surroundings; cool platinum on
+           *  secondary so it reads as a stealth chip. */}
+          <span
+            className={`relative z-10 inline-flex items-center gap-2 ${
+              isPrimary ? "text-platinum-50" : "text-platinum-100"
+            }`}
+            style={{
+              textShadow: isPrimary
+                ? "0 1px 8px rgba(221,41,20,0.45)"
+                : "0 1px 8px rgba(0,0,0,0.55)",
+            }}
+          >
+            {children}
+          </span>
+        </span>
+      </motion.span>
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * TiltCard — perspective tilt that follows the cursor.
  *
  * Used on the showcase service cards and the Configuration summary card.

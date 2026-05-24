@@ -46,6 +46,7 @@ import {
   CarbonWeave,
   EmberCTA,
   EmberOrb,
+  GlassCTA,
   GrainOverlay,
   Hairline,
   Marquee,
@@ -381,14 +382,14 @@ export function Hero({
 
           <Reveal delay={0.6}>
             <div className="mt-10 flex flex-wrap items-center gap-4">
-              <EmberCTA onClick={onBook} size="lg">
+              <GlassCTA onClick={onBook} variant="primary" size="lg">
                 Configure a Detail
-                <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
-              </EmberCTA>
-              <EmberCTA onClick={onServicesClick} size="lg" variant="ghost">
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/glass:translate-x-0.5" />
+              </GlassCTA>
+              <GlassCTA onClick={onServicesClick} variant="secondary" size="lg">
                 See the work
-                <ArrowDown className="h-3.5 w-3.5" />
-              </EmberCTA>
+                <ArrowDown className="h-3.5 w-3.5 transition-transform duration-300 group-hover/glass:translate-y-0.5" />
+              </GlassCTA>
             </div>
           </Reveal>
 
