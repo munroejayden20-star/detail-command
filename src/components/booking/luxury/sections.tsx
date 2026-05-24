@@ -408,7 +408,22 @@ export function Hero({
                 <SpecRow k="Booking" v="Direct, no agent" />
               </div>
 
-              <div className="group relative aspect-[4/5] overflow-hidden rounded-[2px] border border-white/10 bg-gradient-to-br from-obsidian-800 to-obsidian-950">
+              {/*
+               * No border, no rounded corners, no corner tags — the image is
+               * masked with a radial gradient so its edges dissolve into the
+               * obsidian hero background instead of sitting in a framed plate.
+               * The mask is applied to the *outer* container so both the
+               * <img> and any fallback content share the same soft outline.
+               */}
+              <div
+                className="group relative aspect-[4/5] overflow-hidden"
+                style={{
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse 78% 88% at 55% 45%, #000 50%, rgba(0,0,0,0.6) 75%, transparent 100%)",
+                  maskImage:
+                    "radial-gradient(ellipse 78% 88% at 55% 45%, #000 50%, rgba(0,0,0,0.6) 75%, transparent 100%)",
+                }}
+              >
                 {heroImageUrl ? (
                   <img
                     src={heroImageUrl}
@@ -419,16 +434,9 @@ export function Hero({
                 ) : (
                   <HeroPlateFallback />
                 )}
-                {/* gradient overlay so the plate fades into the page below */}
-                <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950/80 via-transparent to-transparent" />
-
-                {/* corner tags — paint chip style */}
-                <div className="absolute left-3 top-3 font-mono text-[10px] uppercase tracking-[0.28em] text-platinum-200/80">
-                  Plate 01
-                </div>
-                <div className="absolute bottom-3 right-3 font-mono text-[10px] uppercase tracking-[0.28em] text-platinum-200/80">
-                  in studio
-                </div>
+                {/* Subtle bottom-fade so any text underneath still reads even
+                 *  when the photo is bright on its lower half. */}
+                <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950/55 via-transparent to-transparent" />
               </div>
             </div>
           </ParallaxLayer>
