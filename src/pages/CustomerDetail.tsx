@@ -29,8 +29,16 @@ import { PhotoGallery } from "@/components/photos/PhotoGallery";
 import { PhotoUploader } from "@/components/photos/PhotoUploader";
 import { AppointmentRow } from "@/components/appointments/AppointmentRow";
 import { ReceiptViewModal } from "@/components/receipts/ReceiptViewModal";
+import { MarkCompleteDialog } from "@/components/receipts/MarkCompleteDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { formatCents } from "@/lib/receipts";
-import type { Receipt } from "@/lib/types";
+import type { Appointment, Receipt } from "@/lib/types";
 import { useStore } from "@/store/store";
 import {
   customerAppointmentCount,
@@ -58,6 +66,8 @@ export function CustomerDetailPage() {
   const [newAppt, setNewAppt] = useState(false);
   const [reachOpen, setReachOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [receiptForAppt, setReceiptForAppt] = useState<Appointment | null>(null);
 
   const customerReceipts = useMemo(() => {
     if (!id) return [];
@@ -65,6 +75,23 @@ export function CustomerDetailPage() {
       .filter((r) => r.customerId === id)
       .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   }, [data.receipts, id]);
+
+  const eligibleForReceipt = useMemo(() => {
+    if (!id) return [] as Appointment[];
+    const apptIdsWithActive = new Set(
+      (data.receipts ?? [])
+        .filter((r) => r.receiptStatus === "active" && r.customerId === id)
+        .map((r) => r.appointmentId)
+    );
+    return data.appointments
+      .filter(
+        (a) =>
+          a.customerId === id &&
+          a.status !== "canceled" &&
+          !apptIdsWithActive.has(a.id)
+      )
+      .sort((a, b) => b.start.localeCompare(a.start));
+  }, [data.appointments, data.receipts, id]);
 
   const receiptTotals = useMemo(() => {
     const active = customerReceipts.filter((r) => r.receiptStatus === "active");
@@ -296,7 +323,7 @@ export function CustomerDetailPage() {
 
       {/* Receipts & payment history */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
           <div>
             <CardTitle className="flex items-center gap-2">
               <ReceiptIcon className="h-4 w-4" /> Receipts & payment history
@@ -309,6 +336,16 @@ export function CustomerDetailPage() {
                 : ""}
             </p>
           </div>
+          {eligibleForReceipt.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPickerOpen(true)}
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" /> Generate from booking
+            </Button>
+          ) : null}
         </CardHeader>
         <CardContent>
           {customerReceipts.length === 0 ? (
@@ -430,6 +467,64 @@ export function CustomerDetailPage() {
           open={true}
           receipt={selectedReceipt}
           onClose={() => setSelectedReceipt(null)}
+        />
+      ) : null}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pick a past booking</DialogTitle>
+            <DialogDescription>
+              Choose an appointment to generate a receipt for. Bookings with an
+              active receipt are hidden.
+            </DialogDescription>
+          </DialogHeader>
+          {eligibleForReceipt.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No eligible bookings — every appointment already has a receipt.
+            </p>
+          ) : (
+            <div className="max-h-[60vh] space-y-1.5 overflow-y-auto pr-1">
+              {eligibleForReceipt.map((a) => {
+                const svc = a.serviceIds
+                  .map((sid) => data.services.find((s) => s.id === sid)?.name)
+                  .filter(Boolean)
+                  .join(" · ");
+                const price = a.finalPrice ?? a.estimatedPrice ?? 0;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => {
+                      setPickerOpen(false);
+                      setReceiptForAppt(a);
+                    }}
+                    className="flex w-full items-center justify-between gap-3 rounded-md border border-border/80 bg-card px-3 py-2.5 text-left text-sm transition-[border-color,background-color] duration-fast hover:border-primary/30 hover:bg-hover"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium leading-tight">
+                        {format(parseISO(a.start), "MMM d, yyyy")} ·{" "}
+                        <span className="capitalize text-muted-foreground">
+                          {a.status.replace("_", " ")}
+                        </span>
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {svc || "No services"}
+                      </p>
+                    </div>
+                    <span className="font-mono text-sm font-semibold tabular-nums">
+                      {formatCurrency(price)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      {receiptForAppt ? (
+        <MarkCompleteDialog
+          open={true}
+          appointment={receiptForAppt}
+          onClose={() => setReceiptForAppt(null)}
         />
       ) : null}
       <ReachOutDialog

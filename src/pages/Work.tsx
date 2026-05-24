@@ -15,6 +15,7 @@ import {
   ListChecks,
   X,
   Plus,
+  Square,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { formatBusinessDate, formatBusinessDateTime, formatBusinessTime } from "@/lib/datetime";
@@ -180,6 +181,16 @@ export function WorkPage() {
     toast.success("Timer reset");
   }
 
+  function stopTimer() {
+    if (!current?.actualStartAt || current.actualEndAt) return;
+    dispatch({
+      type: "updateAppointment",
+      id: current.id,
+      patch: { actualEndAt: new Date().toISOString() },
+    });
+    toast.success("Timer stopped");
+  }
+
   function setPayment(p: PaymentStatus) {
     if (!current) return;
     dispatch({
@@ -273,7 +284,7 @@ export function WorkPage() {
         />
       ) : null}
 
-      {/* Big primary action: start / complete */}
+      {/* Big primary action: start / stop timer / end job */}
       {current.status !== "completed" ? (
         <div className="grid gap-2">
           {current.status !== "in_progress" ? (
@@ -283,11 +294,26 @@ export function WorkPage() {
               label="Start job"
               tone="primary"
             />
+          ) : current.actualStartAt && !current.actualEndAt ? (
+            <div className="grid grid-cols-2 gap-2">
+              <BigButton
+                onClick={stopTimer}
+                icon={<Square className="h-5 w-5" />}
+                label="Stop timer"
+                tone="default"
+              />
+              <BigButton
+                onClick={() => setStatus("completed")}
+                icon={<CheckCircle2 className="h-6 w-6" />}
+                label="End job"
+                tone="emerald"
+              />
+            </div>
           ) : (
             <BigButton
               onClick={() => setStatus("completed")}
               icon={<CheckCircle2 className="h-6 w-6" />}
-              label="Mark complete"
+              label="End job"
               tone="emerald"
             />
           )}
