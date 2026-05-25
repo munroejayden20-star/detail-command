@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 import type { PublicService, PublicDepositInfo } from "@/lib/booking-api";
 import { EmberCTA, LiquidProgress, Reveal } from "./primitives";
+import { computeQuote } from "@/lib/pricing/engine";
+import { DEFAULT_PRICING_CONFIG } from "@/lib/pricing/config";
+import type { Quote } from "@/lib/pricing/types";
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * Form state — identical shape to the original BookingPage so the orchestrator
@@ -1278,11 +1281,122 @@ function Step6Access({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * QuoteBreakdown — folded-by-default disclosure showing every engine line.
+ *
+ * Rendered on the Step 7 review screen between the configuration sheet
+ * and the deposit panel. Customers don't have to read this — the headline
+ * estimate is in the configuration sheet — but if they want to know where
+ * the number came from, every modifier and floor is here.
+ *
+ * Visual treatment matches the rest of the editorial chrome: hairline
+ * border, mono kicker, ember accents. AnimatePresence on the height
+ * transition so the disclosure feels intentional, not chunky.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+function QuoteBreakdown({ quote }: { quote: Quote }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="relative overflow-hidden border border-white/10 bg-obsidian-900/55"
+      style={{ borderRadius: 2 }}
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.025]"
+      >
+        <span className="flex items-baseline gap-3">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-ember-300">
+            Quote breakdown
+          </span>
+          <span className="h-px w-10 bg-white/15" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/65">
+            {quote.laborHours.toFixed(1)} hr ·{" "}
+            ${Math.round(quote.effectiveHourlyRate)}/hr
+          </span>
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="text-platinum-300"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden border-t border-white/10"
+          >
+            <ul className="space-y-2 px-5 py-4">
+              {quote.lines.map((line, i) => (
+                <li
+                  key={i}
+                  className="grid grid-cols-[1fr_auto] items-baseline gap-4"
+                >
+                  <div>
+                    <p className="text-[13px] text-platinum-100">{line.label}</p>
+                    {line.detail ? (
+                      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/60">
+                        {line.detail}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span
+                    className={`font-sans text-base tabular-nums ${
+                      line.amount < 0
+                        ? "text-emerald-300/85"
+                        : "text-platinum-50"
+                    }`}
+                  >
+                    {line.amount < 0 ? "−" : "+"}${Math.abs(Math.round(line.amount))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex items-baseline justify-between border-t border-white/10 px-5 py-4">
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-ember-300">
+                Estimate
+              </span>
+              <span className="font-sans text-2xl text-platinum-50">
+                ~${quote.estimate}
+              </span>
+            </div>
+
+            {quote.minProtectionApplied || quote.minBookingApplied ? (
+              <div className="space-y-1 border-t border-white/10 px-5 py-3">
+                {quote.minProtectionApplied ? (
+                  <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/55">
+                    Labor floor applied · keeps the work sustainable
+                  </p>
+                ) : null}
+                {quote.minBookingApplied ? (
+                  <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/55">
+                    Minimum booking floor applied
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * STEP 7 — Review (Configuration card)
  *
  * This is the "configurator summary" moment. Mimics a Tesla / Porsche
  * configurator: spec rows organized by category, an "ESTIMATE" line at the
- * bottom, a deposit pane when required.
+ * bottom, a quote breakdown disclosure, then a deposit pane when required.
  * ──────────────────────────────────────────────────────────────────────── */
 
 function Step7Review({
@@ -1370,6 +1484,8 @@ function Step7Review({
           <ReviewRow k="Power"     v={form.powerAccess ? "available" : "not available"} />
         </ReviewBlock>
       </div>
+
+      <QuoteBreakdown quote={quoteOf(form, services)} />
 
       {deposit?.enabled && deposit.required ? (
         <div className="relative overflow-hidden border border-ember-500/30 bg-ember-500/[0.05] p-5 md:p-6" style={{ borderRadius: 2 }}>
@@ -1672,20 +1788,52 @@ export function makeCanProceed(
  * estimatedPriceOf — same pricing logic used previously (midPrice w/ discount).
  * ──────────────────────────────────────────────────────────────────────── */
 
+/**
+ * Builds a full Quote from the live form state via the pricing engine.
+ *
+ * Centralizes the form → engine mapping so every consumer (configurator
+ * status bar, mobile dock, review step breakdown, submit payload) sees the
+ * same number. Modifies are applied via DEFAULT_PRICING_CONFIG today —
+ * Phase 2 will swap this for the owner-customized config stored on the
+ * settings row.
+ */
+export function quoteOf(form: FormState, services: PublicService[]): Quote {
+  const packages = form.serviceIds
+    .map((id) => services.find((s) => s.id === id))
+    .filter((s): s is PublicService => !!s);
+  const addons = form.addonIds
+    .map((id) => {
+      const s = services.find((x) => x.id === id);
+      if (!s) return null;
+      return {
+        service: s,
+        quantity: Math.max(1, form.addonQuantities[id] ?? 1),
+      };
+    })
+    .filter((a): a is { service: PublicService; quantity: number } => !!a);
+
+  return computeQuote(
+    {
+      packages,
+      addons,
+      vehicleSize: form.vehicleSize,
+      interiorCondition: form.interiorCondition,
+      exteriorCondition: form.exteriorCondition,
+      flags: {
+        petHair: form.petHair,
+        stains: form.stains,
+        heavyDirt: form.heavyDirt,
+      },
+    },
+    DEFAULT_PRICING_CONFIG,
+  );
+}
+
+/**
+ * Number-only helper kept for backwards compatibility with the orchestrator
+ * (`BookingPage`) and the configurator shell, which both useMemo on a
+ * primitive. Delegates to the engine; identical math, identical return.
+ */
 export function estimatedPriceOf(form: FormState, services: PublicService[]): number {
-  let total = 0;
-  // Packages — sum across every selected service id (multi-select).
-  for (const id of form.serviceIds) {
-    const pkg = services.find((s) => s.id === id);
-    if (pkg) total += midPrice(pkg);
-  }
-  // Add-ons — multiply by quantity for countable items (default 1).
-  for (const id of form.addonIds) {
-    const a = services.find((s) => s.id === id);
-    if (a) {
-      const qty = Math.max(1, form.addonQuantities[id] ?? 1);
-      total += midPrice(a) * qty;
-    }
-  }
-  return total;
+  return quoteOf(form, services).estimate;
 }
