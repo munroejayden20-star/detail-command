@@ -150,7 +150,7 @@ export function CustomerPortalPanel({
    chosen from appointment state. No LLM call.
 ───────────────────────────────────────────── */
 
-function IrisNote({ data }: { data: CustomerPortalData }) {
+export function IrisNote({ data }: { data: CustomerPortalData }) {
   const message = buildIrisMessage(data);
   if (!message) return null;
   return (
@@ -278,7 +278,7 @@ const TERMINAL_STATUSES = new Set([
   "in_progress",
 ]);
 
-function AppointmentRow({
+export function AppointmentRow({
   appt,
   muted,
   onRefresh,
@@ -637,7 +637,7 @@ function DetailLine({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-function ReceiptRow({ receipt }: { receipt: PortalReceipt }) {
+export function ReceiptRow({ receipt }: { receipt: PortalReceipt }) {
   const href = `/receipt/${receipt.publicReceiptToken}`;
   const total = formatMoney(receipt.totalCents, receipt.currency);
   return (

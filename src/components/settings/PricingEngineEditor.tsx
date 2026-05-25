@@ -130,13 +130,28 @@ function LivePreview({ config }: { config: PricingConfig }) {
     durationMinutes: 240,
     isAddon: false,
   } as const;
+  // Three scenarios chosen to bracket the engine's behavior:
+  //   1. Sedan / clean      — listed price baseline (1.0 modifier)
+  //   2. Compact / clean    — the smaller-car discount in action
+  //   3. SUV / heavy + flag — typical upcharge case
   const scenarios = [
     {
-      label: "Sedan · clean",
+      label: "Sedan · clean (baseline)",
       input: {
         packages: [samplePackage],
         addons: [],
         vehicleSize: "sedan",
+        interiorCondition: "average",
+        exteriorCondition: "average",
+        flags: { petHair: false, stains: false, heavyDirt: false },
+      },
+    },
+    {
+      label: "Compact · clean (discount)",
+      input: {
+        packages: [samplePackage],
+        addons: [],
+        vehicleSize: "compact",
         interiorCondition: "average",
         exteriorCondition: "average",
         flags: { petHair: false, stains: false, heavyDirt: false },
@@ -151,17 +166,6 @@ function LivePreview({ config }: { config: PricingConfig }) {
         interiorCondition: "heavy",
         exteriorCondition: "average",
         flags: { petHair: true, stains: false, heavyDirt: false },
-      },
-    },
-    {
-      label: "Van · heavy + flags",
-      input: {
-        packages: [samplePackage],
-        addons: [],
-        vehicleSize: "van_xl",
-        interiorCondition: "heavy",
-        exteriorCondition: "heavy",
-        flags: { petHair: true, stains: true, heavyDirt: true },
       },
     },
   ];

@@ -30,9 +30,11 @@ import {
 import {
   getCustomerToken,
   saveCustomerToken,
-  clearCustomerToken,
 } from "@/lib/customer-portal-storage";
-import { CustomerPortalPanel } from "@/components/booking/CustomerPortalPanel";
+import {
+  CustomerPortalRibbon,
+  RIBBON_HEIGHT_PX,
+} from "@/components/booking/CustomerPortalRibbon";
 
 import {
   BootIntro,
@@ -173,12 +175,6 @@ export function BookingPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [justBooked, portal]);
-
-  function handlePortalSignOut() {
-    clearCustomerToken();
-    setPortal(null);
-    setJustBooked(false);
-  }
 
   /* ─── Scroll the form card into view on step change ────────────────── */
   useEffect(() => {
@@ -394,22 +390,13 @@ export function BookingPage() {
       <ScrollAmbient />
       <ScrollTelemetry />
 
-      {portal ? (
-        <CustomerPortalPanel
-          key={justBooked ? "expanded" : "collapsed"}
-          data={portal}
-          defaultExpanded={justBooked}
-          onSignOut={handlePortalSignOut}
-          onRefresh={async () => {
-            await refreshPortal();
-          }}
-        />
-      ) : null}
+      {portal ? <CustomerPortalRibbon data={portal} /> : null}
 
       <TopNav
         businessName={settings.businessName}
         logoUrl={settings.logoUrl}
         onBook={jumpToBook}
+        topOffset={portal ? RIBBON_HEIGHT_PX : 0}
       />
 
       <main>

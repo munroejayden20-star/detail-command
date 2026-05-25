@@ -125,10 +125,14 @@ export function TopNav({
   businessName,
   logoUrl,
   onBook,
+  topOffset = 0,
 }: {
   businessName: string;
   logoUrl?: string;
   onBook: () => void;
+  /** Pixels to push the fixed nav down from the top — used to clear the
+   *  CustomerPortalRibbon when a returning customer is signed in. */
+  topOffset?: number;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -151,19 +155,33 @@ export function TopNav({
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-[background,backdrop-filter,border-color] duration-500 ${
+        style={{ top: topOffset }}
+        className={`fixed inset-x-0 z-50 transition-[background,backdrop-filter,border-color] duration-500 ${
           scrolled
             ? "bg-obsidian-950/72 backdrop-blur-xl border-b border-white/10"
             : "bg-transparent border-b border-transparent"
         }`}
       >
-        <div className="mx-auto flex max-w-[1320px] items-center justify-between px-5 py-4 md:px-10">
+        {/* Three-zone responsive header.
+         *
+         * Below md (mobile / small tablet): [brand]  [menu]
+         *   – business name truncates with min-w-0 + flex-1 so it never
+         *     pushes the menu button off-screen
+         *   – Configure CTA is intentionally absent (the floating
+         *     MobileBookDock handles the conversion path)
+         *
+         * md+ (≥768px): [brand] [center nav] [Configure CTA]
+         *   – nav links and CTA share the right side without competing
+         *     for the same x-coordinate as the menu button (menu is gone)
+         */}
+        <div className="mx-auto flex max-w-[1320px] items-center gap-3 px-4 py-3.5 sm:px-6 md:gap-6 md:px-10 md:py-4">
+          {/* Brand — flex-1 min-w-0 lets it shrink instead of overflow */}
           <a
             href="#home"
             onClick={(e) => { e.preventDefault(); scrollToId("home"); }}
-            className="group flex items-center gap-3"
+            className="group flex min-w-0 flex-1 items-center gap-3 md:flex-none"
           >
-            <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-obsidian-900">
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-obsidian-900">
               {logoUrl ? (
                 <img src={logoUrl} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -171,17 +189,18 @@ export function TopNav({
               )}
               <span className="absolute inset-0 rounded-full bg-ember-500/0 transition-colors duration-300 group-hover:bg-ember-500/15" />
             </span>
-            <span className="hidden text-[11px] uppercase tracking-[0.32em] text-platinum-100 sm:inline-block">
+            <span className="hidden truncate text-[11px] uppercase tracking-[0.28em] text-platinum-100 sm:inline-block md:tracking-[0.32em]">
               {businessName}
             </span>
           </a>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          {/* Desktop center nav — md and up only */}
+          <nav className="hidden flex-1 items-center justify-center gap-6 md:flex lg:gap-8">
             {links.map((l) => (
               <button
                 key={l.id}
                 onClick={() => scrollToId(l.id)}
-                className="group relative text-[11px] uppercase tracking-[0.26em] text-platinum-300/85 transition-colors hover:text-platinum-50"
+                className="group relative text-[11px] uppercase tracking-[0.24em] text-platinum-300/85 transition-colors hover:text-platinum-50 lg:tracking-[0.26em]"
               >
                 {l.label}
                 <span className="absolute -bottom-2 left-1/2 h-px w-0 -translate-x-1/2 bg-ember-400 transition-all duration-500 group-hover:w-full" />
@@ -189,7 +208,10 @@ export function TopNav({
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          {/* Right zone — Configure on md+, menu button on mobile.
+           * shrink-0 on both prevents the menu from being squeezed by a long
+           * business name. */}
+          <div className="flex shrink-0 items-center gap-2">
             <GlassCTA
               onClick={onBook}
               variant="primary"
@@ -202,7 +224,7 @@ export function TopNav({
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-platinum-100 transition-colors hover:bg-white/[0.08] md:hidden"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-platinum-100 transition-colors hover:bg-white/[0.08] md:hidden"
               aria-label="Open navigation"
             >
               <Menu className="h-4 w-4" />
@@ -1559,18 +1581,23 @@ export function Footer({
   return (
     <footer className="relative bg-obsidian-950/85 border-t border-white/10 text-platinum-200">
       <CarbonWeave opacity={0.35} />
-      <div className="relative mx-auto max-w-[1320px] px-5 py-16 md:px-10 md:py-20">
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-12 md:gap-12">
-          <div className="col-span-2 md:col-span-5">
+      <div className="relative mx-auto max-w-[1320px] px-5 py-14 sm:px-6 md:px-10 md:py-20">
+        {/* Mobile: single-column stack (no side-by-side columns that can collide).
+         *   sm (≥640px): brand spans full width, the three info columns split 3-up.
+         *   md (≥768px): the canonical 12-col editorial grid.
+         * The brand block uses min-w-0 + break-words so a long email/business name
+         * never overflows its column. */}
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8 md:grid-cols-12 md:gap-12">
+          <div className="min-w-0 sm:col-span-3 md:col-span-5">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-obsidian-900">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-obsidian-900">
                 {logoUrl ? (
                   <img src={logoUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <span className="font-display italic text-[16px] text-ember-300">jm</span>
                 )}
               </span>
-              <span className="font-display italic text-2xl font-light text-platinum-50">
+              <span className="min-w-0 truncate font-display italic text-2xl font-light text-platinum-50">
                 {businessName}
               </span>
             </div>
@@ -1584,23 +1611,32 @@ export function Footer({
             </p>
           </div>
 
-          <div className="col-span-1 md:col-span-3">
+          <div className="min-w-0 sm:col-span-1 md:col-span-3">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-ember-300">Reach</p>
             <ul className="mt-5 space-y-3 text-[13px]">
               {phone ? (
-                <li className="flex items-center gap-3"><Phone className="h-3.5 w-3.5 text-platinum-300" /><a href={`tel:${phone}`} className="hover:text-ember-200">{phone}</a></li>
+                <li className="flex items-start gap-3">
+                  <Phone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-platinum-300" />
+                  <a href={`tel:${phone}`} className="min-w-0 break-all hover:text-ember-200">{phone}</a>
+                </li>
               ) : null}
               {email ? (
-                <li className="flex items-center gap-3"><Mail  className="h-3.5 w-3.5 text-platinum-300" /><a href={`mailto:${email}`} className="hover:text-ember-200">{email}</a></li>
+                <li className="flex items-start gap-3">
+                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-platinum-300" />
+                  <a href={`mailto:${email}`} className="min-w-0 break-all hover:text-ember-200">{email}</a>
+                </li>
               ) : null}
               {!phone && !email ? (
-                <li className="text-platinum-300/70 text-[12px]">Configure on this page — the form is the fastest way to reach me.</li>
+                <li className="text-[12px] text-platinum-300/70">Configure on this page — the form is the fastest way to reach me.</li>
               ) : null}
-              <li className="flex items-center gap-3 text-platinum-300/85"><MapPin className="h-3.5 w-3.5 text-platinum-300" /> {serviceArea ?? "PNW · WA / OR"}</li>
+              <li className="flex items-start gap-3 text-platinum-300/85">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-platinum-300" />
+                <span className="min-w-0">{serviceArea ?? "PNW · WA / OR"}</span>
+              </li>
             </ul>
           </div>
 
-          <div className="col-span-1 md:col-span-2">
+          <div className="min-w-0 sm:col-span-1 md:col-span-2">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-ember-300">Browse</p>
             <ul className="mt-5 space-y-3 text-[13px]">
               {["manifesto","services","process","gallery","faq"].map((id) => (
@@ -1613,23 +1649,23 @@ export function Footer({
             </ul>
           </div>
 
-          <div className="col-span-2 md:col-span-2">
+          <div className="min-w-0 sm:col-span-1 md:col-span-2">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-ember-300">Trust</p>
             <ul className="mt-5 space-y-3 text-[13px]">
-              <li className="flex items-center gap-2 text-platinum-200"><ShieldCheck className="h-3.5 w-3.5 text-ember-300" /> Insured</li>
-              <li className="flex items-center gap-2 text-platinum-200"><Sparkles    className="h-3.5 w-3.5 text-ember-300" /> Studio-grade tools</li>
-              <li className="flex items-center gap-2 text-platinum-200"><Clock       className="h-3.5 w-3.5 text-ember-300" /> On-time, always</li>
+              <li className="flex items-center gap-2 text-platinum-200"><ShieldCheck className="h-3.5 w-3.5 shrink-0 text-ember-300" /> Insured</li>
+              <li className="flex items-center gap-2 text-platinum-200"><Sparkles    className="h-3.5 w-3.5 shrink-0 text-ember-300" /> Studio-grade tools</li>
+              <li className="flex items-center gap-2 text-platinum-200"><Clock       className="h-3.5 w-3.5 shrink-0 text-ember-300" /> On-time, always</li>
             </ul>
           </div>
         </div>
 
-        <Hairline className="mt-16" />
+        <Hairline className="mt-14 md:mt-16" />
 
-        <div className="mt-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/70">
+        <div className="mt-8 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center md:gap-4">
+          <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.24em] text-platinum-300/70 sm:text-[10.5px] sm:tracking-[0.28em]">
             © {new Date().getFullYear()} {businessName} · Mobile detailing, done right.
           </p>
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.4em] text-platinum-300/60">
+          <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-platinum-300/60 sm:text-[10.5px] sm:tracking-[0.4em]">
             — end of file —
           </p>
         </div>

@@ -99,10 +99,13 @@ export const EMPTY_FORM: FormState = {
 
 export const TOTAL_STEPS = 7;
 
+/* Order matters — first item is the implied baseline ("listed price applies
+ * here"). Compact comes second so the discount cue reads as a perk against
+ * the default sedan price, not as a cheaper starting point. */
 export const VEHICLE_SIZES = [
-  { value: "compact",   label: "Compact",   hint: "Coupes, hatchbacks"      },
-  { value: "sedan",     label: "Sedan",     hint: "Full-size sedans, sports"},
-  { value: "suv_truck", label: "SUV / Truck", hint: "Mid-size SUV, pickup"  },
+  { value: "sedan",     label: "Sedan",       hint: "Listed price · baseline" },
+  { value: "compact",   label: "Compact",     hint: "Coupes, hatchbacks · small-car discount" },
+  { value: "suv_truck", label: "SUV / Truck", hint: "Mid-size SUV, pickup" },
   { value: "van_xl",    label: "Van / XL",    hint: "Full-size van, large SUV" },
 ];
 
@@ -750,17 +753,19 @@ function Step2Addons({
  * `public/cars/` and it appears here. Missing files fall back to an
  * "image not yet placed" state so the form remains usable.
  */
+/* Iteration order here drives the "class · 0N" label on the plate. Sedan
+ * sits first because it's the pricing baseline. */
 const VEHICLE_IMAGE_SOURCES: Record<
   string,
   { label: string; sources: string[] }
 > = {
-  compact: {
-    label: "COMPACT",
-    sources: ["/cars/compact.webp", "/cars/compact.jpg", "/cars/compact.png"],
-  },
   sedan: {
     label: "SEDAN",
     sources: ["/cars/sedan.webp", "/cars/sedan.jpg", "/cars/sedan.png"],
+  },
+  compact: {
+    label: "COMPACT",
+    sources: ["/cars/compact.webp", "/cars/compact.jpg", "/cars/compact.png"],
   },
   suv_truck: {
     label: "SUV / TRUCK",

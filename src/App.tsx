@@ -17,6 +17,7 @@ import { DashboardPage } from "@/pages/Dashboard";
 const BookingPage = lazy(() => import("@/pages/BookingPage").then((m) => ({ default: m.BookingPage })));
 const BookingSuccessPage = lazy(() => import("@/pages/BookingSuccess").then((m) => ({ default: m.BookingSuccessPage })));
 const BookingCancelPage = lazy(() => import("@/pages/BookingCancel").then((m) => ({ default: m.BookingCancelPage })));
+const CustomerPortalPage = lazy(() => import("@/pages/CustomerPortal").then((m) => ({ default: m.CustomerPortalPage })));
 const CalendarPage = lazy(() => import("@/pages/Calendar").then((m) => ({ default: m.CalendarPage })));
 const CustomersPage = lazy(() => import("@/pages/Customers").then((m) => ({ default: m.CustomersPage })));
 const CustomerDetailPage = lazy(() => import("@/pages/CustomerDetail").then((m) => ({ default: m.CustomerDetailPage })));
@@ -117,6 +118,9 @@ export default function App() {
         <Route path="/book" element={lazyRoute(<BookingPage />)} />
         <Route path="/booking/success" element={lazyRoute(<BookingSuccessPage />)} />
         <Route path="/booking/cancel" element={lazyRoute(<BookingCancelPage />)} />
+        {/* Public customer dashboard — token-gated via localStorage,
+            resolved through get_customer_portal_by_token RPC. */}
+        <Route path="/portal" element={lazyRoute(<CustomerPortalPage />)} />
         <Route path="/receipt/:token" element={lazyRoute(<PublicReceiptPage />)} />
         {/* Chromeless admin routes (Quick View widget) — auth + data, no Layout shell. */}
         <Route
