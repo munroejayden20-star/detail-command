@@ -30,7 +30,6 @@ import {
 import {
   getCustomerToken,
   saveCustomerToken,
-  hasCustomerAccountLink,
 } from "@/lib/customer-portal-storage";
 import {
   CustomerPortalRibbon,
@@ -422,12 +421,13 @@ export function BookingPage() {
 
   const settings = info.settings;
 
-  // True only when this device has explicitly linked the customer to a real
-  // account (set on successful signup, signin, or first /portal data load).
-  // The localStorage flag captures intent directly — much more reliable than
-  // email-matching, which fails when the booking customer record has an
-  // empty email or doesn't exactly match the auth user's email casing.
-  const customerHasAccount = !!user && hasCustomerAccountLink() && !!portal;
+  // Ribbon shows when there's a real auth session AND the portal has loaded.
+  // Anyone signed in viewing /book is a customer with an account by
+  // definition — admin who wants the ribbon hidden can sign out from
+  // /portal. localStorage flag helpers stay in place for future use but
+  // aren't part of the gate (clearing localStorage during testing was
+  // breaking the flag-based gate).
+  const customerHasAccount = !!user && !!portal;
 
   return (
     <div className="relative min-h-screen bg-obsidian-950 text-platinum-100 antialiased [scroll-behavior:smooth]">
