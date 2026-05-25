@@ -27,7 +27,7 @@ import {
 import type { PublicService, PublicDepositInfo } from "@/lib/booking-api";
 import { EmberCTA, LiquidProgress, Reveal } from "./primitives";
 import { LuxuryScheduler } from "./scheduler";
-import { computeQuote } from "@/lib/pricing/engine";
+import { computeQuote, computeServicePriceRange } from "@/lib/pricing/engine";
 import { DEFAULT_PRICING_CONFIG } from "@/lib/pricing/config";
 import type { PricingConfig, Quote } from "@/lib/pricing/types";
 
@@ -104,7 +104,7 @@ export const TOTAL_STEPS = 7;
  * here"). Compact comes second so the discount cue reads as a perk against
  * the default sedan price, not as a cheaper starting point. */
 export const VEHICLE_SIZES = [
-  { value: "sedan",     label: "Sedan",       hint: "Listed price · baseline" },
+  { value: "sedan",     label: "Sedan",       hint: "4-door, midsize car" },
   { value: "compact",   label: "Compact",     hint: "Coupes, hatchbacks · small-car discount" },
   { value: "suv_truck", label: "SUV / Truck", hint: "Mid-size SUV, pickup" },
   { value: "van_xl",    label: "Van / XL",    hint: "Full-size van, large SUV" },
@@ -468,10 +468,12 @@ function Step1Service({
   services,
   form,
   set,
+  pricingConfig,
 }: {
   services: PublicService[];
   form: FormState;
   set: (patch: Partial<FormState>) => void;
+  pricingConfig: PricingConfig;
 }) {
   const packages = services.filter((s) => !s.isAddon);
   return (
@@ -488,8 +490,17 @@ function Step1Service({
           {packages.map((s) => {
             const selected = form.serviceIds.includes(s.id);
             const disc = activeDiscount(s);
-            const lo = disc ? applyDiscount(s.priceLow, disc) : s.priceLow;
-            const hi = disc ? applyDiscount(s.priceHigh, disc) : s.priceHigh;
+            // Real envelope from the calculator engine — vehicle size,
+            // condition, flags, and engine floors all factor in. When a
+            // discount is active we show the undiscounted range struck
+            // through and the discounted range as the live number.
+            const undiscRange = computeServicePriceRange(
+              disc ? { ...s, discount: undefined } : s,
+              pricingConfig,
+            );
+            const discRange = computeServicePriceRange(s, pricingConfig);
+            const lo = discRange.low;
+            const hi = discRange.high;
             const toggle = () => {
               // Toggle in/out of the selection. Same pattern as add-ons —
               // the submit RPC already accepts an array of service ids.
@@ -557,11 +568,11 @@ function Step1Service({
                     <div className="text-right">
                       {disc ? (
                         <>
-                          <p className="font-mono text-[11px] text-platinum-300/50 line-through">{fmtPrice(s.priceLow, s.priceHigh)}</p>
+                          <p className="font-mono text-[11px] text-platinum-300/50 line-through">{fmtPrice(undiscRange.low, undiscRange.high)}</p>
                           <p className="font-sans text-2xl font-light text-copper-200">{fmtPrice(lo, hi)}</p>
                         </>
                       ) : (
-                        <p className="font-sans text-2xl font-light text-platinum-50">{fmtPrice(s.priceLow, s.priceHigh)}</p>
+                        <p className="font-sans text-2xl font-light text-platinum-50">{fmtPrice(lo, hi)}</p>
                       )}
                       <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.32em] text-platinum-300/70">starting</p>
                     </div>
@@ -688,7 +699,7 @@ function Step2Addons({
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1">
                   <span className="font-mono text-[12px] uppercase tracking-[0.22em] text-platinum-100">
-                    +{fmtPrice(s.priceLow, s.priceHigh)}
+                    +${midPrice(s)}
                   </span>
                   {checked && qty > 1 ? (
                     <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ember-300/85">
@@ -1258,8 +1269,7 @@ function QuoteBreakdown({ quote }: { quote: Quote }) {
           </span>
           <span className="h-px w-10 bg-white/15" />
           <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/65">
-            {quote.laborHours.toFixed(1)} hr ·{" "}
-            ${Math.round(quote.effectiveHourlyRate)}/hr
+            {quote.laborHours.toFixed(1)} hr
           </span>
         </span>
         <motion.span
@@ -1631,7 +1641,7 @@ export function ConfiguratorShell({
             exit   ={{ opacity: 0, y: -22, filter: "blur(10px)" }}
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           >
-            {step === 1 && <Step1Service services={services} form={form} set={set} />}
+            {step === 1 && <Step1Service services={services} form={form} set={set} pricingConfig={pricingConfig} />}
             {step === 2 && <Step2Addons  services={services} form={form} set={set} estimatedPrice={estimatedPrice} />}
             {step === 3 && <Step3Vehicle form={form} set={set} />}
             {step === 4 && <Step4DateTime form={form} set={set} bookedSlots={bookedSlots} />}

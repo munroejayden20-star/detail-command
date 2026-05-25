@@ -465,7 +465,11 @@ export function BookingPage() {
 
         <Manifesto businessName={settings.businessName} />
 
-        <Services services={services} onSelect={selectServiceAndJump} />
+        <Services
+          services={services}
+          onSelect={selectServiceAndJump}
+          pricingConfig={pricingConfig}
+        />
 
         <Process />
 

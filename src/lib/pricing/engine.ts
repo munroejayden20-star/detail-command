@@ -259,3 +259,82 @@ export function computeQuote(
     policyNotes,
   };
 }
+
+/* ─── Service price range ────────────────────────────────────────────── */
+
+/** Pick the size key whose `price` multiplier sits at the extreme requested.
+ *  Falls back to the sedan baseline (1.0) when the config is empty. */
+function pickSizeKeyByPrice(
+  config: PricingConfig,
+  end: "min" | "max",
+): string {
+  const entries = Object.entries(config.vehicleSize);
+  if (entries.length === 0) return "";
+  return entries.reduce((acc, cur) =>
+    end === "min"
+      ? cur[1].price < acc[1].price ? cur : acc
+      : cur[1].price > acc[1].price ? cur : acc,
+  )[0];
+}
+
+function pickConditionKeyByPrice(
+  config: PricingConfig,
+  end: "min" | "max",
+): string {
+  const entries = Object.entries(config.condition);
+  if (entries.length === 0) return "";
+  return entries.reduce((acc, cur) =>
+    end === "min"
+      ? cur[1].price < acc[1].price ? cur : acc
+      : cur[1].price > acc[1].price ? cur : acc,
+  )[0];
+}
+
+/**
+ * Realistic min/max final quote for a single service across the full
+ * configurator input space. Mirrors what the calculator would actually
+ * produce — vehicle size, condition, flags, and all engine floors
+ * (hourly minimum, min booking, rounding) included.
+ *
+ * Low = smallest vehicle × lightest condition × no flags.
+ * High = biggest vehicle × heaviest condition × every flag.
+ *
+ * The displayed `priceLow` / `priceHigh` columns on a service are
+ * advisory only; this helper returns the real envelope the customer
+ * could be quoted in. Used by the /book service tiles and Step 1.
+ */
+export function computeServicePriceRange(
+  service: PublicService,
+  config: PricingConfig,
+): { low: number; high: number } {
+  const sizeMin = pickSizeKeyByPrice(config, "min");
+  const sizeMax = pickSizeKeyByPrice(config, "max");
+  const condMin = pickConditionKeyByPrice(config, "min");
+  const condMax = pickConditionKeyByPrice(config, "max");
+
+  const low = computeQuote(
+    {
+      packages: [service],
+      addons: [],
+      vehicleSize: sizeMin,
+      interiorCondition: condMin,
+      exteriorCondition: condMin,
+      flags: { petHair: false, stains: false, heavyDirt: false },
+    },
+    config,
+  ).estimate;
+
+  const high = computeQuote(
+    {
+      packages: [service],
+      addons: [],
+      vehicleSize: sizeMax,
+      interiorCondition: condMax,
+      exteriorCondition: condMax,
+      flags: { petHair: true, stains: true, heavyDirt: true },
+    },
+    config,
+  ).estimate;
+
+  return { low, high };
+}

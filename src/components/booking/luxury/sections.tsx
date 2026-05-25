@@ -41,6 +41,9 @@ import type {
   PublicFeaturedPhoto,
   PublicService,
 } from "@/lib/booking-api";
+import type { PricingConfig } from "@/lib/pricing/types";
+import { computeServicePriceRange } from "@/lib/pricing/engine";
+import { DEFAULT_PRICING_CONFIG } from "@/lib/pricing/config";
 import {
   AnimatedCounter,
   CarbonWeave,
@@ -797,9 +800,11 @@ export function Manifesto({ businessName }: { businessName: string }) {
 export function Services({
   services,
   onSelect,
+  pricingConfig = DEFAULT_PRICING_CONFIG,
 }: {
   services: PublicService[];
   onSelect: (serviceId: string) => void;
+  pricingConfig?: PricingConfig;
 }) {
   const packages = services.filter((s) => !s.isAddon);
   return (
@@ -842,7 +847,12 @@ export function Services({
               const span = wide ? "md:col-span-7" : "md:col-span-5";
               return (
                 <Reveal key={s.id} delay={i * 0.06} className={span}>
-                  <ServicePlate service={s} index={i + 1} onSelect={onSelect} />
+                  <ServicePlate
+                    service={s}
+                    index={i + 1}
+                    onSelect={onSelect}
+                    pricingConfig={pricingConfig}
+                  />
                 </Reveal>
               );
             })}
@@ -857,14 +867,26 @@ function ServicePlate({
   service: s,
   index,
   onSelect,
+  pricingConfig,
 }: {
   service: PublicService;
   index: number;
   onSelect: (serviceId: string) => void;
+  pricingConfig: PricingConfig;
 }) {
   const disc = activeDiscount(s);
-  const priceLow = disc ? applyDiscount(s.priceLow, disc) : s.priceLow;
-  const priceHigh = disc ? applyDiscount(s.priceHigh, disc) : s.priceHigh;
+  // Real envelope the calculator can quote — accounts for vehicle size,
+  // condition, flags, and engine floors. The undiscounted range is shown
+  // line-through when a discount is active; the engine handles the discount
+  // automatically via midPrice(), so passing the service as-is yields the
+  // already-discounted numbers.
+  const undiscountedRange = computeServicePriceRange(
+    disc ? { ...s, discount: undefined } : s,
+    pricingConfig,
+  );
+  const discountedRange = computeServicePriceRange(s, pricingConfig);
+  const priceLow = discountedRange.low;
+  const priceHigh = discountedRange.high;
 
   // Read more / Show less — measured against the clamped state so the toggle
   // only appears when the description actually overflows. Re-checks on resize
@@ -922,7 +944,7 @@ function ServicePlate({
             </span>
             {disc ? (
               <>
-                <p className="font-mono text-[12px] text-platinum-300/50 line-through">${s.priceLow}</p>
+                <p className="font-mono text-[12px] text-platinum-300/50 line-through">${undiscountedRange.low}</p>
                 <p className="font-sans text-3xl font-light text-copper-200">${priceLow}</p>
               </>
             ) : (
