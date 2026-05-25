@@ -893,6 +893,7 @@ export function settingsToRow(s: Settings, userId: string) {
     sms_phone_number: s.smsPhoneNumber ?? null,
     review_request_enabled: s.reviewRequestEnabled ?? true,
     review_request_delay_hours: s.reviewRequestDelayHours ?? 2,
+    pricing_config: s.pricingConfig ?? null,
   };
 }
 
@@ -967,6 +968,9 @@ export function settingsPatchToRow(p: Partial<Settings>): Record<string, unknown
   if (p.smsPhoneNumber !== undefined) out.sms_phone_number = p.smsPhoneNumber ?? null;
   if (p.reviewRequestEnabled !== undefined) out.review_request_enabled = !!p.reviewRequestEnabled;
   if (p.reviewRequestDelayHours !== undefined) out.review_request_delay_hours = p.reviewRequestDelayHours;
+  // Phase O — admin-customizable pricing engine. Passes through as JSONB.
+  // `null` clears the override (engine falls back to defaults).
+  if (p.pricingConfig !== undefined) out.pricing_config = p.pricingConfig;
   return out;
 }
 
@@ -1041,5 +1045,6 @@ export function settingsFromRow(r: any): Settings {
     smsPhoneNumber: r.sms_phone_number ?? undefined,
     reviewRequestEnabled: r.review_request_enabled ?? true,
     reviewRequestDelayHours: r.review_request_delay_hours != null ? Number(r.review_request_delay_hours) : 2,
+    pricingConfig: r.pricing_config ?? null,
   };
 }

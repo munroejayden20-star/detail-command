@@ -35,8 +35,10 @@ import {
   Smartphone,
   MessageSquare,
   Plug,
+  Gauge,
 } from "lucide-react";
 import { IntegrationsSection } from "@/components/settings/IntegrationsSection";
+import { PricingEngineEditor } from "@/components/settings/PricingEngineEditor";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -474,6 +476,29 @@ export function SettingsPage() {
               </Link>
             </Button>
           </div>
+        </SettingsSection>
+      ) : null}
+
+      {/* ── 3b. Pricing engine — admin config for the booking-page quote math ── */}
+      {matches(
+        "pricing",
+        "engine",
+        "modifier",
+        "vehicle",
+        "size",
+        "condition",
+        "labor",
+        "minimum",
+        "travel",
+        "quote",
+      ) ? (
+        <SettingsSection
+          id="pricing-engine"
+          title="Pricing engine"
+          description="Tune the modifiers that drive the customer-facing quote estimate on /book."
+          icon={Gauge}
+        >
+          <PricingEngineEditor />
         </SettingsSection>
       ) : null}
 

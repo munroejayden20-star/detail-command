@@ -656,6 +656,12 @@ export interface Settings {
   taxSetAsidePercent?: number;  // % of net profit to set aside (default 25)
   taxBusinessState?: string;    // e.g. "WA", "OR"
 
+  // ── Pricing engine (Phase O — admin-customizable) ───────────────────────
+  /** Full pricing engine config. May be partial; the engine deep-merges
+   *  this with DEFAULT_PRICING_CONFIG before computing. NULL/undefined =
+   *  defaults everywhere, behavior identical to before customization. */
+  pricingConfig?: Partial<import("./pricing/types").PricingConfig> | null;
+
   // ── Legacy (kept for backward-compat, no longer shown in UI) ─────────────
   startupGoal: number;
 }

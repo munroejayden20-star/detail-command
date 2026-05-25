@@ -232,6 +232,22 @@ export function computeQuote(
 
   const effectiveHourlyRate = laborHours > 0 ? estimate / laborHours : 0;
 
+  /* 11. Policy notes — non-monetary informational items the UI can show
+   *  alongside the breakdown. Currently only the travel policy lives here;
+   *  the geocoding-based auto-bill version is deferred to a later phase. */
+  const policyNotes: Array<{ label: string; detail: string }> = [];
+  if (config.travel?.enabled) {
+    const t = config.travel;
+    const tail =
+      t.maxMiles > t.freeRadiusMiles
+        ? ` to ${t.maxMiles} mi`
+        : "";
+    policyNotes.push({
+      label: "Travel",
+      detail: `First ${t.freeRadiusMiles} mi included · $${t.perMileRate.toFixed(2)}/mi${tail} · beyond ${t.maxMiles} mi by quote`,
+    });
+  }
+
   return {
     estimate,
     rawSubtotal,
@@ -240,5 +256,6 @@ export function computeQuote(
     effectiveHourlyRate,
     minProtectionApplied,
     minBookingApplied,
+    policyNotes,
   };
 }

@@ -235,6 +235,38 @@ describe("computeQuote — profit + minimum protection", () => {
   });
 });
 
+describe("computeQuote — travel policy", () => {
+  it("adds travel policy to policyNotes when enabled (no $ impact)", () => {
+    const pkg = svc({ id: "p1", priceLow: 200, durationMinutes: 120 });
+    const baseline = computeQuote(
+      { packages: [pkg], addons: [], ...SEDAN_AVERAGE },
+      DEFAULT_PRICING_CONFIG,
+    );
+    const withTravel = computeQuote(
+      { packages: [pkg], addons: [], ...SEDAN_AVERAGE },
+      {
+        ...DEFAULT_PRICING_CONFIG,
+        travel: { enabled: true, freeRadiusMiles: 15, perMileRate: 1.5, maxMiles: 40 },
+      },
+    );
+    // Travel is informational — the dollar estimate should NOT change.
+    expect(withTravel.estimate).toBe(baseline.estimate);
+    // But the policy note shows up.
+    expect(withTravel.policyNotes.length).toBe(1);
+    expect(withTravel.policyNotes[0].label).toBe("Travel");
+    expect(withTravel.policyNotes[0].detail).toMatch(/15/);
+  });
+
+  it("omits travel policy when disabled", () => {
+    const pkg = svc({ id: "p1", priceLow: 200, durationMinutes: 120 });
+    const q = computeQuote(
+      { packages: [pkg], addons: [], ...SEDAN_AVERAGE },
+      DEFAULT_PRICING_CONFIG,
+    );
+    expect(q.policyNotes.length).toBe(0);
+  });
+});
+
 describe("computeQuote — breakdown lines", () => {
   it("breakdown lines are ordered (packages → addons → adjustments → floors)", () => {
     const pkg = svc({ id: "p1", priceLow: 200, durationMinutes: 240 });

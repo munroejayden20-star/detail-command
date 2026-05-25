@@ -65,6 +65,7 @@ import {
   ScrollAmbient,
   ScrollTelemetry,
 } from "@/components/booking/luxury/primitives";
+import { mergePricingConfig } from "@/lib/pricing/merge";
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * Local helpers
@@ -240,9 +241,18 @@ export function BookingPage() {
   const bookedSlots = info?.bookedSlots ?? [];
   const deposit     = info?.deposit;
 
+  /* Phase O — owner-tuned pricing config. The RPC returns a partial blob (or
+   * null when the owner hasn't customized yet); merge with defaults so every
+   * field is always populated. Memoized so the engine doesn't re-run with a
+   * fresh reference on every parent render. */
+  const pricingConfig = useMemo(
+    () => mergePricingConfig(info?.pricingConfig ?? null),
+    [info?.pricingConfig],
+  );
+
   const estimatedPrice = useMemo(
-    () => estimatedPriceOf(form, services),
-    [form, services],
+    () => estimatedPriceOf(form, services, pricingConfig),
+    [form, services, pricingConfig],
   );
 
   function canProceed(): boolean {
@@ -442,6 +452,7 @@ export function BookingPage() {
             onSubmit={handleSubmit}
             bookedSlots={bookedSlots}
             deposit={deposit}
+            pricingConfig={pricingConfig}
           />
         </BookingSection>
 

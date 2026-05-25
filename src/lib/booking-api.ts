@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { PricingConfig } from "./pricing/types";
 
 export interface PublicService {
   id: string;
@@ -51,6 +52,10 @@ export interface PublicBookingInfo {
   services: PublicService[];
   bookedSlots?: PublicBookedSlot[];
   deposit?: PublicDepositInfo;
+  /** Owner-tuned pricing engine config (Phase 2). May be null/partial when
+   *  the owner hasn't customized yet — caller deep-merges with defaults via
+   *  `mergePricingConfig(...)` from `lib/pricing/merge`. */
+  pricingConfig?: Partial<PricingConfig> | null;
   settings: {
     businessName: string;
     serviceArea?: string;

@@ -60,4 +60,15 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   // Round to nearest $5. Reads as engineered (200, 215, 240) rather than
   // arbitrary (197.43). Tune to 1 if you want exact pennies.
   rounding: 5,
+
+  // Travel policy — informational by default. Engine does NOT auto-compute
+  // miles into the estimate (requires geocoding). When enabled here, the
+  // policy text surfaces on Step 7 of the customer's quote so they see it
+  // before submitting; owner adds the actual travel charge when confirming.
+  travel: {
+    enabled: false,
+    freeRadiusMiles: 15,
+    perMileRate: 1.5,
+    maxMiles: 40,
+  },
 };

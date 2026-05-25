@@ -28,7 +28,7 @@ import type { PublicService, PublicDepositInfo } from "@/lib/booking-api";
 import { EmberCTA, LiquidProgress, Reveal } from "./primitives";
 import { computeQuote } from "@/lib/pricing/engine";
 import { DEFAULT_PRICING_CONFIG } from "@/lib/pricing/config";
-import type { Quote } from "@/lib/pricing/types";
+import type { PricingConfig, Quote } from "@/lib/pricing/types";
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * Form state — identical shape to the original BookingPage so the orchestrator
@@ -1384,6 +1384,20 @@ function QuoteBreakdown({ quote }: { quote: Quote }) {
                 ) : null}
               </div>
             ) : null}
+
+            {quote.policyNotes.length > 0 ? (
+              <div className="border-t border-white/10 px-5 py-3 space-y-1.5">
+                {quote.policyNotes.map((n, i) => (
+                  <div key={i} className="grid grid-cols-[60px_1fr] gap-3">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-ember-300">{n.label}</span>
+                    <span className="text-[12px] text-platinum-200/85">{n.detail}</span>
+                  </div>
+                ))}
+                <p className="pt-1 font-mono text-[9.5px] uppercase tracking-[0.22em] text-platinum-300/45">
+                  Informational · confirmed at booking confirmation
+                </p>
+              </div>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1405,12 +1419,14 @@ function Step7Review({
   estimatedPrice,
   disclaimer,
   deposit,
+  pricingConfig,
 }: {
   form: FormState;
   services: PublicService[];
   estimatedPrice: number;
   disclaimer?: string;
   deposit?: PublicDepositInfo;
+  pricingConfig: PricingConfig;
 }) {
   const selectedServices = services.filter((s) => form.serviceIds.includes(s.id));
   const selectedAddons   = services.filter((s) => form.addonIds.includes(s.id));
@@ -1485,7 +1501,7 @@ function Step7Review({
         </ReviewBlock>
       </div>
 
-      <QuoteBreakdown quote={quoteOf(form, services)} />
+      <QuoteBreakdown quote={quoteOf(form, services, pricingConfig)} />
 
       {deposit?.enabled && deposit.required ? (
         <div className="relative overflow-hidden border border-ember-500/30 bg-ember-500/[0.05] p-5 md:p-6" style={{ borderRadius: 2 }}>
@@ -1591,6 +1607,7 @@ export function ConfiguratorShell({
   onSubmit,
   bookedSlots,
   deposit,
+  pricingConfig = DEFAULT_PRICING_CONFIG,
 }: {
   step: number;
   setStep: React.Dispatch<React.SetStateAction<number>>;
@@ -1605,6 +1622,9 @@ export function ConfiguratorShell({
   onSubmit: () => void;
   bookedSlots: { start: string; end: string }[];
   deposit?: PublicDepositInfo;
+  /** Phase O — owner-tuned engine config. Defaults to DEFAULT_PRICING_CONFIG
+   *  when caller hasn't loaded the dynamic config yet. */
+  pricingConfig?: PricingConfig;
 }) {
   const depositActive = !!deposit?.enabled && !!deposit.required;
   const progress = (step - 1) / (TOTAL_STEPS - 1);
@@ -1678,6 +1698,7 @@ export function ConfiguratorShell({
                 estimatedPrice={estimatedPrice}
                 disclaimer={disclaimer}
                 deposit={deposit}
+                pricingConfig={pricingConfig}
               />
             )}
           </motion.div>
@@ -1797,7 +1818,18 @@ export function makeCanProceed(
  * Phase 2 will swap this for the owner-customized config stored on the
  * settings row.
  */
-export function quoteOf(form: FormState, services: PublicService[]): Quote {
+/**
+ * Builds a full Quote from the live form state via the pricing engine.
+ *
+ * Optional `config` arg threads the owner-tuned PricingConfig in from the
+ * BookingPage (Phase 2). Callers without access to the config (legacy
+ * code paths, tests) pass nothing and get DEFAULT_PRICING_CONFIG behavior.
+ */
+export function quoteOf(
+  form: FormState,
+  services: PublicService[],
+  config: PricingConfig = DEFAULT_PRICING_CONFIG,
+): Quote {
   const packages = form.serviceIds
     .map((id) => services.find((s) => s.id === id))
     .filter((s): s is PublicService => !!s);
@@ -1825,7 +1857,7 @@ export function quoteOf(form: FormState, services: PublicService[]): Quote {
         heavyDirt: form.heavyDirt,
       },
     },
-    DEFAULT_PRICING_CONFIG,
+    config,
   );
 }
 
@@ -1834,6 +1866,10 @@ export function quoteOf(form: FormState, services: PublicService[]): Quote {
  * (`BookingPage`) and the configurator shell, which both useMemo on a
  * primitive. Delegates to the engine; identical math, identical return.
  */
-export function estimatedPriceOf(form: FormState, services: PublicService[]): number {
-  return quoteOf(form, services).estimate;
+export function estimatedPriceOf(
+  form: FormState,
+  services: PublicService[],
+  config: PricingConfig = DEFAULT_PRICING_CONFIG,
+): number {
+  return quoteOf(form, services, config).estimate;
 }

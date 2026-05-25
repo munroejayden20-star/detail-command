@@ -89,6 +89,23 @@ export interface PricingConfig {
   /** Round the final estimate to the nearest $N. Keeps quotes from
    *  reading as $187.42 — feels engineered, not arbitrary. */
   rounding: number;
+
+  /** Travel policy. Displayed on the customer's quote breakdown when
+   *  enabled — informational only. The engine does NOT auto-compute miles
+   *  into the estimate (Phase 3a) — that requires geocoding and is
+   *  deferred to a later phase. Owner confirms travel after seeing the
+   *  booking, same time as final on-site pricing. */
+  travel: {
+    /** If false, the policy is hidden everywhere. */
+    enabled: boolean;
+    /** Free travel within this radius (miles from base). */
+    freeRadiusMiles: number;
+    /** Per-mile rate beyond the free radius ($). */
+    perMileRate: number;
+    /** Hard cap on auto-billable distance — past this the owner quotes
+     *  manually. */
+    maxMiles: number;
+  };
 }
 
 /* ─── Quote (output) ─────────────────────────────────────────────────── */
@@ -158,4 +175,9 @@ export interface Quote {
 
   /** Did the minimum-booking floor kick in? */
   minBookingApplied: boolean;
+
+  /** Informational text the UI should display alongside the breakdown but
+   *  that is NOT part of the dollar math (e.g. travel policy). Each note
+   *  is a short labeled string ready to render. */
+  policyNotes: Array<{ label: string; detail: string }>;
 }
