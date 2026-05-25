@@ -11,6 +11,7 @@
 import { ArrowUpRight, CalendarClock, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CustomerPortalData } from "@/lib/booking-api";
+import { Z_CLASS } from "@/design-system";
 
 /** Exported so BookingPage can offset the fixed TopNav by this many pixels
  *  when the ribbon is rendered. Keep in sync with the visual height below. */
@@ -31,7 +32,7 @@ export function CustomerPortalRibbon({ data }: Props) {
       role="region"
       aria-label="Returning customer"
       style={{ height: RIBBON_HEIGHT_PX }}
-      className="fixed inset-x-0 top-0 z-[60] isolate w-full border-b border-white/[0.08] bg-obsidian-950/92 backdrop-blur-xl"
+      className={`fixed inset-x-0 top-0 ${Z_CLASS.navOverlay} isolate w-full border-b border-white/[0.08] bg-obsidian-950/92 backdrop-blur-xl`}
     >
       {/* Ember accent stripe — bottom edge (separates ribbon from nav) */}
       <div

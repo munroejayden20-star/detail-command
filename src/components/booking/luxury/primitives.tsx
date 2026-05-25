@@ -24,6 +24,7 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
+import { Z_CLASS } from "@/design-system";
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * MouseSpotlight — a fixed radial ember glow that tracks the cursor.
@@ -1179,7 +1180,7 @@ export function ScrollAmbient() {
   if (reduced) return null;
 
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div aria-hidden className={`pointer-events-none fixed inset-0 ${Z_CLASS.base} overflow-hidden`}>
       {/* dot grid pan */}
       <motion.div
         className="absolute inset-[-20%]"
@@ -1285,7 +1286,7 @@ export function ScrollTelemetry() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-3 md:flex"
+      className={`pointer-events-none fixed right-3 top-1/2 ${Z_CLASS.navInternal} hidden -translate-y-1/2 flex-col items-center gap-3 md:flex`}
     >
       <span className="font-mono text-[9.5px] uppercase tracking-[0.4em] text-platinum-300/55 [writing-mode:vertical-rl] rotate-180">
         Telemetry
@@ -1344,7 +1345,7 @@ export function LuxModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4 backdrop-blur-md"
+          className={`fixed inset-0 ${Z_CLASS.modal} flex items-center justify-center px-4 backdrop-blur-md`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

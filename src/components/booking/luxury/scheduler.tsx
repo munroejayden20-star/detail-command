@@ -19,6 +19,7 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { DURATION, EASING, stagger } from "@/design-system";
 import {
   CalendarDays,
   CheckCircle2,
@@ -336,7 +337,7 @@ function DayGrid({
           initial={reduced ? false : { opacity: 0, x: slideDir * 24, filter: "blur(4px)" }}
           animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
           exit={reduced ? { opacity: 0 } : { opacity: 0, x: -slideDir * 24, filter: "blur(4px)" }}
-          transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: DURATION.measured, ease: EASING.settle }}
           className="grid grid-cols-7 gap-1 sm:gap-1.5"
         >
           {cells.map((cell, i) => (
@@ -391,9 +392,9 @@ function DayTile({
   const disabled = isPast || isFuture;
   const isToday = sameDay(cell.date, today);
 
-  // Staggered stagger reveal — each cell appears ~16ms after the previous.
-  // Keeps perceived smoothness when the month animates in.
-  const stagger = reduced ? 0 : Math.min(index * 0.012, 0.18);
+  // Staggered reveal — each cell appears ~12ms after the previous, capped
+  // so a 42-cell month doesn't end in awkward late delays.
+  const delay = reduced ? 0 : stagger(index, { step: 0.012, cap: 0.18 });
 
   return (
     <motion.button
@@ -404,7 +405,7 @@ function DayTile({
       aria-label={cell.date.toDateString()}
       initial={reduced ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1], delay: stagger }}
+      transition={{ duration: 0.32, ease: EASING.settle, delay }}
       className={`group/day relative isolate flex aspect-square min-h-[44px] flex-col items-center justify-center overflow-hidden rounded-xl border text-[13px] font-medium transition-all duration-300 will-change-transform sm:rounded-[14px] ${
         !cell.inMonth
           ? "border-transparent text-platinum-300/20"
@@ -598,7 +599,11 @@ function TimeSlotCard({
       aria-pressed={selected}
       initial={reduced ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1], delay: Math.min(index * 0.025, 0.3) }}
+      transition={{
+        duration: DURATION.relaxed,
+        ease: EASING.settle,
+        delay: stagger(index, { step: 0.025, cap: 0.3 }),
+      }}
       className={`group/slot relative isolate overflow-hidden rounded-xl border px-3 py-3 text-left transition-all duration-300 will-change-transform ${
         booked
           ? "cursor-not-allowed border-white/[0.04] bg-white/[0.01]"

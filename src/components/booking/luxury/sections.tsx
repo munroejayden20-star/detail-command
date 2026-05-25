@@ -60,6 +60,7 @@ import {
   TiltCard,
   VolumetricFog,
 } from "./primitives";
+import { Z_CLASS } from "@/design-system";
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * Shared helpers (price, discount math) — duplicated minimally from the old
@@ -159,7 +160,7 @@ export function TopNav({
     <>
       <header
         style={{ top: topOffset }}
-        className={`fixed inset-x-0 z-50 transition-[background,backdrop-filter,border-color] duration-500 ${
+        className={`fixed inset-x-0 ${Z_CLASS.nav} transition-[background,backdrop-filter,border-color] duration-500 ${
           scrolled
             ? "bg-obsidian-950/72 backdrop-blur-xl border-b border-white/10"
             : "bg-transparent border-b border-transparent"
@@ -240,7 +241,7 @@ export function TopNav({
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-[60] md:hidden"
+            className={`fixed inset-0 ${Z_CLASS.navOverlay} md:hidden`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -358,7 +359,7 @@ export function Hero({
        * Deep gradient + faint animated grid + carbon weave + film grain.
        * Sits at the very back of the stacking context; every other layer
        * (image, ambient, content) paints on top. */}
-      <div aria-hidden className="absolute inset-0 z-0">
+      <div aria-hidden className={`absolute inset-0 ${Z_CLASS.base}`}>
         <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_0%,#0f1218_0%,#06070a_55%,#040506_100%)]" />
         <div
           className="absolute inset-0 opacity-[0.14] animate-lx-grid-pan"
@@ -383,13 +384,13 @@ export function Hero({
        *  (cheaper than HeroAmbient's motion-driven smoke). FloatingParticles
        *  is the dust-mote field — sparse, low-opacity, rising slowly.
        *  CinematicVignette frames the section corners. */}
-      <VolumetricFog intensity={0.85} className="z-[2]" />
-      <FloatingParticles className="z-[2]" />
-      <CinematicVignette intensity={0.5} className="z-[3]" />
+      <VolumetricFog intensity={0.85} className={Z_CLASS.ambient} />
+      <FloatingParticles className={Z_CLASS.ambient} />
+      <CinematicVignette intensity={0.5} className={Z_CLASS.accent} />
 
       {/* ─── L3 — interactive accents ─────────────────────────────────────── */}
       <MouseSpotlight color="rgba(221,41,20,0.22)" size={620} />
-      <div className="pointer-events-none absolute -right-32 -top-20 z-[3] opacity-90">
+      <div className={`pointer-events-none absolute -right-32 -top-20 ${Z_CLASS.accent} opacity-90`}>
         <EmberOrb size={520} />
       </div>
 
@@ -397,7 +398,7 @@ export function Hero({
        *  Wrapped in a HeroContentParallax that scroll-fades + lifts the
        *  text as the page advances. Adds the cinematic "the world moves
        *  past the message" feel without breaking the existing layout. */}
-      <HeroContentParallax className="relative z-10 mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-16 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-24 md:pt-36">
+      <HeroContentParallax className={`relative ${Z_CLASS.content} mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-16 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-24 md:pt-36`}>
         {/* LEFT — editorial headline */}
         <div className="md:col-span-7 lg:col-span-7">
           <Reveal delay={0.05}>
@@ -458,11 +459,11 @@ export function Hero({
        *  of starting abruptly partway down the bleed. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[15] h-56 bg-[linear-gradient(180deg,transparent_0%,rgba(6,7,10,0.25)_30%,rgba(6,7,10,0.65)_65%,#06070a_100%)]"
+        className={`pointer-events-none absolute inset-x-0 bottom-0 ${Z_CLASS.bleed} h-56 bg-[linear-gradient(180deg,transparent_0%,rgba(6,7,10,0.25)_30%,rgba(6,7,10,0.65)_65%,#06070a_100%)]`}
       />
 
       {/* scroll cue — z-20, above everything */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center md:bottom-10">
+      <div className={`pointer-events-none absolute inset-x-0 bottom-6 ${Z_CLASS.cue} flex justify-center md:bottom-10`}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -555,7 +556,7 @@ function HeroImagePlate({ heroImageUrl }: { heroImageUrl?: string }) {
     <div
       ref={ref}
       aria-hidden
-      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+      className={`pointer-events-none absolute inset-0 ${Z_CLASS.plate} overflow-hidden`}
     >
       {/* Ember bloom behind the right portion of the image — the "taillight"
        *  glow that bleeds onto the page atmosphere. */}
@@ -631,7 +632,7 @@ function HeroImagePlate({ heroImageUrl }: { heroImageUrl?: string }) {
 function HeroAmbient() {
   const reduced = useReducedMotion();
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-[2] overflow-hidden">
+    <div aria-hidden className={`pointer-events-none absolute inset-0 ${Z_CLASS.ambient} overflow-hidden`}>
       {/* Volumetric ray 1 — warm ember from upper-right */}
       <div
         className="absolute -top-[10%] right-[18%] h-[130vh] w-[100vh] opacity-[0.32] mix-blend-screen"
@@ -1750,7 +1751,7 @@ export function MobileBookDock({
     <AnimatePresence>
       {!hidden && (
         <motion.div
-          className="fixed inset-x-0 bottom-0 z-40 md:hidden"
+          className={`fixed inset-x-0 bottom-0 ${Z_CLASS.dock} md:hidden`}
           initial={{ y: 120, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 140, opacity: 0 }}
@@ -1791,7 +1792,7 @@ export function ScrollProgress() {
   return (
     <motion.span
       aria-hidden
-      className="fixed inset-x-0 top-0 z-[55] h-[2px] origin-left bg-gradient-to-r from-ember-700 via-ember-400 to-copper-200"
+      className={`fixed inset-x-0 top-0 ${Z_CLASS.scrollProgress} h-[2px] origin-left bg-gradient-to-r from-ember-700 via-ember-400 to-copper-200`}
       style={{ width }}
     />
   );
@@ -1819,7 +1820,7 @@ export function BootIntro({ businessName }: { businessName: string }) {
     <AnimatePresence>
       {!done && (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-obsidian-950"
+          className={`fixed inset-0 ${Z_CLASS.boot} flex items-center justify-center bg-obsidian-950`}
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
