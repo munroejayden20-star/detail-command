@@ -532,7 +532,7 @@ export function GlassCTA({
   children: ReactNode;
   onClick?: () => void;
   variant?: "primary" | "secondary";
-  size?: "md" | "lg";
+  size?: "sm" | "md" | "lg";
   disabled?: boolean;
   type?: "button" | "submit";
   ariaLabel?: string;
@@ -575,7 +575,11 @@ export function GlassCTA({
 
   const isPrimary = variant === "primary";
   const sizeCls =
-    size === "lg" ? "px-8 py-4 text-[12px]" : "px-6 py-3 text-[11.5px]";
+    size === "lg"
+      ? "px-8 py-4 text-[12px]"
+      : size === "md"
+      ? "px-6 py-3 text-[11.5px]"
+      : "px-4 py-2.5 text-[10.5px]";
 
   return (
     <button

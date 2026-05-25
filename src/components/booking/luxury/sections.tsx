@@ -190,10 +190,15 @@ export function TopNav({
           </nav>
 
           <div className="flex items-center gap-3">
-            <EmberCTA onClick={onBook} size="sm" className="hidden md:inline-flex">
+            <GlassCTA
+              onClick={onBook}
+              variant="primary"
+              size="sm"
+              className="hidden md:inline-flex"
+            >
               Configure
-              <ArrowRight className="h-3.5 w-3.5" />
-            </EmberCTA>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/glass:translate-x-0.5" />
+            </GlassCTA>
             <button
               type="button"
               onClick={() => setOpen(true)}
@@ -248,14 +253,15 @@ export function TopNav({
               <div className="mt-auto">
                 <Hairline />
                 <div className="mt-6">
-                  <EmberCTA
+                  <GlassCTA
                     onClick={() => { setOpen(false); setTimeout(onBook, 100); }}
+                    variant="primary"
                     size="lg"
                     className="w-full"
                   >
                     Configure a Detail
-                    <ArrowRight className="h-4 w-4" />
-                  </EmberCTA>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/glass:translate-x-0.5" />
+                  </GlassCTA>
                 </div>
               </div>
             </div>
