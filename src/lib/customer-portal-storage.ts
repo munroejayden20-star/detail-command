@@ -8,6 +8,11 @@
  */
 
 const KEY = "dc_customer_token";
+// Separate flag for "this device has linked the booking customer to a real
+// account." Email-match heuristics fail when the booking customer record
+// has an empty email — this flag captures intent directly. Set on signup,
+// signin, or first /portal load; cleared on sign-out.
+const ACCOUNT_KEY = "dc_customer_account_linked";
 
 export function getCustomerToken(): string | null {
   try {
@@ -29,6 +34,30 @@ export function saveCustomerToken(token: string): void {
 export function clearCustomerToken(): void {
   try {
     window.localStorage.removeItem(KEY);
+  } catch {
+    // no-op
+  }
+}
+
+export function hasCustomerAccountLink(): boolean {
+  try {
+    return window.localStorage.getItem(ACCOUNT_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function markCustomerAccountLinked(): void {
+  try {
+    window.localStorage.setItem(ACCOUNT_KEY, "true");
+  } catch {
+    // no-op
+  }
+}
+
+export function clearCustomerAccountLink(): void {
+  try {
+    window.localStorage.removeItem(ACCOUNT_KEY);
   } catch {
     // no-op
   }

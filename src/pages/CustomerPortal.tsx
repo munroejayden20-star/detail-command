@@ -49,6 +49,8 @@ import {
   getCustomerToken,
   clearCustomerToken,
   saveCustomerToken,
+  markCustomerAccountLinked,
+  clearCustomerAccountLink,
 } from "@/lib/customer-portal-storage";
 import { useAuth } from "@/auth/AuthProvider";
 import {
@@ -85,6 +87,9 @@ export function CustomerPortalPage() {
         setData(null);
       } else {
         setData(d);
+        // First-load on this device — mark the account link so /book's
+        // ribbon shows on return visits.
+        markCustomerAccountLinked();
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load your account.");
@@ -109,6 +114,7 @@ export function CustomerPortalPage() {
         return;
       }
       saveCustomerToken(d.customerAccessToken);
+      markCustomerAccountLinked();
       setData(d);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load your account.");
@@ -165,6 +171,7 @@ export function CustomerPortalPage() {
 
   async function handleSignOut() {
     clearCustomerToken();
+    clearCustomerAccountLink();
     await signOut();
     setData(null);
   }

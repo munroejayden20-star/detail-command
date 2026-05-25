@@ -38,6 +38,7 @@ import {
   Reveal,
 } from "@/components/booking/luxury/primitives";
 import { useAuth } from "@/auth/AuthProvider";
+import { markCustomerAccountLinked } from "@/lib/customer-portal-storage";
 
 interface Props {
   businessName: string;
@@ -59,14 +60,27 @@ export function BookingSuccessAccount({
   onSkip,
   onAccountCreated,
 }: Props) {
-  const { signUp } = useAuth();
-  const [mode, setMode] = useState<"choose" | "signup">("choose");
+  const { signUp, signIn } = useAuth();
+  // "choose" = decision card · "signup" = new account form · "signin" =
+  // existing-account fallback shown when signUp returns "already registered"
+  const [mode, setMode] = useState<"choose" | "signup" | "signin">("choose");
   const [email, setEmail] = useState(prefilledEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmationNotice, setConfirmationNotice] = useState(false);
+
+  // Recognize the family of "user exists" responses Supabase can return.
+  function isUserExistsError(msg: string): boolean {
+    const m = msg.toLowerCase();
+    return (
+      m.includes("already registered") ||
+      m.includes("user already") ||
+      m.includes("already exists") ||
+      m.includes("duplicate")
+    );
+  }
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
@@ -79,6 +93,15 @@ export function BookingSuccessAccount({
     try {
       const result = await signUp(email.trim(), password);
       if (result.error) {
+        // If the email already has an account, slide into sign-in mode
+        // instead of leaving the user stuck. The password field stays
+        // populated so if they typed their existing password they're one
+        // click away from being in.
+        if (isUserExistsError(result.error)) {
+          setMode("signin");
+          setError("");
+          return;
+        }
         setError(result.error);
         return;
       }
@@ -89,10 +112,35 @@ export function BookingSuccessAccount({
         setConfirmationNotice(true);
         return;
       }
-      // Session is live — route to portal where the customer's data appears.
+      // Session is live — mark this device as having a linked account so
+      // /book knows to show the ribbon, then route to /portal.
+      markCustomerAccountLinked();
       onAccountCreated();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not create your account. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || password.length < 1) {
+      setError("Enter your existing password to sign in.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await signIn(email.trim(), password);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      markCustomerAccountLinked();
+      onAccountCreated();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not sign in. Try again.");
     } finally {
       setBusy(false);
     }
@@ -213,7 +261,7 @@ export function BookingSuccessAccount({
               </div>
             </div>
           </Reveal>
-        ) : (
+        ) : mode === "signup" ? (
           /* ── Sign-up form ────────────────────────────────────────── */
           <Reveal>
             <form
@@ -331,6 +379,115 @@ export function BookingSuccessAccount({
                 By creating an account you agree to be contacted about your bookings.
                 Your email is never shared.
               </p>
+            </form>
+          </Reveal>
+        ) : (
+          /* ── Sign-in form (existing account fallback) ────────────── */
+          <Reveal>
+            <form
+              onSubmit={handleSignIn}
+              className="mt-10 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-7"
+            >
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-ember-400/35 bg-ember-500/10 text-ember-300">
+                  <ShieldCheck className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-ember-300">
+                    Welcome back
+                  </p>
+                  <p className="mt-1 text-[13.5px] leading-relaxed text-platinum-300/85">
+                    This email already has an account. Sign in with your existing
+                    password to link this booking.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <label className="block">
+                  <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/80">
+                    Email
+                  </span>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    readOnly
+                    className="mt-2 block w-full appearance-none rounded-none border-b border-white/15 bg-transparent py-2.5 text-[15px] text-platinum-300/85 outline-none"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/80">
+                    Password
+                  </span>
+                  <div className="relative mt-2">
+                    <Lock className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-platinum-300/55" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="block w-full appearance-none rounded-none border-b border-white/20 bg-transparent py-2.5 pl-6 pr-9 text-[15px] text-platinum-50 placeholder:text-platinum-300/40 outline-none transition-all focus:border-ember-400 focus:[box-shadow:inset_0_-1px_0_rgba(248,114,72,0.7)]"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-platinum-300/65 transition-colors hover:text-platinum-50"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </label>
+
+                {error && (
+                  <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-2">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-300" />
+                    <p className="text-[12px] leading-relaxed text-rose-200">{error}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+                <EmberCTA
+                  type="submit"
+                  disabled={busy}
+                  size="md"
+                  className="sm:flex-1"
+                >
+                  {busy ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing in…
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
+                    </>
+                  )}
+                </EmberCTA>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("choose");
+                    setPassword("");
+                    setError("");
+                  }}
+                  disabled={busy}
+                  className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/70 transition-colors hover:text-platinum-100 disabled:opacity-50"
+                >
+                  Skip
+                </button>
+              </div>
             </form>
           </Reveal>
         )}

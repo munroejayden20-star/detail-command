@@ -30,6 +30,7 @@ import {
 import {
   getCustomerToken,
   saveCustomerToken,
+  hasCustomerAccountLink,
 } from "@/lib/customer-portal-storage";
 import {
   CustomerPortalRibbon,
@@ -393,10 +394,12 @@ export function BookingPage() {
   if (infoError) return <BookingUnavailable />;
   if (!info?.settings?.bookingPageEnabled) return <BookingUnavailable />;
 
-  // Post-submit: show the cinematic success screen with the optional
-  // account-creation choice. Replaces the legacy "ribbon expanded at top"
-  // UX so the conversion moment has a proper landing.
-  if (submitted) {
+  // Post-submit: show the cinematic account-creation choice — UNLESS the
+  // customer is already signed in. Already-signed-in users (admin testing
+  // their own flow, or a returning customer who's logged in) skip the
+  // signup screen entirely; their booking is added to their existing
+  // account and the ribbon shows them the new appointment.
+  if (submitted && !user) {
     return (
       <BookingSuccessAccount
         businessName={info.settings.businessName}
@@ -419,14 +422,12 @@ export function BookingPage() {
 
   const settings = info.settings;
 
-  // True only when the current auth session's email matches this portal
-  // customer's email. Prevents the admin's session from accidentally
-  // unlocking a non-admin customer's ribbon, and ensures token-only
-  // customers (no signup) never see portal artifacts on /book.
-  const customerHasAccount =
-    !!user?.email &&
-    !!portal?.customer?.email &&
-    user.email.trim().toLowerCase() === portal.customer.email.trim().toLowerCase();
+  // True only when this device has explicitly linked the customer to a real
+  // account (set on successful signup, signin, or first /portal data load).
+  // The localStorage flag captures intent directly — much more reliable than
+  // email-matching, which fails when the booking customer record has an
+  // empty email or doesn't exactly match the auth user's email casing.
+  const customerHasAccount = !!user && hasCustomerAccountLink() && !!portal;
 
   return (
     <div className="relative min-h-screen bg-obsidian-950 text-platinum-100 antialiased [scroll-behavior:smooth]">

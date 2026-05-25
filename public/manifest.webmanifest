@@ -1,8 +1,8 @@
 {
-  "name": "Iris — Detail Command",
-  "short_name": "Iris",
-  "description": "Iris quick view — at-a-glance jobs, attention, and revenue with direct chat access to the Detail Command intelligence layer.",
-  "start_url": "/quick",
+  "name": "Detail Command",
+  "short_name": "Detail Command",
+  "description": "Detail Command — admin dashboard with appointments, customers, revenue, and the Iris intelligence layer.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -23,11 +23,11 @@
   ],
   "shortcuts": [
     {
-      "name": "Full Dashboard",
-      "short_name": "Dashboard",
-      "description": "Open the full Detail Command dashboard.",
-      "url": "/",
-      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "name": "Quick view",
+      "short_name": "Quick",
+      "description": "Compact Iris quick-view widget.",
+      "url": "/quick",
+      "icons": [{ "src": "/iris-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
       "name": "Ask Iris",
