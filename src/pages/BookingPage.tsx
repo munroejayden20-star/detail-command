@@ -17,7 +17,7 @@
  * ========================================================================== */
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import {
   getPublicBookingInfo,
   submitPublicBooking,
@@ -35,6 +35,9 @@ import {
   CustomerPortalRibbon,
   RIBBON_HEIGHT_PX,
 } from "@/components/booking/CustomerPortalRibbon";
+import { BookingSuccessAccount } from "@/components/booking/BookingSuccessAccount";
+import { useAuth } from "@/auth/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 import {
   BootIntro,
@@ -84,6 +87,8 @@ function scrollToId(id: string) {
  * ──────────────────────────────────────────────────────────────────────── */
 
 export function BookingPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState<PublicBookingInfo | null>(null);
   const [infoLoading, setInfoLoading] = useState(true);
@@ -96,6 +101,10 @@ export function BookingPage() {
   // Phase K — returning-customer portal
   const [portal, setPortal] = useState<CustomerPortalData | null>(null);
   const [justBooked, setJustBooked] = useState(false);
+  // Captured from the most recent submission so the success / signup screen
+  // can pre-fill the email + greet by name. Survives any form reset.
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState("");
+  const [lastSubmittedFirstName, setLastSubmittedFirstName] = useState("");
 
   // Hide the floating mobile dock when the form is in view
   const [inFormSection, setInFormSection] = useState(false);
@@ -330,6 +339,11 @@ export function BookingPage() {
       if (result.customerToken) {
         saveCustomerToken(result.customerToken);
       }
+      // Capture submission identity BEFORE wiping the form — the success
+      // screen needs the email to pre-fill signup, and the first name to
+      // greet the customer.
+      setLastSubmittedEmail(form.email.trim());
+      setLastSubmittedFirstName(form.name.trim().split(/\s+/)[0] ?? "");
       setFormRaw(EMPTY_FORM);
       setStep(1);
       await refreshPortal();
@@ -378,10 +392,41 @@ export function BookingPage() {
   }
   if (infoError) return <BookingUnavailable />;
   if (!info?.settings?.bookingPageEnabled) return <BookingUnavailable />;
-  if (submitted && !portal)
-    return <BookingSuccessScreen businessName={info.settings.businessName} />;
+
+  // Post-submit: show the cinematic success screen with the optional
+  // account-creation choice. Replaces the legacy "ribbon expanded at top"
+  // UX so the conversion moment has a proper landing.
+  if (submitted) {
+    return (
+      <BookingSuccessAccount
+        businessName={info.settings.businessName}
+        prefilledEmail={lastSubmittedEmail}
+        firstName={lastSubmittedFirstName}
+        onSkip={() => {
+          // Returning to /book at default state — no ribbon (no account).
+          // We reset the submitted flag so the user can see the landing page.
+          setSubmitted(false);
+          setJustBooked(false);
+        }}
+        onAccountCreated={() => {
+          // Auth session is now live; portal data is already hydrated.
+          // Send the customer to their dashboard.
+          navigate("/portal");
+        }}
+      />
+    );
+  }
 
   const settings = info.settings;
+
+  // True only when the current auth session's email matches this portal
+  // customer's email. Prevents the admin's session from accidentally
+  // unlocking a non-admin customer's ribbon, and ensures token-only
+  // customers (no signup) never see portal artifacts on /book.
+  const customerHasAccount =
+    !!user?.email &&
+    !!portal?.customer?.email &&
+    user.email.trim().toLowerCase() === portal.customer.email.trim().toLowerCase();
 
   return (
     <div className="relative min-h-screen bg-obsidian-950 text-platinum-100 antialiased [scroll-behavior:smooth]">
@@ -390,13 +435,20 @@ export function BookingPage() {
       <ScrollAmbient />
       <ScrollTelemetry />
 
-      {portal ? <CustomerPortalRibbon data={portal} /> : null}
+      {/* Ribbon shows ONLY when this customer signed up — verified by
+       *  matching auth.user.email against the portal customer's email.
+       *  Catches the case where the admin is signed in but this isn't
+       *  their personal customer record (a token-only customer's data is
+       *  hydrated locally, but no customer account exists). */}
+      {portal && customerHasAccount ? (
+        <CustomerPortalRibbon data={portal} />
+      ) : null}
 
       <TopNav
         businessName={settings.businessName}
         logoUrl={settings.logoUrl}
         onBook={jumpToBook}
-        topOffset={portal ? RIBBON_HEIGHT_PX : 0}
+        topOffset={portal && customerHasAccount ? RIBBON_HEIGHT_PX : 0}
       />
 
       <main>
@@ -497,25 +549,3 @@ function BookingUnavailable() {
   );
 }
 
-function BookingSuccessScreen({ businessName }: { businessName: string }) {
-  return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-obsidian-950 px-6 text-center text-platinum-50">
-      <div className="absolute inset-0 bg-[radial-gradient(70%_50%_at_50%_30%,rgba(221,41,20,0.18),transparent_60%)]" />
-      <div className="relative flex max-w-md flex-col items-center gap-7">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full border border-ember-400/40 bg-ember-500/15">
-          <CheckCircle2 className="h-8 w-8 text-ember-300" />
-        </span>
-        <h1 className="font-sans text-4xl font-extralight tracking-tight">
-          Request <span className="font-display italic text-ember-200">received.</span>
-        </h1>
-        <p className="text-[14.5px] leading-relaxed text-platinum-300/90">
-          Your configuration was submitted. I'll review the build and reach out shortly to confirm
-          the time and final price.
-        </p>
-        <p className="font-mono text-[10.5px] uppercase tracking-[0.4em] text-platinum-300/65">
-          — {businessName}
-        </p>
-      </div>
-    </div>
-  );
-}

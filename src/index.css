@@ -239,9 +239,15 @@
 
 /* Mobile-portrait polish */
 
-/* Global horizontal-overflow guard. */
+/* Global horizontal-overflow guard.
+ * `clip` (not `hidden`) — `overflow-x: hidden` implicitly turns the y-axis
+ * into a scroll context, which moves the scroll container off `window` and
+ * onto `#root`. That silently breaks framer-motion's `useScroll()` (the
+ * Telemetry tick, top ScrollProgress bar, and ScrollAmbient parallax all
+ * read scrollY from window). `clip` clips horizontal overflow without
+ * creating a scroll context, so window stays the canonical scroller. */
 html, body, #root {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* iOS auto-zooms inputs whose font-size is < 16px. Force 16px on small

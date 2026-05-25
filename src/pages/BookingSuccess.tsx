@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { CheckCircle2, Loader2, Mail, Phone, Calendar, AlertCircle } from "lucide-react";
-import { getPaymentStatusBySession, type PublicPaymentStatus } from "@/lib/booking-api";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { Loader2, AlertCircle } from "lucide-react";
+import {
+  getCustomerPortal,
+  getPaymentStatusBySession,
+  type PublicPaymentStatus,
+} from "@/lib/booking-api";
 import { saveCustomerToken } from "@/lib/customer-portal-storage";
+import { BookingSuccessAccount } from "@/components/booking/BookingSuccessAccount";
 
 /**
  * /booking/success — customer arrives here after Stripe Checkout completes.
@@ -13,10 +18,15 @@ import { saveCustomerToken } from "@/lib/customer-portal-storage";
  */
 export function BookingSuccessPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const sessionId = params.get("session_id");
   const [status, setStatus] = useState<PublicPaymentStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pollCount, setPollCount] = useState(0);
+  // Pulled from the customer portal once we have a token — used to prefill
+  // the signup form on the post-deposit account-creation prompt.
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerFirstName, setCustomerFirstName] = useState("");
 
   useEffect(() => {
     if (!sessionId) {
@@ -29,7 +39,17 @@ export function BookingSuccessPage() {
       try {
         const s = await getPaymentStatusBySession(sessionId!);
         if (cancelled) return;
-        if (s.customerToken) saveCustomerToken(s.customerToken);
+        if (s.customerToken) {
+          saveCustomerToken(s.customerToken);
+          // Fetch customer info so BookingSuccessAccount can pre-fill email.
+          // Fire-and-forget — failure leaves the field empty (user enters it).
+          getCustomerPortal(s.customerToken).then((portal) => {
+            if (cancelled || !portal) return;
+            setCustomerEmail(portal.customer.email ?? "");
+            const first = (portal.customer.name ?? "").trim().split(/\s+/)[0] ?? "";
+            setCustomerFirstName(first);
+          });
+        }
         setStatus(s);
         attempts++;
         setPollCount(attempts);
@@ -48,7 +68,6 @@ export function BookingSuccessPage() {
     };
   }, [sessionId]);
 
-  const businessName = status?.businessName ?? "the team";
   const isPaid = status?.status === "paid";
   const isStillPending = status?.status === "pending";
   const isTerminalFail =
@@ -56,16 +75,27 @@ export function BookingSuccessPage() {
     status?.status === "canceled" ||
     status?.status === "expired";
 
+  /* Deposit confirmed → show the same cinematic account-creation choice
+   *  that the no-deposit path gets. Without this, Stripe customers never
+   *  got the chance to sign up. */
+  if (isPaid) {
+    return (
+      <BookingSuccessAccount
+        businessName={status?.businessName ?? "Our team"}
+        prefilledEmail={customerEmail}
+        firstName={customerFirstName}
+        onSkip={() => navigate("/book")}
+        onAccountCreated={() => navigate("/portal")}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center px-6 py-16">
       <div className="w-full max-w-md text-center">
         {/* Header icon */}
         <div className="mx-auto mb-6">
-          {isPaid ? (
-            <div className="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-            </div>
-          ) : isTerminalFail ? (
+          {isTerminalFail ? (
             <div className="h-16 w-16 mx-auto rounded-full bg-rose-500/10 border border-rose-500/40 flex items-center justify-center">
               <AlertCircle className="h-8 w-8 text-rose-400" />
             </div>
@@ -80,32 +110,6 @@ export function BookingSuccessPage() {
           <>
             <h1 className="text-2xl font-bold mb-2">Hmm, something's off</h1>
             <p className="text-sm text-zinc-400 leading-relaxed">{error}</p>
-          </>
-        ) : isPaid ? (
-          <>
-            <h1 className="text-2xl font-bold mb-2">Deposit received!</h1>
-            <p className="text-sm text-zinc-300 leading-relaxed">
-              Thanks — your booking request is in. {businessName} will review the details and reach out shortly to confirm.
-            </p>
-            <div className="mt-8 grid grid-cols-1 gap-2 text-left">
-              <Stat
-                icon={<CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-                label="Deposit"
-                value={`$${(status!.amountCents / 100).toFixed(2)} ${status!.currency.toUpperCase()} paid`}
-              />
-              {status?.preferredDate ? (
-                <Stat
-                  icon={<Calendar className="h-4 w-4 text-zinc-400" />}
-                  label="Requested time"
-                  value={formatDateLabel(status.preferredDate)}
-                />
-              ) : null}
-              <Stat
-                icon={<Mail className="h-4 w-4 text-zinc-400" />}
-                label="Receipt"
-                value="Stripe will email your receipt"
-              />
-            </div>
           </>
         ) : isTerminalFail ? (
           <>
@@ -145,31 +149,6 @@ export function BookingSuccessPage() {
   );
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
-      <div className="shrink-0">{icon}</div>
-      <div className="min-w-0 flex-1 text-left">
-        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{label}</p>
-        <p className="text-sm text-white">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function formatDateLabel(dateStr: string): string {
-  // dateStr is "YYYY-MM-DDTHH:mm" in LA local time from the RPC.
-  const [datePart, timePart] = dateStr.split("T");
-  const [y, m, d] = datePart.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  const dateLabel = date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-  if (!timePart) return dateLabel;
-  const [hh, mm] = timePart.split(":").map(Number);
-  const hour12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
-  const ampm = hh < 12 ? "AM" : "PM";
-  return `${dateLabel} · ${hour12}:${String(mm).padStart(2, "0")} ${ampm}`;
-}
+// (Stat / formatDateLabel removed — the deposit-confirmed UI now lives in
+// BookingSuccessAccount so the post-payment flow matches the no-deposit
+// path's cinematic account-creation prompt.)

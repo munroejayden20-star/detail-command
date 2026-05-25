@@ -48,13 +48,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   }, []);
 
-  // Public signup is intentionally disabled — this app is private/admin-only.
-  // Kept on the context so existing callers compile, but always rejects.
-  const signUp = useCallback(async (_email: string, _password: string) => {
-    return {
-      error: "Sign-ups are disabled. This app is private.",
-      needsConfirmation: false,
-    };
+  // Customer-account signup for the public /book post-submit flow. Admin
+  // access remains gated by the is_admin() RLS allowlist — anonymous
+  // signups land as non-admin auth users and can only see the customer
+  // portal, not /, /calendar, /customers, etc.
+  const signUp = useCallback(async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: "Supabase is not configured.", needsConfirmation: false };
+    }
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      return { error: error.message, needsConfirmation: false };
+    }
+    // Project may have "Confirm email" enabled in Supabase Auth settings.
+    // In that case `session` is null until the user clicks the link.
+    const needsConfirmation = !data.session;
+    return { error: null, needsConfirmation };
   }, []);
 
   const signInWithMagicLink = useCallback(async (email: string) => {

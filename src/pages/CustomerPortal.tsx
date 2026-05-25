@@ -16,15 +16,19 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Calendar,
   CheckCircle2,
   Clock,
+  Eye,
+  EyeOff,
   Gift,
   LifeBuoy,
   LogOut,
   Loader2,
+  Lock,
   Mail,
   MapPin,
   Phone,
@@ -37,13 +41,16 @@ import {
 } from "lucide-react";
 import {
   getCustomerPortal,
+  getCustomerPortalBySession,
   type CustomerPortalData,
   type PortalVehicle,
 } from "@/lib/booking-api";
 import {
   getCustomerToken,
   clearCustomerToken,
+  saveCustomerToken,
 } from "@/lib/customer-portal-storage";
+import { useAuth } from "@/auth/AuthProvider";
 import {
   AppointmentRow,
   IrisNote,
@@ -63,19 +70,18 @@ import {
 const LA_TZ = "America/Los_Angeles";
 
 export function CustomerPortalPage() {
-  const navigate = useNavigate();
-  const [token, setTokenState] = useState<string | null>(() => getCustomerToken());
+  const { user, loading: authLoading, signOut } = useAuth();
   const [data, setData] = useState<CustomerPortalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function fetchPortal(t: string) {
+  async function fetchByToken(t: string) {
     setLoading(true);
     setError("");
     try {
       const d = await getCustomerPortal(t);
       if (!d) {
-        setError("Your session expired. Sign back in by booking on the main page.");
+        setError("Your session expired. Sign in again to view your account.");
         setData(null);
       } else {
         setData(d);
@@ -87,28 +93,65 @@ export function CustomerPortalPage() {
     }
   }
 
+  // Auth-session driven fetch: used when user signs in on a new device, or
+  // when the token isn't yet in localStorage. Caches the token from the
+  // response so cancel/reschedule RPCs (still token-gated) continue to work.
+  async function fetchBySession() {
+    setLoading(true);
+    setError("");
+    try {
+      const d = await getCustomerPortalBySession();
+      if (!d) {
+        setError(
+          "Your account isn't linked to a booking yet — book a detail and we'll connect it automatically.",
+        );
+        setData(null);
+        return;
+      }
+      saveCustomerToken(d.customerAccessToken);
+      setData(d);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load your account.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Effect — decide which fetch path to take based on session + cached token.
   useEffect(() => {
-    if (!token) {
+    if (authLoading) return;
+    if (!user) {
+      // Signed-out: show the sign-in form. Account gating is auth-only now.
+      setData(null);
       setLoading(false);
       return;
     }
-    void fetchPortal(token);
-  }, [token]);
+    const t = getCustomerToken();
+    if (t) {
+      void fetchByToken(t);
+    } else {
+      void fetchBySession();
+    }
+  }, [user, authLoading]);
 
-  // Poll every 30s while visible so status changes (pending → confirmed) appear.
+  // Poll every 30s while visible so status changes (pending → confirmed)
+  // appear. Only polls while authed + has data.
   useEffect(() => {
-    if (!token) return;
+    if (!user || !data) return;
     const tick = () => {
-      if (document.visibilityState === "visible") void fetchPortal(token);
+      if (document.visibilityState !== "visible") return;
+      const t = getCustomerToken();
+      if (t) void fetchByToken(t);
+      else void fetchBySession();
     };
     const id = window.setInterval(tick, 30_000);
-    const onFocus = () => void fetchPortal(token);
+    const onFocus = () => tick();
     window.addEventListener("focus", onFocus);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("focus", onFocus);
     };
-  }, [token]);
+  }, [user, data]);
 
   // Swap page title
   useEffect(() => {
@@ -120,18 +163,20 @@ export function CustomerPortalPage() {
     };
   }, [data?.business?.name]);
 
-  function handleSignOut() {
+  async function handleSignOut() {
     clearCustomerToken();
-    setTokenState(null);
+    await signOut();
     setData(null);
   }
 
   function handleRefresh() {
-    if (token) return fetchPortal(token);
+    const t = getCustomerToken();
+    if (t) return fetchByToken(t);
+    return fetchBySession();
   }
 
   /* ── Loading ──────────────────────────────────────────────── */
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <PortalShell>
         <div className="grid min-h-[60vh] place-items-center">
@@ -146,10 +191,16 @@ export function CustomerPortalPage() {
     );
   }
 
-  /* ── No token / not signed in ────────────────────────────── */
-  if (!token || !data) {
+  /* ── Not signed in → sign-in form ────────────────────────── */
+  if (!user) {
+    return <SignInGate />;
+  }
+
+  /* ── Signed in but no portal data (account not linked) ────── */
+  if (!data) {
     return (
       <PortalShell>
+        <TopBar onSignOut={handleSignOut} />
         <div className="grid min-h-[70vh] place-items-center px-5">
           <div className="relative w-full max-w-md text-center">
             <div className="pointer-events-none absolute -inset-x-10 -top-10 -z-10 h-40 bg-[radial-gradient(60%_60%_at_50%_50%,rgba(221,41,20,0.18),transparent_70%)]" />
@@ -157,18 +208,20 @@ export function CustomerPortalPage() {
               <UserCircle2 className="h-8 w-8 text-ember-300" />
             </div>
             <h1 className="mt-7 font-sans text-3xl font-extralight tracking-tight text-platinum-50 sm:text-4xl">
-              No account on this <span className="font-display italic text-ember-200">device.</span>
+              Almost <span className="font-display italic text-ember-200">there.</span>
             </h1>
             <p className="mt-4 text-[14px] leading-relaxed text-platinum-300/85">
-              {error
-                ? error
-                : "Your account is created automatically the first time you book. Configure a detail and we'll save your history here."}
+              {error ||
+                "Your account isn't linked to a booking yet — book a detail under the same email and we'll connect it automatically."}
             </p>
             <div className="mt-8">
-              <EmberCTA onClick={() => navigate("/book")} size="lg">
+              <Link
+                to="/book"
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.22em] text-platinum-100 transition-all hover:border-ember-400/40 hover:bg-ember-500/10"
+              >
                 Go to the booking page
                 <ArrowRight className="h-4 w-4" />
-              </EmberCTA>
+              </Link>
             </div>
           </div>
         </div>
@@ -178,6 +231,175 @@ export function CustomerPortalPage() {
 
   return <PortalDashboard data={data} onSignOut={handleSignOut} onRefresh={handleRefresh} />;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Sign-in gate — cinematic password form for returning customers on /portal
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function SignInGate() {
+  const { signIn, signInWithMagicLink } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [linkSent, setLinkSent] = useState(false);
+
+  async function handleSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr("");
+    try {
+      const { error } = await signIn(email.trim(), password);
+      if (error) setErr(error);
+      // No navigation — useAuth().user transitions and the page re-renders.
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleMagicLink() {
+    if (!email.trim()) {
+      setErr("Enter your email above first.");
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    try {
+      const { error } = await signInWithMagicLink(email.trim());
+      if (error) setErr(error);
+      else setLinkSent(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <PortalShell>
+      <div className="grid min-h-[80vh] place-items-center px-5">
+        <div className="relative w-full max-w-md">
+          <div className="pointer-events-none absolute -inset-x-10 -top-10 -z-10 h-40 bg-[radial-gradient(60%_60%_at_50%_50%,rgba(221,41,20,0.16),transparent_70%)]" />
+
+          <div className="text-center">
+            <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full border border-ember-400/35 bg-ember-500/10 text-ember-300">
+              <ShieldCheck className="h-7 w-7" />
+            </span>
+            <h1 className="mt-6 font-sans text-3xl font-extralight tracking-tight text-platinum-50 sm:text-4xl">
+              Sign in to your{" "}
+              <span className="font-display italic text-ember-200">account.</span>
+            </h1>
+            <p className="mt-3 text-[13.5px] leading-relaxed text-platinum-300/80">
+              Bookings, receipts, and saved details — under one roof.
+            </p>
+          </div>
+
+          <form onSubmit={handleSignIn} className="mt-8 space-y-4">
+            <label className="block">
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/80">
+                Email
+              </span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="mt-2 block w-full appearance-none rounded-none border-b border-white/20 bg-transparent py-2.5 text-[15px] text-platinum-50 placeholder:text-platinum-300/40 outline-none transition-all focus:border-ember-400 focus:[box-shadow:inset_0_-1px_0_rgba(248,114,72,0.7)]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/80">
+                Password
+              </span>
+              <div className="relative mt-2">
+                <Lock className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-platinum-300/55" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  className="block w-full appearance-none rounded-none border-b border-white/20 bg-transparent py-2.5 pl-6 pr-9 text-[15px] text-platinum-50 placeholder:text-platinum-300/40 outline-none transition-all focus:border-ember-400 focus:[box-shadow:inset_0_-1px_0_rgba(248,114,72,0.7)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-platinum-300/65 transition-colors hover:text-platinum-50"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </label>
+
+            {err && (
+              <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-2">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-300" />
+                <p className="text-[12px] leading-relaxed text-rose-200">{err}</p>
+              </div>
+            )}
+
+            {linkSent && (
+              <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
+                <p className="text-[12px] leading-relaxed text-emerald-200">
+                  Check your email — sign-in link sent.
+                </p>
+              </div>
+            )}
+
+            <EmberCTA type="submit" disabled={busy} size="md" className="w-full">
+              {busy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
+                </>
+              )}
+            </EmberCTA>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleMagicLink}
+                disabled={busy}
+                className="font-mono text-[10.5px] uppercase tracking-[0.26em] text-platinum-300/70 transition-colors hover:text-ember-200 disabled:opacity-50"
+              >
+                Email me a link instead
+              </button>
+              <Link
+                to="/book"
+                className="font-mono text-[10.5px] uppercase tracking-[0.26em] text-platinum-300/70 transition-colors hover:text-platinum-100"
+              >
+                Back to booking
+              </Link>
+            </div>
+          </form>
+
+          <p className="mt-10 text-center text-[11px] text-platinum-300/55">
+            No account yet?{" "}
+            <Link to="/book" className="text-ember-200 hover:text-ember-100">
+              Book a detail
+            </Link>{" "}
+            — you can create one at the end.
+          </p>
+        </div>
+      </div>
+    </PortalShell>
+  );
+}
+
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * Outer shell — shared atmosphere + top bar + footer caption

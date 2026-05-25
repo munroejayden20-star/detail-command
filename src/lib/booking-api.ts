@@ -296,6 +296,24 @@ export async function getCustomerPortal(token: string): Promise<CustomerPortalDa
   return data as CustomerPortalData;
 }
 
+/** Resolve portal data using the current Supabase auth session.
+ *  Returns the portal payload PLUS the customer's access token so the
+ *  browser can cache it for cancel / reschedule RPCs that are still
+ *  token-gated. Returns null if the user has no matching customer record
+ *  (e.g., signed up with a different email than they booked under). */
+export async function getCustomerPortalBySession(): Promise<
+  (CustomerPortalData & { customerAccessToken: string }) | null
+> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("get_customer_portal_by_session");
+  if (error) {
+    console.warn("[portal] session fetch failed", error);
+    return null;
+  }
+  if (!data || data.error || !data.customerAccessToken) return null;
+  return data as CustomerPortalData & { customerAccessToken: string };
+}
+
 export async function cancelAppointmentByToken(
   token: string,
   appointmentId: string,
