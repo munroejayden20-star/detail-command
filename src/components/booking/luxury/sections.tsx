@@ -44,8 +44,10 @@ import type {
 import {
   AnimatedCounter,
   CarbonWeave,
+  CinematicVignette,
   EmberCTA,
   EmberOrb,
+  FloatingParticles,
   GlassCTA,
   GrainOverlay,
   Hairline,
@@ -56,6 +58,7 @@ import {
   RevealText,
   SectionMarker,
   TiltCard,
+  VolumetricFog,
 } from "./primitives";
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -375,14 +378,26 @@ export function Hero({
       {/* ─── L2 — cinematic ambient: rays, smoke, scanline ─────────────────── */}
       <HeroAmbient />
 
+      {/* ─── L2.5 — additional atmosphere (cinematic polish pass) ─────────────
+       *  VolumetricFog adds a second, calmer fog system that's pure CSS
+       *  (cheaper than HeroAmbient's motion-driven smoke). FloatingParticles
+       *  is the dust-mote field — sparse, low-opacity, rising slowly.
+       *  CinematicVignette frames the section corners. */}
+      <VolumetricFog intensity={0.85} className="z-[2]" />
+      <FloatingParticles className="z-[2]" />
+      <CinematicVignette intensity={0.5} className="z-[3]" />
+
       {/* ─── L3 — interactive accents ─────────────────────────────────────── */}
       <MouseSpotlight color="rgba(221,41,20,0.22)" size={620} />
       <div className="pointer-events-none absolute -right-32 -top-20 z-[3] opacity-90">
         <EmberOrb size={520} />
       </div>
 
-      {/* ─── L10 — content (text + spec corner) ──────────────────────────── */}
-      <div className="relative z-10 mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-16 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-24 md:pt-36">
+      {/* ─── L10 — content (text + spec corner) ────────────────────────────
+       *  Wrapped in a HeroContentParallax that scroll-fades + lifts the
+       *  text as the page advances. Adds the cinematic "the world moves
+       *  past the message" feel without breaking the existing layout. */}
+      <HeroContentParallax className="relative z-10 mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-16 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-24 md:pt-36">
         {/* LEFT — editorial headline */}
         <div className="md:col-span-7 lg:col-span-7">
           <Reveal delay={0.05}>
@@ -436,12 +451,14 @@ export function Hero({
           </Reveal>
         </div>
 
-      </div>
+      </HeroContentParallax>
 
-      {/* ─── L15 — bottom bleed: hero dissolves into next section ────────── */}
+      {/* ─── L15 — bottom bleed: hero dissolves into next section ──────────
+       *  Taller + multi-stop so the transition lands progressively instead
+       *  of starting abruptly partway down the bleed. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[15] h-40 bg-gradient-to-b from-transparent via-obsidian-950/60 to-obsidian-950"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[15] h-56 bg-[linear-gradient(180deg,transparent_0%,rgba(6,7,10,0.25)_30%,rgba(6,7,10,0.65)_65%,#06070a_100%)]"
       />
 
       {/* scroll cue — z-20, above everything */}
@@ -462,6 +479,45 @@ export function Hero({
         </motion.div>
       </div>
     </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * HeroContentParallax — wraps the editorial content of the Hero and applies a
+ * scroll-linked opacity + Y-lift transform so the headline + sub + CTAs feel
+ * like they lift away as the page advances. Subtle (max ~60px lift, fades
+ * from 1.0 → 0.3 over the section). Reduced-motion: static.
+ *
+ * Lives here (not in primitives.tsx) because the only consumer is Hero —
+ * keeping it adjacent makes the relationship obvious.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+function HeroContentParallax({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  // Lift up to 60px as the section scrolls past, then fade opacity from
+  // 1 → 0.25 so the hero feels like it elegantly recedes.
+  const y = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const opacity = useTransform(scrollYProgress, [0, 0.6, 1], [1, 0.7, 0.25]);
+
+  return (
+    <motion.div
+      ref={ref}
+      style={reduced ? undefined : { y, opacity }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 }
 

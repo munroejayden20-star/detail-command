@@ -143,6 +143,178 @@ export function CarbonWeave({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * FloatingParticles — sparse drifting motes for atmospheric depth.
+ *
+ * 10 tiny dots scattered across the parent, each rising slowly on its own
+ * loop with a hand-picked delay so the motion never aligns. Pure CSS
+ * keyframes (`lx-mote-float` / `lx-mote-float-rev`), transform + opacity
+ * only. Reduced-motion: freezes everything at base position.
+ *
+ * Sized to ~2px so they read as ambient dust, not snow.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+interface Mote {
+  /** Starting % left position */
+  left: number;
+  /** Starting % top position */
+  top: number;
+  /** Animation delay in seconds — staggers each mote out of sync */
+  delay: number;
+  /** Pixel size — 1.5 to 3 to vary depth */
+  size: number;
+  /** Reverse drift = opposite arc, gives the field volume */
+  reverse?: boolean;
+}
+
+const DEFAULT_MOTES: Mote[] = [
+  { left:  8, top: 88, delay: 0,  size: 2,   reverse: false },
+  { left: 22, top: 92, delay: 4,  size: 2.5, reverse: true  },
+  { left: 36, top: 80, delay: 8,  size: 1.5, reverse: false },
+  { left: 48, top: 95, delay: 12, size: 3,   reverse: true  },
+  { left: 62, top: 84, delay: 2,  size: 2,   reverse: false },
+  { left: 74, top: 91, delay: 6,  size: 1.5, reverse: true  },
+  { left: 88, top: 86, delay: 10, size: 2.5, reverse: false },
+  { left: 14, top: 96, delay: 16, size: 1.5, reverse: true  },
+  { left: 56, top: 70, delay: 20, size: 2,   reverse: false },
+  { left: 80, top: 76, delay: 14, size: 2,   reverse: true  },
+];
+
+export function FloatingParticles({
+  motes = DEFAULT_MOTES,
+  color = "rgba(255, 210, 180, 0.55)",
+  className = "",
+}: {
+  motes?: Mote[];
+  /** Mote fill — defaults to a warm ember-tinted off-white */
+  color?: string;
+  className?: string;
+}) {
+  const reduced = useReducedMotion();
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+    >
+      {motes.map((m, i) => (
+        <span
+          key={i}
+          className={`absolute rounded-full will-change-transform ${
+            reduced
+              ? ""
+              : m.reverse
+                ? "animate-lx-mote-float-rev"
+                : "animate-lx-mote-float"
+          }`}
+          style={{
+            left: `${m.left}%`,
+            top: `${m.top}%`,
+            width: m.size,
+            height: m.size,
+            background: color,
+            boxShadow: `0 0 ${m.size * 4}px ${m.size}px ${color}`,
+            animationDelay: `${m.delay}s`,
+            opacity: reduced ? 0.35 : 0,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * VolumetricFog — slow-drifting fog blobs for atmospheric haze.
+ *
+ * Three large blurred radials breathing on independent CSS-keyframe loops
+ * (`lx-fog-drift`). Sits between the image plate and content. Differs from
+ * HeroAmbient's motion-driven smoke blobs in that the timing is pure CSS —
+ * cheaper to run and one less framer-motion subtree.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export function VolumetricFog({
+  className = "",
+  intensity = 1,
+}: {
+  className?: string;
+  /** 0.5 = whisper, 1 = default, 1.5 = noticeable */
+  intensity?: number;
+}) {
+  const reduced = useReducedMotion();
+  const fogClass = reduced ? "" : "animate-lx-fog-drift will-change-transform";
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+    >
+      {/* Warm ember haze — lower-left */}
+      <div
+        className={`absolute -bottom-[10%] -left-[8%] h-[70vh] w-[70vh] rounded-full blur-3xl ${fogClass}`}
+        style={{
+          background:
+            "radial-gradient(circle, rgba(221,41,20,0.10) 0%, rgba(168,114,70,0.05) 35%, transparent 70%)",
+          opacity: 0.28 * intensity,
+          animationDelay: "0s",
+          animationDuration: "26s",
+        }}
+      />
+      {/* Cool neutral fog — upper-right */}
+      <div
+        className={`absolute -top-[12%] right-[14%] h-[55vh] w-[55vh] rounded-full blur-3xl ${fogClass}`}
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)",
+          opacity: 0.22 * intensity,
+          animationDelay: "-9s",
+          animationDuration: "32s",
+        }}
+      />
+      {/* Mid-tone copper drift — center bias */}
+      <div
+        className={`absolute top-[34%] left-[36%] h-[50vh] w-[50vh] rounded-full blur-3xl ${fogClass}`}
+        style={{
+          background:
+            "radial-gradient(circle, rgba(196,137,90,0.07) 0%, transparent 65%)",
+          opacity: 0.26 * intensity,
+          animationDelay: "-16s",
+          animationDuration: "38s",
+        }}
+      />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * CinematicVignette — corner darkening for film-like framing.
+ *
+ * Four overlapping radial gradients pinned to each corner. Reads as a soft
+ * lens-darkening, focuses the eye to center without an obvious frame.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export function CinematicVignette({
+  intensity = 0.55,
+  className = "",
+}: {
+  /** 0 = transparent, 1 = heavy. Default 0.55 is "noticeable but elegant." */
+  intensity?: number;
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute inset-0 ${className}`}
+      style={{
+        background: `
+          radial-gradient(ellipse 80% 60% at 50% 45%, transparent 50%, rgba(4,5,6,${0.45 * intensity}) 100%),
+          radial-gradient(ellipse 30% 25% at 0% 0%, rgba(4,5,6,${0.6 * intensity}) 0%, transparent 70%),
+          radial-gradient(ellipse 30% 25% at 100% 0%, rgba(4,5,6,${0.55 * intensity}) 0%, transparent 70%),
+          radial-gradient(ellipse 40% 30% at 0% 100%, rgba(4,5,6,${0.5 * intensity}) 0%, transparent 70%),
+          radial-gradient(ellipse 40% 30% at 100% 100%, rgba(4,5,6,${0.5 * intensity}) 0%, transparent 70%)
+        `,
+      }}
+    />
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * Hairline — an SVG line that draws itself in when scrolled into view.
  * Used between sections instead of a flat border. Has the orientation of
  * "horizontal" by default; vertical mode is used inside hero margins.
@@ -467,12 +639,14 @@ export function EmberCTA({
       ? "px-4 py-2.5 text-[11px]"
       : "px-6 py-3.5 text-[12px]";
 
+  // Press-state shadow is tighter + redirected as an inset so the button
+  // appears to depress into the page rather than just shrink.
   const variantCls =
     variant === "ember"
-      ? "bg-ember-500 text-white shadow-[0_18px_40px_-12px_rgba(221,41,20,0.55)] hover:shadow-[0_28px_56px_-14px_rgba(221,41,20,0.7)] border border-ember-400/40"
+      ? "bg-ember-500 text-white shadow-[0_18px_40px_-12px_rgba(221,41,20,0.55)] hover:shadow-[0_28px_56px_-14px_rgba(221,41,20,0.7)] active:shadow-[0_6px_18px_-6px_rgba(221,41,20,0.55),inset_0_2px_6px_rgba(0,0,0,0.35)] border border-ember-400/40 hover:border-ember-300/60"
       : variant === "ghost"
-      ? "bg-transparent text-platinum-50 border border-white/20 hover:border-ember-400/60 hover:text-ember-200"
-      : "bg-obsidian-800 text-platinum-50 border border-white/10 hover:border-white/30";
+      ? "bg-transparent text-platinum-50 border border-white/20 hover:border-ember-400/60 hover:text-ember-200 active:bg-white/[0.03]"
+      : "bg-obsidian-800 text-platinum-50 border border-white/10 hover:border-white/30 active:bg-obsidian-900";
 
   return (
     <MagneticButton
@@ -627,16 +801,24 @@ export function GlassCTA({
       >
         {/* L3 — glass body. backdrop-blur for the real glass effect; the
          *  vertical gradient + dual inset shadows fake a top highlight + a
-         *  bottom shade so the surface reads as curved, not flat. */}
+         *  bottom shade so the surface reads as curved, not flat.
+         *  backdrop-saturate-[1.4] enriches the color sampled from behind
+         *  the button so the glass picks up the scene more richly — the
+         *  same trick Apple uses on visionOS controls. */}
         <span
-          className={`group/glass-body relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full backdrop-blur-2xl ${sizeCls}`}
+          className={`group/glass-body relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full backdrop-blur-2xl backdrop-saturate-[1.4] ${sizeCls}`}
           style={{
             background: isPrimary
               ? "linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.05) 45%, rgba(221,41,20,0.22) 100%)"
               : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.06) 100%)",
             boxShadow: isPrimary
-              ? "0 22px 50px -18px rgba(221,41,20,0.55), 0 6px 18px -8px rgba(0,0,0,0.45), inset 0 1px 0 0 rgba(255,225,210,0.32), inset 0 -1px 0 0 rgba(0,0,0,0.42)"
-              : "0 22px 50px -22px rgba(0,0,0,0.75), 0 4px 14px -6px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.18), inset 0 -1px 0 0 rgba(0,0,0,0.45)",
+              ? pressed
+                ? "0 8px 22px -14px rgba(221,41,20,0.55), 0 2px 8px -4px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,225,210,0.20), inset 0 -1px 0 0 rgba(0,0,0,0.55), inset 0 4px 14px -6px rgba(0,0,0,0.45)"
+                : "0 22px 50px -18px rgba(221,41,20,0.55), 0 6px 18px -8px rgba(0,0,0,0.45), inset 0 1px 0 0 rgba(255,225,210,0.32), inset 0 -1px 0 0 rgba(0,0,0,0.42)"
+              : pressed
+                ? "0 8px 22px -16px rgba(0,0,0,0.75), 0 2px 6px -3px rgba(0,0,0,0.65), inset 0 1px 0 0 rgba(255,255,255,0.10), inset 0 -1px 0 0 rgba(0,0,0,0.55), inset 0 4px 12px -6px rgba(0,0,0,0.40)"
+                : "0 22px 50px -22px rgba(0,0,0,0.75), 0 4px 14px -6px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.18), inset 0 -1px 0 0 rgba(0,0,0,0.45)",
+            transition: "box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           {/* L4 — top specular highlight. Sits in the top half so the curve
@@ -696,6 +878,26 @@ export function GlassCTA({
                 "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
               WebkitMaskComposite: "xor",
               maskComposite: "exclude",
+            }}
+          />
+
+          {/* L7.5 — chromatic dispersion edge. A near-invisible prismatic ring
+           *  (cool blue → warm magenta) that activates on hover. Reads as the
+           *  refractive fringing on a real piece of curved glass — the detail
+           *  that separates "glass-like" from "Apple-level glass." */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-500 group-hover/glass-body:opacity-100"
+            style={{
+              background: isPrimary
+                ? "conic-gradient(from 220deg at 50% 50%, rgba(140,180,255,0.0) 0deg, rgba(140,180,255,0.30) 80deg, rgba(255,160,210,0.28) 200deg, rgba(255,210,180,0.30) 290deg, rgba(140,180,255,0.0) 360deg)"
+                : "conic-gradient(from 200deg at 50% 50%, rgba(180,220,255,0.0) 0deg, rgba(180,220,255,0.24) 90deg, rgba(255,200,230,0.22) 220deg, rgba(180,220,255,0.0) 360deg)",
+              padding: "1px",
+              WebkitMask:
+                "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+              WebkitMaskComposite: "xor",
+              maskComposite: "exclude",
+              mixBlendMode: "screen",
             }}
           />
 

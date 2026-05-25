@@ -262,6 +262,27 @@ export default {
           from: { transform: "rotate(0deg)" },
           to:   { transform: "rotate(360deg)" },
         },
+        // ─── Cinematic polish — atmospheric particles & fog drift ──
+        // Single mote keyframe; per-element timing/offset varies via inline
+        // animationDelay + custom transform-origins. transform + opacity only.
+        "lx-mote-float": {
+          "0%":   { transform: "translate3d(0,0,0) scale(1)", opacity: "0" },
+          "12%":  { opacity: "0.55" },
+          "50%":  { transform: "translate3d(8vw,-22vh,0) scale(1.1)", opacity: "0.4" },
+          "88%":  { opacity: "0.25" },
+          "100%": { transform: "translate3d(-4vw,-44vh,0) scale(0.9)", opacity: "0" },
+        },
+        "lx-mote-float-rev": {
+          "0%":   { transform: "translate3d(0,0,0) scale(1)", opacity: "0" },
+          "14%":  { opacity: "0.45" },
+          "60%":  { transform: "translate3d(-12vw,-30vh,0) scale(1.15)", opacity: "0.3" },
+          "100%": { transform: "translate3d(6vw,-58vh,0) scale(0.85)", opacity: "0" },
+        },
+        "lx-fog-drift": {
+          "0%, 100%": { transform: "translate3d(0,0,0) scale(1)", opacity: "0.28" },
+          "33%":      { transform: "translate3d(2vw,-1.5vh,0) scale(1.05)", opacity: "0.36" },
+          "66%":      { transform: "translate3d(-1.5vw,1vh,0) scale(0.98)", opacity: "0.22" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.2s cubic-bezier(0.32, 0.72, 0, 1)",
@@ -296,6 +317,9 @@ export default {
         "lx-rise":          "lx-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
         "lx-blur-in":       "lx-blur-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both",
         "lx-conic-spin":    "lx-conic-spin 14s linear infinite",
+        "lx-mote-float":    "lx-mote-float 26s linear infinite",
+        "lx-mote-float-rev":"lx-mote-float-rev 34s linear infinite",
+        "lx-fog-drift":     "lx-fog-drift 22s ease-in-out infinite",
       },
     },
   },

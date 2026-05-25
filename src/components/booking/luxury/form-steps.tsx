@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { PublicService, PublicDepositInfo } from "@/lib/booking-api";
 import { EmberCTA, LiquidProgress, Reveal } from "./primitives";
+import { LuxuryScheduler } from "./scheduler";
 import { computeQuote } from "@/lib/pricing/engine";
 import { DEFAULT_PRICING_CONFIG } from "@/lib/pricing/config";
 import type { PricingConfig, Quote } from "@/lib/pricing/types";
@@ -133,19 +134,19 @@ export function timeSlotsForDate(dateStr: string): { value: string; label: strin
   const d = new Date(parts[0], parts[1] - 1, parts[2]);
   const dow = d.getDay();
   const isWeekend = dow === 0 || dow === 6;
-  const startHour = isWeekend ? 7 : 17;
-  const startMinute = isWeekend ? 0 : 30;
-  const endHour = isWeekend ? 19 : 21;
+  // Keep in sync with src/lib/booking-slots.ts. Inclusive start/end in
+  // minutes-since-midnight — last entry IS the latest bookable start.
+  const startMin = isWeekend ? 7 * 60     : 17 * 60 + 30;
+  const endMin   = isWeekend ? 18 * 60 + 30 : 18 * 60;
   const slots: { value: string; label: string }[] = [];
-  for (let h = startHour; h < endHour; h++) {
-    for (const m of [0, 30]) {
-      if (h === startHour && m < startMinute) continue;
-      const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      const ampm = h < 12 ? "AM" : "PM";
-      const label = `${hour12}:${String(m).padStart(2, "0")} ${ampm}`;
-      slots.push({ value, label });
-    }
+  for (let t = startMin; t <= endMin; t += 30) {
+    const h = Math.floor(t / 60);
+    const m = t % 60;
+    const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const ampm = h < 12 ? "AM" : "PM";
+    const label = `${hour12}:${String(m).padStart(2, "0")} ${ampm}`;
+    slots.push({ value, label });
   }
   return slots;
 }
@@ -1043,10 +1044,6 @@ function Step4DateTime({
   set: (patch: Partial<FormState>) => void;
   bookedSlots: { start: string; end: string }[];
 }) {
-  const today = new Date().toISOString().split("T")[0];
-  const slots = timeSlotsForDate(form.preferredDate);
-  const hint  = availabilityHintForDate(form.preferredDate);
-
   return (
     <div className="space-y-7">
       <StepHeader
@@ -1055,69 +1052,13 @@ function Step4DateTime({
         body="Pick a window — I'll confirm exact time when I reach out."
       />
 
-      <Field label="Date" required>
-        <input
-          type="date"
-          min={today}
-          className={inputCls}
-          value={form.preferredDate}
-          onChange={(e) => {
-            const newSlots = timeSlotsForDate(e.target.value);
-            const newDate  = e.target.value;
-            const stillValid =
-              newSlots.some((s) => s.value === form.preferredTime) &&
-              !isSlotBooked(newDate, form.preferredTime, bookedSlots);
-            set({
-              preferredDate: newDate,
-              preferredTime: stillValid ? form.preferredTime : "",
-            });
-          }}
-        />
-      </Field>
-
-      <div>
-        <div className="flex items-baseline justify-between">
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/80">Window</p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-ember-300/85">{hint}</p>
-        </div>
-        <div className="mt-3">
-          {slots.length === 0 ? (
-            <div className="border border-dashed border-white/15 px-4 py-6 text-center font-mono text-[11px] uppercase tracking-[0.28em] text-platinum-300/65">
-              Pick a date to render times
-            </div>
-          ) : (
-            <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
-              {slots.map((opt) => {
-                const booked   = isSlotBooked(form.preferredDate, opt.value, bookedSlots);
-                const selected = form.preferredTime === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    disabled={booked}
-                    onClick={() => set({ preferredTime: opt.value })}
-                    className={`relative border px-2 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] transition-all ${
-                      booked
-                        ? "cursor-not-allowed border-white/5 text-platinum-300/30 line-through"
-                        : selected
-                        ? "border-ember-400/70 bg-ember-500/[0.08] text-platinum-50"
-                        : "border-white/12 bg-white/[0.02] text-platinum-200 hover:border-white/25"
-                    }`}
-                    style={{ borderRadius: 2 }}
-                  >
-                    {opt.label}
-                    {booked ? (
-                      <span className="absolute -top-1.5 -right-1.5 rounded-full bg-obsidian-700 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-platinum-300/85">
-                        booked
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+      <LuxuryScheduler
+        date={form.preferredDate}
+        time={form.preferredTime}
+        bookedSlots={bookedSlots}
+        onDate={(d) => set({ preferredDate: d })}
+        onTime={(t) => set({ preferredTime: t })}
+      />
 
       <Field label="Service address" required hint="Where I should pull up.">
         <textarea
