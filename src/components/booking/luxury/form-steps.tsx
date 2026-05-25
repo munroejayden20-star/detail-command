@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   ChevronDown,
   Loader2,
+  Minus,
+  Plus,
   Upload,
   X,
 } from "lucide-react";
@@ -35,6 +37,11 @@ export interface FormState {
    *  the same way they stack add-ons. The submit RPC already accepts a list. */
   serviceIds: string[];
   addonIds: string[];
+  /** Per-addon quantity. Used for countable add-ons like spot-stain extraction.
+   *  Defaults to 1 when an addon is checked; keys are removed when unchecked.
+   *  On submit, the addon id is repeated N times in the payload so the
+   *  backend treats N units as N occurrences (no RPC signature change). */
+  addonQuantities: Record<string, number>;
   vehicleSize: string;
   vehicleYear: string;
   vehicleMake: string;
@@ -62,6 +69,7 @@ export interface FormState {
 export const EMPTY_FORM: FormState = {
   serviceIds: [],
   addonIds: [],
+  addonQuantities: {},
   vehicleSize: "",
   vehicleYear: "",
   vehicleMake: "",
@@ -314,6 +322,65 @@ function ToggleRow({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * QuantityStepper — compact +/- control used inside add-on rows.
+ *
+ * Reasoning for inline +/- vs a number input:
+ *   - The add-on row is itself a clickable card (role="button"); a number
+ *     input inside a button would create accessibility friction. Two small
+ *     buttons that stopPropagation are cleaner than a typeable field.
+ *   - The visible range (1 – ~20) is small enough that a stepper feels
+ *     faster than typing.
+ *
+ * Caller passes value + onChange. Clamps internally [min, max].
+ */
+function QuantityStepper({
+  value,
+  onChange,
+  min = 1,
+  max = 20,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+}) {
+  const clamped = Math.max(min, Math.min(max, value));
+  const dec = () => onChange(Math.max(min, clamped - 1));
+  const inc = () => onChange(Math.min(max, clamped + 1));
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-obsidian-950/60 px-1 py-0.5 backdrop-blur-sm"
+      // The stepper sits inside an outer card with role="button" that toggles
+      // the addon. Stop propagation here so +/- never accidentally unchecks.
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        aria-label="Decrease quantity"
+        disabled={clamped <= min}
+        onClick={dec}
+        className="flex h-6 w-6 items-center justify-center rounded-full text-platinum-200 transition-colors hover:bg-white/[0.08] hover:text-ember-300 disabled:opacity-30 disabled:hover:bg-transparent"
+      >
+        <Minus className="h-3 w-3" />
+      </button>
+      <span className="min-w-[20px] text-center font-mono text-[12px] tabular-nums text-platinum-50">
+        {clamped}
+      </span>
+      <button
+        type="button"
+        aria-label="Increase quantity"
+        disabled={clamped >= max}
+        onClick={inc}
+        className="flex h-6 w-6 items-center justify-center rounded-full text-platinum-200 transition-colors hover:bg-white/[0.08] hover:text-ember-300 disabled:opacity-30 disabled:hover:bg-transparent"
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * ExpandableDescription — clamped paragraph + "Read more" toggle.
  *
  * The toggle only renders when the clamped paragraph actually overflows. We
@@ -542,11 +609,23 @@ function Step2Addons({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {addons.map((s) => {
             const checked = form.addonIds.includes(s.id);
+            const qty = form.addonQuantities[s.id] ?? 1;
             const toggle = () => {
-              const ids = checked
-                ? form.addonIds.filter((id) => id !== s.id)
-                : [...form.addonIds, s.id];
-              set({ addonIds: ids });
+              if (checked) {
+                const ids = form.addonIds.filter((id) => id !== s.id);
+                // Clean up the quantity record when the addon goes off.
+                const nextQty = { ...form.addonQuantities };
+                delete nextQty[s.id];
+                set({ addonIds: ids, addonQuantities: nextQty });
+              } else {
+                set({
+                  addonIds: [...form.addonIds, s.id],
+                  addonQuantities: { ...form.addonQuantities, [s.id]: 1 },
+                });
+              }
+            };
+            const setQty = (n: number) => {
+              set({ addonQuantities: { ...form.addonQuantities, [s.id]: n } });
             };
             return (
               <div
@@ -577,16 +656,38 @@ function Step2Addons({
                     >
                       {checked ? <CheckCircle2 className="h-3.5 w-3.5 text-platinum-50" /> : null}
                     </span>
-                    <span className="font-sans text-[14.5px] text-platinum-50">{s.name}</span>
+                    <span className="font-sans text-[14.5px] text-platinum-50">
+                      {s.name}
+                      {checked && qty > 1 ? (
+                        <span className="ml-2 font-mono text-[11px] tracking-[0.18em] text-ember-300">
+                          ×{qty}
+                        </span>
+                      ) : null}
+                    </span>
                   </span>
                   {s.description ? (
                     <div className="ml-8 mt-1">
                       <ExpandableDescription text={s.description} clampClass="line-clamp-2" />
                     </div>
                   ) : null}
+                  {checked ? (
+                    <div className="ml-8 mt-3 flex items-center gap-3">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-platinum-300/65">
+                        Quantity
+                      </span>
+                      <QuantityStepper value={qty} onChange={setQty} />
+                    </div>
+                  ) : null}
                 </span>
-                <span className="shrink-0 font-mono text-[12px] uppercase tracking-[0.22em] text-platinum-100">
-                  +{fmtPrice(s.priceLow, s.priceHigh)}
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="font-mono text-[12px] uppercase tracking-[0.22em] text-platinum-100">
+                    +{fmtPrice(s.priceLow, s.priceHigh)}
+                  </span>
+                  {checked && qty > 1 ? (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ember-300/85">
+                      subtotal ~${midPrice(s) * qty}
+                    </span>
+                  ) : null}
                 </span>
               </div>
             );
@@ -1228,7 +1329,15 @@ function Step7Review({
             v={selectedServices.map((s) => s.name).join(", ") || undefined}
           />
           {selectedAddons.length > 0 ? (
-            <ReviewRow k="Add-ons"      v={selectedAddons.map((a) => a.name).join(", ")} />
+            <ReviewRow
+              k="Add-ons"
+              v={selectedAddons
+                .map((a) => {
+                  const q = form.addonQuantities[a.id] ?? 1;
+                  return q > 1 ? `${q}× ${a.name}` : a.name;
+                })
+                .join(", ")}
+            />
           ) : null}
           <ReviewRow k="Estimate" v={<span className="font-sans text-lg text-platinum-50">~${estimatedPrice}</span>} />
         </ReviewBlock>
@@ -1570,10 +1679,13 @@ export function estimatedPriceOf(form: FormState, services: PublicService[]): nu
     const pkg = services.find((s) => s.id === id);
     if (pkg) total += midPrice(pkg);
   }
-  // Add-ons.
+  // Add-ons — multiply by quantity for countable items (default 1).
   for (const id of form.addonIds) {
     const a = services.find((s) => s.id === id);
-    if (a) total += midPrice(a);
+    if (a) {
+      const qty = Math.max(1, form.addonQuantities[id] ?? 1);
+      total += midPrice(a) * qty;
+    }
   }
   return total;
 }

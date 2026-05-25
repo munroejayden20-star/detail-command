@@ -291,7 +291,14 @@ export function BookingPage() {
         heavyDirt: form.heavyDirt,
         vehicleNotes: form.vehicleNotes || undefined,
         serviceIds: form.serviceIds,
-        addonIds: form.addonIds,
+        // Duplicate the addon id per its selected quantity so the backend
+        // sees N units as N occurrences without an RPC signature change.
+        // Customers who don't touch the stepper land at qty=1 — identical
+        // to the prior behavior.
+        addonIds: form.addonIds.flatMap((id) => {
+          const qty = Math.max(1, form.addonQuantities[id] ?? 1);
+          return Array(qty).fill(id);
+        }),
         estimatedPrice,
         preferredDate: form.preferredDate || undefined,
         preferredTime: form.preferredTime || undefined,
