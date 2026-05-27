@@ -32,9 +32,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    // Anonymous visitors land on the public booking page. Admin reaches
-    // /login directly when they want to sign in.
-    return <Navigate to="/book" replace state={{ from: location }} />;
+    // Anonymous redirect target depends on context:
+    //   - Installed PWA (standalone mode): admin opened the app expecting
+    //     the dashboard; their session just lapsed. Send them to /login
+    //     so they can sign back in. Sending them to /book would dump
+    //     them on the customer-facing marketing page, which is what
+    //     was happening before this gate existed.
+    //   - Browser tab: random visitor on the bare domain. /book is the
+    //     correct public landing surface.
+    const isStandalone =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(display-mode: standalone)").matches;
+    const target = isStandalone ? "/login" : "/book";
+    return <Navigate to={target} replace state={{ from: location }} />;
   }
 
   if (!isAdminUser(user)) {
