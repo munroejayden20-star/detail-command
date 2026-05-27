@@ -34,7 +34,7 @@ import { Z_CLASS } from "@/design-system";
  * scroll into a jank fest. Returns true on phones / narrow viewports.
  * SSR-safe (defaults to false when window is undefined).
  * ──────────────────────────────────────────────────────────────────────── */
-function useIsMobile(): boolean {
+export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== "undefined"
       ? window.matchMedia("(max-width: 767px)").matches
@@ -499,10 +499,17 @@ export function Reveal({
   y?: number;
   className?: string;
 }) {
+  // On mobile, the section-to-section transition fires multiple Reveals
+  // simultaneously (the whole section fits in one viewport). Each one
+  // shifting up by 24px stacked into a visible "teleport up" snap at the
+  // hero → manifesto boundary. Drop the Y on mobile — keep the opacity +
+  // blur fade so the reveal still reads as cinematic without the lift.
+  const isMobile = useIsMobile();
+  const effectiveY = isMobile ? 0 : y;
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y, filter: "blur(8px)" }}
+      initial={{ opacity: 0, y: effectiveY, filter: "blur(8px)" }}
       whileInView={{ opacity: 1, y: 0, filter: "blur(0)" }}
       viewport={{ once: true, amount: 0.4, margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1], delay }}

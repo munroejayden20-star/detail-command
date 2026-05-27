@@ -61,6 +61,7 @@ import {
   RevealText,
   SectionMarker,
   TiltCard,
+  useIsMobile,
   VolumetricFog,
 } from "./primitives";
 import { Z_CLASS } from "@/design-system";
@@ -505,6 +506,7 @@ function HeroContentParallax({
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const reduced = useReducedMotion();
+  const isMobile = useIsMobile();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -514,10 +516,14 @@ function HeroContentParallax({
   const y = useTransform(scrollYProgress, [0, 1], [0, -60]);
   const opacity = useTransform(scrollYProgress, [0, 0.6, 1], [1, 0.7, 0.25]);
 
+  // Mobile: skip the scroll-linked transform entirely. On phones the
+  // hero+manifesto transition is the most jank-sensitive moment (iOS
+  // address bar collapses around the same scroll), and the parallax
+  // re-measurement contributed to the "teleport up" sensation.
   return (
     <motion.div
       ref={ref}
-      style={reduced ? undefined : { y, opacity }}
+      style={reduced || isMobile ? undefined : { y, opacity }}
       className={className}
     >
       {children}
@@ -548,12 +554,14 @@ function HeroImagePlate({ heroImageUrl }: { heroImageUrl?: string }) {
    * absolute layout intact and the parallax tied to scroll progress.
    */
   const ref = useRef<HTMLDivElement | null>(null);
+  const isMobile = useIsMobile();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
   });
   const reduced = useReducedMotion();
   const y = useTransform(scrollYProgress, [0, 1], ["32px", "-32px"]);
+  const disableParallax = reduced || isMobile;
 
   return (
     <div
@@ -582,7 +590,7 @@ function HeroImagePlate({ heroImageUrl }: { heroImageUrl?: string }) {
       <motion.div
         className="absolute inset-y-0 right-0 w-full opacity-[0.92] md:w-[68%] lg:w-[60%]"
         style={{
-          y: reduced ? 0 : y,
+          y: disableParallax ? 0 : y,
           WebkitMaskImage:
             "radial-gradient(ellipse 72% 78% at 62% 50%, #000 32%, rgba(0,0,0,0.55) 65%, transparent 100%)",
           maskImage:

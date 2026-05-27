@@ -8,6 +8,12 @@ build
 .env.*
 !.env.example
 *.local
+*PAT*
+*pat*.txt
+*token*.txt
+*secret*.txt
+*.pem
+*.key
 
 # Tooling caches
 .vite
