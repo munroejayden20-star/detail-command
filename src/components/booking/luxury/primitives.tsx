@@ -27,6 +27,30 @@ import {
 import { Z_CLASS } from "@/design-system";
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * useIsMobile — matchMedia hook tied to Tailwind's md breakpoint (<768px).
+ *
+ * Used to short-circuit decorative scroll-driven layers on mobile, where
+ * fixed full-viewport parallax + many useScroll listeners turn the first
+ * scroll into a jank fest. Returns true on phones / narrow viewports.
+ * SSR-safe (defaults to false when window is undefined).
+ * ──────────────────────────────────────────────────────────────────────── */
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 767px)").matches
+      : false,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return isMobile;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * MouseSpotlight — a fixed radial ember glow that tracks the cursor.
  *
  * The glow lives inside a wrapper that already establishes a stacking
@@ -1151,6 +1175,18 @@ export function AnimatedCounter({
  * ──────────────────────────────────────────────────────────────────────── */
 
 export function ScrollAmbient() {
+  // Mobile short-circuit BEFORE any motion hooks fire. On phones the
+  // atmospheric layer is barely visible (it's a backdrop with subtle
+  // grid/orbs) but its 7 useTransform + useSpring + useScroll chain was
+  // the dominant cost on first-scroll jank. Returning null from this
+  // outer wrapper means none of the inner hooks ever mount — no listener,
+  // no transforms, no compositor layers.
+  const isMobile = useIsMobile();
+  if (isMobile) return null;
+  return <ScrollAmbientInner />;
+}
+
+function ScrollAmbientInner() {
   const { scrollYProgress } = useScroll();
   const reduced = useReducedMotion();
 
@@ -1262,6 +1298,16 @@ export function ScrollAmbient() {
  *     tick range matches the real rendered height at any viewport.
  */
 export function ScrollTelemetry() {
+  // Already CSS-hidden on mobile (`hidden md:flex`) but the inner hooks
+  // still ran — including a `useMotionValueEvent` that called setState on
+  // every scroll tick. That's pure waste on mobile and a contributor to
+  // first-scroll jank. Short-circuit before any hooks mount.
+  const isMobile = useIsMobile();
+  if (isMobile) return null;
+  return <ScrollTelemetryInner />;
+}
+
+function ScrollTelemetryInner() {
   const { scrollYProgress } = useScroll();
   const reduced = useReducedMotion();
   const [pct, setPct] = useState(0);
