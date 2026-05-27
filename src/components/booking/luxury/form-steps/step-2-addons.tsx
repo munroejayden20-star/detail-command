@@ -9,6 +9,17 @@ import type { FormState } from "./types";
 import { midPrice } from "./helpers";
 import { ExpandableDescription, QuantityStepper, StepHeader } from "./shared";
 
+/**
+ * Only spot-stain extraction sells by the unit — other add-ons are
+ * scope toggles (yes/no), not countable. Match by name so the rule
+ * doesn't depend on a service-row column. Add to this list if a new
+ * countable add-on ever exists.
+ */
+function supportsQuantity(s: PublicService): boolean {
+  const n = s.name.toLowerCase();
+  return n.includes("spot") && n.includes("stain");
+}
+
 export function Step2Addons({
   services,
   form,
@@ -34,6 +45,7 @@ export function Step2Addons({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {addons.map((s) => {
             const checked = form.addonIds.includes(s.id);
+            const countable = supportsQuantity(s);
             const qty = form.addonQuantities[s.id] ?? 1;
             const toggle = () => {
               if (checked) {
@@ -83,7 +95,7 @@ export function Step2Addons({
                     </span>
                     <span className="font-sans text-[14.5px] text-platinum-50">
                       {s.name}
-                      {checked && qty > 1 ? (
+                      {checked && countable && qty > 1 ? (
                         <span className="ml-2 font-mono text-[11px] tracking-[0.18em] text-ember-300">
                           ×{qty}
                         </span>
@@ -95,7 +107,7 @@ export function Step2Addons({
                       <ExpandableDescription text={s.description} clampClass="line-clamp-2" />
                     </div>
                   ) : null}
-                  {checked ? (
+                  {checked && countable ? (
                     <div className="ml-8 mt-3 flex items-center gap-3">
                       <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-platinum-300/65">
                         Quantity
@@ -108,7 +120,7 @@ export function Step2Addons({
                   <span className="font-mono text-[12px] uppercase tracking-[0.22em] text-platinum-100">
                     +${midPrice(s)}
                   </span>
-                  {checked && qty > 1 ? (
+                  {checked && countable && qty > 1 ? (
                     <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ember-300/85">
                       subtotal ~${midPrice(s) * qty}
                     </span>
