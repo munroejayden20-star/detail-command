@@ -50,6 +50,12 @@ export function Footer({
             <p className="mt-5 font-mono text-[10.5px] uppercase tracking-[0.32em] text-platinum-300/70">
               {serviceArea ?? "Vancouver, WA — Portland, OR"}
             </p>
+            <p className="mt-3 font-mono text-[9.5px] uppercase leading-[1.7] tracking-[0.22em] text-platinum-300/50">
+              Also serving · Camas · Washougal · Ridgefield · Battle Ground ·
+              Salmon Creek · Hazel Dell · Hillsboro · Beaverton · Tigard ·
+              Lake Oswego · Tualatin · Gresham · Milwaukie · Oregon City ·
+              Troutdale
+            </p>
           </div>
 
           <div className="min-w-0 sm:col-span-1 md:col-span-3">
