@@ -138,7 +138,6 @@ interface ToneStyles {
   topHighlight: string;
   cursorLight: string;
   rimBorder: string;
-  rimShimmer: string;
   chromaticRing: string;
   textColor: string;
   textShadow: string;
@@ -161,8 +160,6 @@ const TONES: Record<Tone, ToneStyles> = {
       "radial-gradient(220px circle at var(--gx) var(--gy), rgba(255,200,170,0.45), transparent 65%)",
     rimBorder:
       "linear-gradient(180deg, rgba(255,210,180,0.60) 0%, rgba(255,210,180,0.10) 40%, rgba(0,0,0,0.40) 100%)",
-    rimShimmer:
-      "conic-gradient(from 0deg at 50% 50%, rgba(255,220,190,0.0) 0deg, rgba(255,180,140,0.55) 60deg, rgba(248,114,72,0.0) 130deg, rgba(255,210,180,0.45) 220deg, rgba(221,41,20,0.0) 290deg, rgba(255,220,190,0.0) 360deg)",
     chromaticRing:
       "conic-gradient(from 220deg at 50% 50%, rgba(140,180,255,0.0) 0deg, rgba(140,180,255,0.32) 80deg, rgba(255,160,210,0.30) 200deg, rgba(255,210,180,0.32) 290deg, rgba(140,180,255,0.0) 360deg)",
     textColor: "text-platinum-50",
@@ -184,8 +181,6 @@ const TONES: Record<Tone, ToneStyles> = {
       "radial-gradient(220px circle at var(--gx) var(--gy), rgba(255,255,255,0.20), transparent 65%)",
     rimBorder:
       "linear-gradient(180deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.06) 45%, rgba(0,0,0,0.42) 100%)",
-    rimShimmer:
-      "conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0.0) 0deg, rgba(255,255,255,0.35) 70deg, rgba(255,255,255,0.0) 140deg, rgba(255,255,255,0.28) 230deg, rgba(255,255,255,0.0) 300deg, rgba(255,255,255,0.0) 360deg)",
     chromaticRing:
       "conic-gradient(from 200deg at 50% 50%, rgba(180,220,255,0.0) 0deg, rgba(180,220,255,0.26) 90deg, rgba(255,200,230,0.24) 220deg, rgba(180,220,255,0.0) 360deg)",
     textColor: "text-platinum-100",
@@ -207,8 +202,6 @@ const TONES: Record<Tone, ToneStyles> = {
       "radial-gradient(200px circle at var(--gx) var(--gy), rgba(255,255,255,0.14), transparent 65%)",
     rimBorder:
       "linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.06) 50%, rgba(0,0,0,0.30) 100%)",
-    rimShimmer:
-      "conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0.0) 0deg, rgba(255,255,255,0.22) 80deg, rgba(255,255,255,0.0) 160deg, rgba(255,255,255,0.0) 360deg)",
     chromaticRing:
       "conic-gradient(from 200deg at 50% 50%, rgba(180,220,255,0.0) 0deg, rgba(180,220,255,0.18) 90deg, rgba(255,200,230,0.16) 220deg, rgba(180,220,255,0.0) 360deg)",
     textColor: "text-platinum-100",
@@ -230,8 +223,6 @@ const TONES: Record<Tone, ToneStyles> = {
       "radial-gradient(200px circle at var(--gx) var(--gy), rgba(255,255,255,0.10), transparent 65%)",
     rimBorder:
       "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.50) 100%)",
-    rimShimmer:
-      "conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0.0) 0deg, rgba(255,255,255,0.14) 80deg, rgba(255,255,255,0.0) 160deg, rgba(255,255,255,0.0) 360deg)",
     chromaticRing:
       "conic-gradient(from 200deg at 50% 50%, rgba(180,220,255,0.0) 0deg, rgba(180,220,255,0.10) 90deg, rgba(255,200,230,0.10) 220deg, rgba(180,220,255,0.0) 360deg)",
     textColor: "text-platinum-50",
@@ -387,30 +378,12 @@ function GlassButtonShell({
             } as CSSProperties}
           />
 
-          {/* L5 — rim shimmer. Slow conic gradient rotation on the border
-           *  ring; the cinematic "this thing is alive" tell. Pauses on
-           *  hover so it doesn't compete with the cursor light or sheen. */}
-          {!reduced && !inert && (
-            <motion.span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full"
-              style={{
-                background: styles.rimShimmer,
-                padding: "1px",
-                WebkitMask:
-                  "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-                mixBlendMode: "screen",
-                opacity: hovered ? 0 : 0.5,
-              }}
-              animate={hovered ? {} : { rotate: 360 }}
-              transition={{
-                rotate: { duration: 14, ease: "linear", repeat: Infinity },
-                opacity: { duration: 0.4 },
-              }}
-            />
-          )}
+          {/* L5 — (removed) rotating rim shimmer.
+           *  The conic-gradient rotation with mix-blend-mode: screen inside
+           *  a mask-composite: exclude ring produced visible white pixels
+           *  at the rounded corners that accumulated as the animation ran.
+           *  The bloom + cursor light + chromatic ring on hover already
+           *  carry the "alive" feel without this layer. */}
 
           {/* L6 — diagonal sheen sweep on hover-enter */}
           <span
