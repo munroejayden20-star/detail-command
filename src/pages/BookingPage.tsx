@@ -430,7 +430,7 @@ export function BookingPage() {
   const customerHasAccount = !!user && !!portal;
 
   return (
-    <div className="relative min-h-screen bg-obsidian-950 text-platinum-100 antialiased [scroll-behavior:smooth]">
+    <div className="relative min-h-screen bg-obsidian-950 text-platinum-100 antialiased">
       <BootIntro businessName={settings.businessName} />
       <ScrollProgress />
       <ScrollAmbient />

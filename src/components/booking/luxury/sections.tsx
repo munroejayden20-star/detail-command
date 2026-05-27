@@ -402,7 +402,7 @@ export function Hero({
        *  Wrapped in a HeroContentParallax that scroll-fades + lifts the
        *  text as the page advances. Adds the cinematic "the world moves
        *  past the message" feel without breaking the existing layout. */}
-      <HeroContentParallax className={`relative ${Z_CLASS.content} mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-16 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-24 md:pt-36`}>
+      <HeroContentParallax className={`relative ${Z_CLASS.content} mx-auto grid min-h-screen max-w-[1320px] grid-cols-1 items-end gap-12 px-5 pb-16 pt-32 md:grid-cols-12 md:gap-10 md:px-10 md:pb-24 md:pt-36`}>
         {/* LEFT — editorial headline */}
         <div className="md:col-span-7 lg:col-span-7">
           <Reveal delay={0.05}>
