@@ -550,12 +550,22 @@ function Step1Service({
                       <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-ember-300">
                         Package
                       </p>
-                      <h4 className="mt-1.5 font-sans text-xl font-light text-platinum-50 md:text-[22px]">
-                        {s.name.split(" ").slice(0, -1).join(" ")}{" "}
-                        <span className="font-display italic font-light text-ember-200/95">
-                          {s.name.split(" ").slice(-1).join(" ") || s.name}
-                        </span>
-                      </h4>
+                      {(() => {
+                        // Trim + regex split so a trailing space in the DB
+                        // name doesn't dump the full title into the orange
+                        // italic block (read as the name duplicated).
+                        const parts = s.name.trim().split(/\s+/);
+                        const lead = parts.slice(0, -1).join(" ");
+                        const tail = parts[parts.length - 1] || s.name;
+                        return (
+                          <h4 className="mt-1.5 font-sans text-xl font-light text-platinum-50 md:text-[22px]">
+                            {lead ? <>{lead}{" "}</> : null}
+                            <span className="font-display italic font-light text-ember-200/95">
+                              {tail}
+                            </span>
+                          </h4>
+                        );
+                      })()}
                       {s.description ? (
                         <div className="mt-2 max-w-[56ch]">
                           <ExpandableDescription text={s.description} clampClass="line-clamp-3" />

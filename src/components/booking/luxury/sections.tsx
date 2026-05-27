@@ -939,12 +939,22 @@ function ServicePlate({
             <span className="font-mono text-[11px] uppercase tracking-[0.32em] text-ember-300">
               {String(index).padStart(2, "0")} / Package
             </span>
-            <h3 className="mt-3 font-sans text-2xl font-light tracking-tight text-platinum-50 md:text-[28px]">
-              <span className="block">{s.name.split(" ").slice(0, -1).join(" ")}</span>
-              <span className="block font-display italic font-light text-ember-200/95">
-                {s.name.split(" ").slice(-1).join(" ") || s.name}
-              </span>
-            </h3>
+            {(() => {
+              // Trim + regex-split so a trailing space in the DB name doesn't
+              // produce an empty "last word" and dump the full name into the
+              // orange italic block (which read as the title duplicated).
+              const parts = s.name.trim().split(/\s+/);
+              const lead = parts.slice(0, -1).join(" ");
+              const tail = parts[parts.length - 1] || s.name;
+              return (
+                <h3 className="mt-3 font-sans text-2xl font-light tracking-tight text-platinum-50 md:text-[28px]">
+                  {lead ? <span className="block">{lead}</span> : null}
+                  <span className="block font-display italic font-light text-ember-200/95">
+                    {tail}
+                  </span>
+                </h3>
+              );
+            })()}
           </div>
           <div className="text-right">
             <span className="font-mono text-[10px] uppercase tracking-[0.32em] text-platinum-300/70">
