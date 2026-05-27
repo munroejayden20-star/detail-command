@@ -1,9 +1,82 @@
 # Detail Command — Current Task
 
-## What We Just Shipped
+## What We Just Shipped (Phases J → M, booking-page focus)
 
-**Phase H4 + Phase H7 — Customer/Pricing Intelligence + AI Assistant.** The two
-remaining intelligence phases that don't require Google Cloud setup. Command
+Multi-session work that transformed `/book` from a styled form into a luxury
+reservation system, added optional customer accounts, fixed a long-standing
+scroll bug, and laid down a design-token foundation for future refactors.
+
+### Phase J — UI/UX architecture pass (commit `bdedc13`)
+- **Customer-history overlap fixed.** `CustomerPortalRibbon` (new, slim, fixed-top, `z-60`) replaces the old sticky `CustomerPortalPanel`. TopNav accepts `topOffset` and drops below the ribbon when present.
+- **TopNav restructured** into a clean three-zone layout (brand · center-nav · CTA) with `shrink-0` right zone so Configure and the mobile menu can never compete for the same x-coordinate.
+- **Footer mobile fix** — single-column stack below `sm`; `min-w-0` + `break-all` so long emails/addresses wrap inside their column.
+- **New `/portal` route** — dedicated cinematic customer dashboard. Reuses `AppointmentRow` / `ReceiptRow` / `IrisNote` from the panel; "Book new appointment" CTAs route back to `/book#book`. Hero orb + 4-card stat strip + upcoming/past panels + receipts grid + vehicles + saved info + loyalty/referral/support promo cards.
+- **Pricing engine** — `VEHICLE_SIZES` reordered with sedan as baseline; hints reworded so compact reads as a small-car discount.
+
+### Phase K — Cinematic polish + LuxuryScheduler (commit `e333b7f`)
+- **3 new atmospheric primitives** in `primitives.tsx`: `FloatingParticles` (drifting dust motes, CSS keyframes), `VolumetricFog` (CSS-driven fog blobs), `CinematicVignette` (corner darkening).
+- **`HeroContentParallax`** — scroll-linked y-lift + opacity fade on hero text.
+- **GlassCTA refined** — Apple-style chromatic dispersion ring on hover (`mix-blend: screen`), `backdrop-saturate(1.4)`, true pressed-state inset shadow.
+- **EmberCTA** — active-state inset shadow + warmer hover border.
+- **Smoother hero → manifesto bleed** (h-56, 4-stop gradient).
+- **New `LuxuryScheduler`** (`src/components/booking/luxury/scheduler.tsx`) replaces the native `<input type="date">` + plain time grid in Step 4. Glass-framed month calendar with animated month transitions, staggered cell reveal, ember-glow selected states, booking-density dots, today ring, premium time-slot cards. ~520 LOC.
+- **Slot logic changes** (synced in both `lib/booking-slots.ts` and the duplicate in `form-steps.tsx`):
+  - Weekday slots narrowed to **5:30 PM and 6:00 PM** only.
+  - **Same-day bookings blocked** — earliest selectable date is tomorrow.
+  - Initial calendar month auto-advances if today is end-of-month.
+- New Tailwind keyframes: `lx-mote-float` / `-rev`, `lx-fog-drift`.
+
+### Phase L — Optional customer accounts (commits `a85f671`, `f27ac3c`, `314d8ba`)
+- **New `BookingSuccessAccount` component** — cinematic post-submit screen. Optional save-my-account choice with inline email + password (8-char min, show/hide toggle, confirmation-required state).
+- **`AuthProvider.signUp` re-enabled** — was hard-coded reject. Customer auth has no admin access; `is_admin()` allowlist is the real security boundary. Returns `needsConfirmation` so UI can branch.
+- **`/portal` auth-session gated.** Cinematic sign-in form (email + password + magic-link fallback) when no session. Falls back to session-based fetch if no token in localStorage.
+- **`/booking/success` (Stripe deposit return)** also renders the new account screen on `isPaid`.
+- **"User already registered" handler** — `BookingSuccessAccount` auto-slides into a sign-in form variant with email locked + password autoFocus.
+- **Ribbon gate simplified** to `!!user && !!portal` — anyone signed in with portal data sees the ribbon; admin signs out from `/portal` to hide it. (Previous attempts using email-match and localStorage flags broke whenever localStorage was cleared during testing.)
+- **Skip signup when already signed in** — admin testing or returning signed-in customer bypasses the account screen entirely.
+- **New SQL migration `supabase/phase_n_customer_accounts.sql`** — adds `get_customer_portal_by_session()` so a signed-in customer can fetch portal data via JWT email match. Delegates to the existing by-token RPC and re-emits the token so cancel/reschedule keep working.
+- **PWA manifest** `start_url` changed from `/quick` to `/` so installed app opens the admin dashboard. `/quick` moved to shortcuts.
+- **Telemetry slider fixed** — `src/index.css`: `overflow-x: hidden` → `overflow-x: clip` on `html, body, #root`. `hidden` was implicitly turning the y-axis into a scroll context, moving the scroll container off `window` and silently breaking every `framer-motion` `useScroll()` (Telemetry tick, ScrollProgress bar, ScrollAmbient parallax). `clip` clips horizontal overflow without creating a scroll context.
+
+### Phase M — Design system Phase 1 (commit `98f570c`)
+New `src/design-system/` module with three token files. No behavior change — pure refactor.
+- **`z-index.ts`** — `Z` + `Z_CLASS` exporting 15 named stacking layers (`underlay` → `boot`). Mirrored Tailwind class strings so the JIT still purges. Every fixed/absolute `z-N` in the booking subtree now references it.
+- **`motion.ts`** — `EASING` (5 named curves: `settle`, `swift`, `pulse`, `sheen`, `ambient`), `DURATION` (11 levels: `instant` → `scanline`), `TRANSITIONS` presets, `stagger(i, opts)` helper. Adopted in `scheduler.tsx`; legacy inlines in `sections.tsx` / `primitives.tsx` can migrate opportunistically.
+- **`surfaces.ts`** — `SURFACES` (glass class strings), `GRADIENTS` + `SHADOWS` (CSS strings for the most-reused atmospheric / selected / ember-CTA backgrounds).
+- **`index.ts`** barrel + **`README.md`** with migration policy.
+
+---
+
+## ⚠️ Manual steps still required for the new flows
+
+1. **Supabase Auth — Email signups enabled.** Dashboard → Authentication → Providers → Email → expand → **Enable Sign Up** = ON. (Jayden has done this.)
+2. **Supabase Auth — Email confirmation disabled.** Same panel → **Confirm email** = OFF. Otherwise customers get stuck on "Check your inbox" + Supabase's built-in email is rate-limited on the free tier. (Jayden has done this.)
+3. **Run `supabase/phase_n_customer_accounts.sql`** in Supabase SQL editor. Without it, cross-device sign-in shows "Almost there" gate instead of the dashboard. Same-device signup-after-booking works without it. **Status: ✅ done — customer accounts confirmed working end-to-end.**
+4. **PWA reinstall** if the desktop app still opens `/quick` or `/book` — browsers cache the old manifest, so uninstall + reinstall is required for `start_url: "/"` to take effect.
+
+---
+
+## Architecture conventions established this session
+
+- **Z-index** — every new fixed/absolute/sticky surface should reference `Z_CLASS.*` from `@/design-system`. Add new named layers to `z-index.ts` rather than introducing inline values.
+- **Motion** — new framer-motion `transition` props should use `EASING.*` + `DURATION.*` (or a `TRANSITIONS.*` preset). The literal `[0.16, 1, 0.3, 1]` lives behind `EASING.settle`.
+- **`overflow-x: clip`** — never use `overflow-x: hidden` on root/body/#root. It silently moves the scroll container off `window` and breaks every `useScroll()` on the page.
+- **Slot duplication** — `timeSlotsForDate` / `availabilityHintForDate` exists in BOTH `lib/booking-slots.ts` (canonical) and `form-steps.tsx` (duplicate). Keep them in sync when editing slot hours.
+
+---
+
+## Suggested next phases (any can be the next session's PR)
+
+- **Phase 2 — Split god-files.** `form-steps.tsx` (1880 LOC), `sections.tsx` (1799 LOC), `primitives.tsx` (1167 LOC) — break into per-step / per-section / per-primitive-family files. Mechanical, high readability win, ~30 file moves.
+- **Phase 3 — `<Section>` primitive.** Every section in `sections.tsx` repeats the same `bg-obsidian-950/X`, `py-28 md:py-40`, `scroll-mt-24`, atmosphere stack. One primitive replaces ~400 LOC of duplication.
+- **Phase 4 — Performance audit.** Lighthouse + React Profiler against `/book`, identify real bottlenecks (not guesses), fix top 3–5 measured issues.
+- **Continue motion adoption** — opportunistically replace remaining inline `[0.16, 1, 0.3, 1]` etc. in `sections.tsx` / `primitives.tsx` with `EASING.settle` + `DURATION.*`.
+
+---
+
+## Earlier — Phase H4 + Phase H7 — Customer/Pricing Intelligence + AI Assistant
+
+The two intelligence phases that don't require Google Cloud setup. Command
 Core is now a real assistant: you can type a question into the input bar and
 get a grounded answer from real business data, with cited external sources
 when the model goes to the web.

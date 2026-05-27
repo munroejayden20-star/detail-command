@@ -334,7 +334,7 @@ export function Hairline({
       className={`relative h-px w-full origin-left bg-gradient-to-r from-transparent via-white/15 to-transparent ${className}`}
       initial={{ scaleX: 0 }}
       whileInView={{ scaleX: 1 }}
-      viewport={{ once: true, amount: 0.4 }}
+      viewport={{ once: true, amount: 0.55 }}
       transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay }}
     />
   );
@@ -401,7 +401,7 @@ export function RevealText({
   stagger?: number;
 }) {
   const ref = useRef<HTMLElement | null>(null);
-  const inView = useInView(ref, { once: true, amount: 0.25 });
+  const inView = useInView(ref, { once: true, amount: 0.45 });
   const reduced = useReducedMotion();
   const words = text.split(" ");
 
@@ -480,7 +480,7 @@ export function Reveal({
       className={className}
       initial={{ opacity: 0, y, filter: "blur(8px)" }}
       whileInView={{ opacity: 1, y: 0, filter: "blur(0)" }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0.4, margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1], delay }}
     >
       {children}
@@ -1155,7 +1155,12 @@ export function ScrollAmbient() {
   const reduced = useReducedMotion();
 
   // Smooth the raw scroll progress so all derived motion values inherit ease.
-  const smooth = useSpring(scrollYProgress, { stiffness: 80, damping: 22, mass: 0.4 });
+  // Tighter than a typical "buttery" spring on purpose — the soft profile
+  // (stiffness 80 / mass 0.4) had a visible catch-up lag on the first scroll
+  // event after page load, which read as jitter. This profile critically
+  // tracks scroll (no perceptible lag) while still ironing out trackpad
+  // micro-jitter at high scroll resolution.
+  const smooth = useSpring(scrollYProgress, { stiffness: 220, damping: 36, mass: 0.3 });
 
   const gridX = useTransform(smooth, [0, 1], ["0px", "60px"]);
   const gridY = useTransform(smooth, [0, 1], ["0px", "-120px"]);
