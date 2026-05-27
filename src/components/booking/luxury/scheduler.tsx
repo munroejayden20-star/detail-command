@@ -35,7 +35,7 @@ import {
   availabilityHintForDate,
   type TimeSlot,
 } from "@/lib/booking-slots";
-import { isSlotBooked } from "./form-steps";
+import { isSlotBooked } from "./form-steps/slot-helpers";
 
 const BOOKING_WINDOW_DAYS = 60;
 const WEEK_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
