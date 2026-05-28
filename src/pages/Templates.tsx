@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { Plus, Copy, Check, Trash2, Pencil } from "lucide-react";
+import { motion } from "framer-motion";
+import { Plus, Copy, Check, Trash2, Pencil, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -14,11 +13,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { SectionHeader } from "@/components/ui/section-header";
 import { toast } from "sonner";
 import { useStore, makeId } from "@/store/store";
 import type { Template } from "@/lib/types";
 import { TEMPLATE_TOKENS } from "@/lib/messageTemplate";
+import { cn } from "@/lib/utils";
+import { LuxAmbient, LuxEmptyState } from "@/components/dashboard/lux/primitives";
 
 const TAGS = ["intro", "booking", "confirm", "follow_up", "other"];
 
@@ -35,79 +35,182 @@ export function TemplatesPage() {
     setTimeout(() => setCopied(null), 1500);
   }
 
-  return (
-    <div className="space-y-5">
-      <SectionHeader
-        title="Message templates"
-        description="One-tap copy for the things you say all the time."
-        actions={
-          <Button onClick={() => { setEditing(undefined); setOpen(true); }}>
-            <Plus className="h-4 w-4" /> New template
-          </Button>
-        }
-      />
+  function openNew() {
+    setEditing(undefined);
+    setOpen(true);
+  }
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {data.templates.map((t) => (
-          <Card key={t.id} className="group">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{t.title}</p>
-                  <Badge variant="outline" className="mt-1 capitalize text-[10px]">
-                    {t.tag.replace("_", " ")}
-                  </Badge>
-                </div>
-                <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    onClick={() => {
-                      setEditing(t);
-                      setOpen(true);
-                    }}
-                    className="rounded-md p-1 text-muted-foreground hover:bg-accent"
-                    aria-label="Edit"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Delete "${t.title}"?`)) {
-                        dispatch({ type: "deleteTemplate", id: t.id });
-                        toast.success("Template deleted");
-                      }
-                    }}
-                    className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
-                {t.body}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => copyText(t)}
-              >
-                {copied === t.id ? (
-                  <>
-                    <Check className="h-4 w-4" /> Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" /> Copy text
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+  return (
+    <div className="relative -mx-4 -mt-4 min-h-[calc(100vh-3rem)] bg-obsidian-950 px-4 pt-6 pb-12 text-platinum-100 sm:-mx-6 sm:px-6 md:-mx-10 md:-mt-6 md:px-10 md:pt-9 md:pb-16">
+      <LuxAmbient />
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="relative space-y-6"
+      >
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[9.5px] uppercase tracking-[0.32em] text-ember-300">
+              Library · {data.templates.length}
+            </p>
+            <h1 className="mt-1.5 font-sans text-3xl font-extralight leading-tight tracking-tight text-platinum-50 sm:text-4xl">
+              Message templates
+            </h1>
+            <p className="mt-2 text-[13px] leading-relaxed text-platinum-300/80">
+              One-tap copy for the things you say all the time.
+            </p>
+          </div>
+          <NewTemplateButton onClick={openNew} />
+        </section>
+
+        {data.templates.length === 0 ? (
+          <LuxEmptyState
+            icon={<FileText className="h-5 w-5" />}
+            title="No templates yet"
+            description="Save your most-used messages once — copy them with one tap forever after."
+            action={<NewTemplateButton onClick={openNew} small />}
+          />
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {data.templates.map((t) => (
+              <TemplateCard
+                key={t.id}
+                template={t}
+                copied={copied === t.id}
+                onCopy={() => copyText(t)}
+                onEdit={() => {
+                  setEditing(t);
+                  setOpen(true);
+                }}
+                onDelete={() => {
+                  if (window.confirm(`Delete "${t.title}"?`)) {
+                    dispatch({ type: "deleteTemplate", id: t.id });
+                    toast.success("Template deleted");
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </motion.div>
 
       <TemplateDialog open={open} onOpenChange={setOpen} template={editing} />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+function NewTemplateButton({ onClick, small = false }: { onClick: () => void; small?: boolean }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.96 }}
+      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        "group/lux-btn relative inline-flex shrink-0 items-center gap-2 overflow-hidden border border-ember-500/35 bg-gradient-to-b from-ember-500/12 via-ember-500/8 to-ember-500/14 font-medium uppercase tracking-[0.22em] text-platinum-50 backdrop-blur-md transition-all duration-200 hover:border-ember-400/55 hover:from-ember-500/18 hover:to-ember-500/22",
+        small ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-[11px]",
+      )}
+      style={{ borderRadius: 999 }}
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-full"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,220,200,0.18) 0%, transparent 100%)",
+        }}
+      />
+      <Plus className="relative h-3.5 w-3.5 text-ember-300" />
+      <span className="relative">New template</span>
+    </motion.button>
+  );
+}
+
+function TemplateCard({
+  template: t,
+  copied,
+  onCopy,
+  onEdit,
+  onDelete,
+}: {
+  template: Template;
+  copied: boolean;
+  onCopy: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      className="group/lux-tpl relative isolate overflow-hidden border border-white/10 bg-gradient-to-b from-obsidian-850/90 via-obsidian-900/92 to-obsidian-900/95 p-5 backdrop-blur-[12px] backdrop-saturate-150 transition-all duration-200 hover:border-white/20"
+      style={{ borderRadius: 4 }}
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 4px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 4px)",
+          backgroundSize: "8px 8px",
+        }}
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-px scale-y-0 bg-ember-400/70 transition-transform duration-200 group-hover/lux-tpl:scale-y-100"
+        style={{ transformOrigin: "center" }}
+      />
+      <div className="relative">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-sans text-[15px] font-light leading-tight text-platinum-50">
+              {t.title}
+            </p>
+            <span className="mt-1.5 inline-block rounded-full border border-white/10 bg-white/[0.03] px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.22em] text-platinum-300/75">
+              {t.tag.replace("_", " ")}
+            </span>
+          </div>
+          <div className="flex gap-1 opacity-0 transition-opacity group-hover/lux-tpl:opacity-100">
+            <button
+              onClick={onEdit}
+              className="rounded-md p-1.5 text-platinum-300/65 transition-colors hover:bg-white/[0.05] hover:text-platinum-100"
+              aria-label="Edit"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="rounded-md p-1.5 text-platinum-300/65 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
+              aria-label="Delete"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        <p className="mt-3 whitespace-pre-wrap text-[12.5px] leading-relaxed text-platinum-200/85">
+          {t.body}
+        </p>
+        <button
+          onClick={onCopy}
+          className={cn(
+            "mt-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.22em] transition-all duration-200",
+            copied
+              ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+              : "border-white/12 bg-white/[0.03] text-platinum-200/85 hover:border-ember-400/45 hover:bg-ember-500/10 hover:text-ember-200",
+          )}
+        >
+          {copied ? (
+            <>
+              <Check className="h-3.5 w-3.5" /> Copied
+            </>
+          ) : (
+            <>
+              <Copy className="h-3.5 w-3.5" /> Copy text
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
