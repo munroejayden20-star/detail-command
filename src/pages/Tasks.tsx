@@ -1,13 +1,42 @@
+/* ============================================================================
+ * TasksPage — admin worklist, cinematic retreat.
+ *
+ * Same selectors, same dispatch, same TaskQuickAdd dialog. The KPI strip
+ * uses LuxStat with "overdue" elevated to signal tone when non-zero so the
+ * dashboard reads "act here" at a glance.
+ *
+ * Filters are condensed into a single horizontal row of glass pills — the
+ * dual-rail approach in the shadcn version was visually noisy.
+ * ========================================================================== */
+
 import { useState, useMemo } from "react";
 import { format, parseISO, isToday, isAfter, startOfDay } from "date-fns";
-import { Plus, Trash2, Repeat as RepeatIcon, Search } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  AlertTriangle,
+  CheckSquare,
+  Clock,
+  Plus,
+  Repeat as RepeatIcon,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
+import { useStore } from "@/store/store";
+import { useRegisterIrisContext } from "@/components/iris/PageContext";
+import { TASK_CATEGORIES, type Task, type TaskCategory } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import {
+  LuxAmbient,
+  LuxCard,
+  LuxEmptyState,
+  LuxStat,
+} from "@/components/dashboard/lux/primitives";
 
-/** Has the due moment passed? For date-only values ("2026-05-02") a task is
- *  only "overdue" once today's calendar day is AFTER the due day in local time
- *  — picking May 2 should NOT show overdue at 6 PM on May 1. For datetime
- *  values ("2026-05-02T15:30") it's overdue once the wall-clock minute passes. */
 function hasTime(dueDate: string) {
-  return dueDate.length > 10; // "YYYY-MM-DD" is 10 chars
+  return dueDate.length > 10;
 }
 function isTaskOverdue(dueDate: string): boolean {
   const due = parseISO(dueDate);
@@ -18,22 +47,6 @@ function formatTaskDue(dueDate: string): string {
   const due = parseISO(dueDate);
   return hasTime(dueDate) ? format(due, "MMM d · h:mm a") : format(due, "MMM d");
 }
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmptyState } from "@/components/ui/empty-state";
-import { SectionHeader } from "@/components/ui/section-header";
-import { Stat } from "@/components/ui/stat";
-import { CheckSquare, Clock, AlertTriangle } from "lucide-react";
-import { TaskQuickAdd } from "@/components/tasks/TaskQuickAdd";
-import { useStore } from "@/store/store";
-import { useRegisterIrisContext } from "@/components/iris/PageContext";
-import { TASK_CATEGORIES, type Task, type TaskCategory } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 export function TasksPage() {
   const { data, dispatch } = useStore();
@@ -55,7 +68,7 @@ export function TasksPage() {
       list = list.filter(
         (t) =>
           t.title.toLowerCase().includes(q) ||
-          (t.notes ?? "").toLowerCase().includes(q)
+          (t.notes ?? "").toLowerCase().includes(q),
       );
     }
     return list.sort((a, b) => {
@@ -66,121 +79,140 @@ export function TasksPage() {
       const order = { high: 0, medium: 1, low: 2 } as const;
       return order[a.priority] - order[b.priority];
     });
-  }, [data.tasks, filter, category]);
+  }, [data.tasks, filter, category, priority, query]);
 
   const counts = useMemo(() => {
-    const open = data.tasks.filter((t) => !t.completed).length;
+    const openC = data.tasks.filter((t) => !t.completed).length;
     const overdue = data.tasks.filter(
-      (t) => !t.completed && t.dueDate && isTaskOverdue(t.dueDate)
+      (t) => !t.completed && t.dueDate && isTaskOverdue(t.dueDate),
     ).length;
     const today = data.tasks.filter(
-      (t) => !t.completed && t.dueDate && isToday(parseISO(t.dueDate)) && !isTaskOverdue(t.dueDate)
+      (t) => !t.completed && t.dueDate && isToday(parseISO(t.dueDate)) && !isTaskOverdue(t.dueDate),
     ).length;
-    return { open, overdue, today };
+    return { open: openC, overdue, today };
   }, [data.tasks]);
 
+  const hasActiveFilter = !!query || category !== "all" || priority !== "all";
+
   return (
-    <div className="space-y-6">
-      <SectionHeader
-        title="Tasks"
-        description="Supplies, follow-ups, maintenance, marketing — everything outside the job itself."
-        actions={
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" /> New task
-          </Button>
-        }
-      />
+    <div className="relative -mx-4 -mt-4 min-h-[calc(100vh-3rem)] bg-obsidian-950 px-4 pt-6 pb-12 text-platinum-100 sm:-mx-6 sm:px-6 md:-mx-10 md:-mt-6 md:px-10 md:pt-9 md:pb-16">
+      <LuxAmbient />
 
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        <Stat
-          label="Open tasks"
-          value={counts.open}
-          icon={<CheckSquare className="h-4 w-4" />}
-          hint={counts.open === 0 ? "All caught up" : "Still on the list"}
-        />
-        <Stat
-          label="Due today"
-          value={counts.today}
-          icon={<Clock className="h-4 w-4" />}
-          hint={counts.today === 0 ? "Nothing today" : "Get these done"}
-        />
-        <Stat
-          label="Overdue"
-          value={counts.overdue}
-          icon={<AlertTriangle className="h-4 w-4" />}
-          trend={counts.overdue > 0 ? "down" : "up"}
-          hint={counts.overdue === 0 ? "On time" : "Past their date"}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <TabsList>
-              <TabsTrigger value="open">Open</TabsTrigger>
-              <TabsTrigger value="done">Done</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <div className="relative max-w-xs flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks…"
-              className="pl-9"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="relative space-y-6"
+      >
+        {/* ═══ Hero ═══ */}
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[9.5px] uppercase tracking-[0.32em] text-ember-300">
+              Worklist · {counts.open} open
+            </p>
+            <h1 className="mt-1.5 font-sans text-3xl font-extralight leading-tight tracking-tight text-platinum-50 sm:text-4xl">
+              Tasks
+            </h1>
+            <p className="mt-2 text-[13px] leading-relaxed text-platinum-300/80">
+              Supplies, follow-ups, maintenance, marketing — everything outside the job itself.
+            </p>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button
-            size="sm"
-            variant={category === "all" ? "default" : "outline"}
-            onClick={() => setCategory("all")}
-          >
-            All
-          </Button>
-          {TASK_CATEGORIES.map((c) => (
-            <Button
-              key={c.value}
-              size="sm"
-              variant={category === c.value ? "default" : "outline"}
-              onClick={() => setCategory(c.value)}
-            >
-              {c.label}
-            </Button>
-          ))}
-          <span className="mx-2 hidden h-5 w-px bg-border sm:inline-block" />
-          {(["all", "high", "medium", "low"] as const).map((p) => (
-            <Button
-              key={p}
-              size="sm"
-              variant={priority === p ? "default" : "outline"}
-              onClick={() => setPriority(p)}
-              className="capitalize"
-            >
-              {p === "all" ? "Any priority" : `${p} priority`}
-            </Button>
-          ))}
-          {(query || category !== "all" || priority !== "all") && (
-            <button
-              onClick={() => {
-                setQuery("");
-                setCategory("all");
-                setPriority("all");
-              }}
-              className="ml-1 rounded-md border border-dashed px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
-            >
-              Reset filters
-            </button>
-          )}
-        </div>
-      </div>
+          <NewTaskButton onClick={() => setOpen(true)} />
+        </section>
 
-      <Card>
-        <CardContent className="space-y-1 p-3">
+        {/* ═══ KPI strip ═══ */}
+        <section className="grid gap-3 sm:grid-cols-3">
+          <LuxStat
+            kicker="Open tasks"
+            value={counts.open}
+            icon={<CheckSquare className="h-3.5 w-3.5" />}
+            hint={counts.open === 0 ? "All caught up" : "Still on the list"}
+          />
+          <LuxStat
+            kicker="Due today"
+            value={counts.today}
+            icon={<Clock className="h-3.5 w-3.5" />}
+            hint={counts.today === 0 ? "Nothing today" : "Get these done"}
+          />
+          <LuxStat
+            kicker="Overdue"
+            value={counts.overdue}
+            icon={<AlertTriangle className="h-3.5 w-3.5" />}
+            hint={counts.overdue === 0 ? "On time" : "Past their date"}
+            emphasis={counts.overdue > 0}
+          />
+        </section>
+
+        {/* ═══ Controls ═══ */}
+        <section className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-1.5">
+              {(["open", "done", "all"] as const).map((f) => (
+                <FilterPill
+                  key={f}
+                  active={filter === f}
+                  onClick={() => setFilter(f)}
+                  label={f === "open" ? "Open" : f === "done" ? "Done" : "All"}
+                />
+              ))}
+            </div>
+            <div className="relative max-w-xs flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-platinum-300/55" />
+              <input
+                placeholder="Search tasks…"
+                className="block w-full appearance-none rounded-full border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-[13px] text-platinum-50 placeholder:text-platinum-300/45 backdrop-blur-sm outline-none transition-all duration-200 focus:border-ember-400/55 focus:bg-white/[0.05] focus:[box-shadow:0_0_0_4px_rgba(221,41,20,0.08)]"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <FilterPill
+              tone="subtle"
+              active={category === "all"}
+              onClick={() => setCategory("all")}
+              label="All categories"
+            />
+            {TASK_CATEGORIES.map((c) => (
+              <FilterPill
+                key={c.value}
+                tone="subtle"
+                active={category === c.value}
+                onClick={() => setCategory(c.value)}
+                label={c.label}
+              />
+            ))}
+            <span aria-hidden className="mx-1.5 hidden h-5 w-px bg-white/10 sm:inline-block" />
+            {(["all", "high", "medium", "low"] as const).map((p) => (
+              <FilterPill
+                key={p}
+                tone="subtle"
+                active={priority === p}
+                onClick={() => setPriority(p)}
+                label={p === "all" ? "Any priority" : `${p} priority`}
+              />
+            ))}
+            {hasActiveFilter && (
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setCategory("all");
+                  setPriority("all");
+                }}
+                className="ml-1 rounded-full border border-dashed border-white/15 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/65 transition-colors hover:border-white/25 hover:text-platinum-100"
+              >
+                Reset filters
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* ═══ List ═══ */}
+        <LuxCard className="px-1 py-1">
           {filtered.length === 0 ? (
-            <EmptyState
+            <LuxEmptyState
+              icon={<CheckSquare className="h-5 w-5" />}
               title={
                 data.tasks.length === 0
                   ? "No tasks yet"
@@ -195,72 +227,148 @@ export function TasksPage() {
                   ? "All caught up. Add a task when something comes up."
                   : "Try a different filter."
               }
-              action={
-                <Button size="sm" onClick={() => setOpen(true)}>
-                  <Plus className="h-4 w-4" /> Add your first task
-                </Button>
-              }
+              action={<NewTaskButton small onClick={() => setOpen(true)} />}
             />
           ) : (
-            filtered.map((t) => (
-              <TaskRow
-                key={t.id}
-                task={t}
-                onToggle={() =>
-                  dispatch({
-                    type: "updateTask",
-                    id: t.id,
-                    patch: { completed: !t.completed },
-                  })
-                }
-                onDelete={() => {
-                  dispatch({ type: "deleteTask", id: t.id });
-                  toast.success("Task deleted");
-                }}
-              />
-            ))
+            <ul>
+              {filtered.map((t) => (
+                <TaskRow
+                  key={t.id}
+                  task={t}
+                  onToggle={() =>
+                    dispatch({
+                      type: "updateTask",
+                      id: t.id,
+                      patch: { completed: !t.completed },
+                    })
+                  }
+                  onDelete={() => {
+                    dispatch({ type: "deleteTask", id: t.id });
+                    toast.success("Task deleted");
+                  }}
+                />
+              ))}
+            </ul>
           )}
-        </CardContent>
-      </Card>
+        </LuxCard>
+      </motion.div>
 
       <TaskQuickAdd open={open} onOpenChange={setOpen} />
     </div>
   );
 }
 
-function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => void; onDelete: () => void }) {
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+function NewTaskButton({ onClick, small = false }: { onClick: () => void; small?: boolean }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.96 }}
+      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        "group/lux-btn relative inline-flex shrink-0 items-center gap-2 overflow-hidden border border-ember-500/35 bg-gradient-to-b from-ember-500/12 via-ember-500/8 to-ember-500/14 font-medium uppercase tracking-[0.22em] text-platinum-50 backdrop-blur-md transition-all duration-200 hover:border-ember-400/55 hover:from-ember-500/18 hover:to-ember-500/22",
+        small ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-[11px]",
+      )}
+      style={{ borderRadius: 999 }}
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-full"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,220,200,0.18) 0%, transparent 100%)",
+        }}
+      />
+      <Plus className="relative h-3.5 w-3.5 text-ember-300" />
+      <span className="relative">New task</span>
+    </motion.button>
+  );
+}
+
+function FilterPill({
+  active,
+  onClick,
+  label,
+  tone = "default",
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  tone?: "default" | "subtle";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center rounded-full border font-medium uppercase tracking-[0.18em] transition-all duration-200",
+        tone === "subtle" ? "px-2.5 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]",
+        active
+          ? "border-ember-400/45 bg-ember-500/10 text-platinum-50"
+          : "border-white/10 bg-white/[0.02] text-platinum-300/75 hover:border-white/20 hover:bg-white/[0.04] hover:text-platinum-100",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function TaskRow({
+  task,
+  onToggle,
+  onDelete,
+}: {
+  task: Task;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
   const overdue = !task.completed && !!task.dueDate && isTaskOverdue(task.dueDate);
   const dueToday = !task.completed && !!task.dueDate && isToday(parseISO(task.dueDate)) && !overdue;
   const cat = TASK_CATEGORIES.find((c) => c.value === task.category);
 
   return (
-    <div
+    <li
       className={cn(
-        "group flex items-center gap-3 rounded-md p-2.5 transition-colors duration-fast hover:bg-hover",
-        task.completed && "opacity-60"
+        "group/task relative flex items-center gap-3 border-b border-white/[0.06] px-3 py-2.5 transition-colors duration-150 last:border-b-0 hover:bg-white/[0.025]",
+        task.completed && "opacity-55",
       )}
     >
-      <Checkbox checked={task.completed} onCheckedChange={onToggle} className="mt-0.5" />
+      {/* Hover ember rail */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-px scale-y-0 bg-ember-400/70 transition-transform duration-200 group-hover/task:scale-y-100"
+        style={{ transformOrigin: "center" }}
+      />
+
+      <Checkbox
+        checked={task.completed}
+        onCheckedChange={onToggle}
+        className="mt-0.5 border-white/30 data-[state=checked]:border-ember-400/70 data-[state=checked]:bg-ember-500/30"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <p
             className={cn(
-              "text-sm font-medium leading-tight",
-              task.completed && "line-through text-muted-foreground"
+              "text-[13px] font-light leading-tight text-platinum-50",
+              task.completed && "text-platinum-300/60 line-through",
             )}
           >
             {task.title}
           </p>
           <PriorityDot priority={task.priority} />
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-          {cat ? <Badge variant="outline">{cat.label}</Badge> : null}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+          {cat ? (
+            <span className="rounded-full border border-white/10 bg-white/[0.03] px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.22em] text-platinum-300/75">
+              {cat.label}
+            </span>
+          ) : null}
           {task.dueDate ? (
             <span
               className={cn(
-                "tabular-nums",
-                overdue && "text-rose-600 font-medium dark:text-rose-400",
-                dueToday && "text-amber-600 font-medium dark:text-amber-400"
+                "font-mono tabular-nums",
+                overdue ? "text-rose-300" : dueToday ? "text-ember-300" : "text-platinum-300/65",
               )}
             >
               {overdue
@@ -273,7 +381,7 @@ function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
             </span>
           ) : null}
           {task.recurring && task.recurring !== "none" ? (
-            <span className="inline-flex items-center gap-1 capitalize">
+            <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/65">
               <RepeatIcon className="h-3 w-3" /> {task.recurring}
             </span>
           ) : null}
@@ -281,22 +389,22 @@ function TaskRow({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
       </div>
       <button
         onClick={onDelete}
-        className="opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive p-1 rounded-md"
+        className="rounded-md p-1 text-platinum-300/55 opacity-0 transition-all duration-150 hover:bg-rose-500/10 hover:text-rose-300 group-hover/task:opacity-100"
         aria-label="Delete task"
       >
         <Trash2 className="h-4 w-4" />
       </button>
-    </div>
+    </li>
   );
 }
 
 function PriorityDot({ priority }: { priority: "low" | "medium" | "high" }) {
   const tone =
     priority === "high"
-      ? "bg-rose-500 ring-rose-500/30"
+      ? "bg-rose-400 ring-rose-500/30"
       : priority === "medium"
-      ? "bg-amber-500 ring-amber-500/30"
-      : "bg-muted-foreground/40 ring-muted-foreground/20";
+      ? "bg-amber-400 ring-amber-500/25"
+      : "bg-platinum-300/35 ring-white/10";
   return (
     <span
       className={cn("h-2 w-2 shrink-0 rounded-full ring-2", tone)}
