@@ -20,9 +20,28 @@ export function Layout() {
 
   return (
     <IrisPageContextProvider>
-      <div className="flex h-full w-full bg-background">
+      <div className="relative flex h-full w-full bg-obsidian-950 text-platinum-100">
+        {/* Atmospheric ember orbs that bleed through the whole admin shell,
+            tying the dark surface together regardless of which page is mounted. */}
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          <div
+            className="absolute -left-32 -top-32 h-[55vh] w-[55vh] rounded-full blur-3xl motion-reduce:opacity-40"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(221,41,20,0.07) 0%, rgba(221,41,20,0.015) 40%, transparent 70%)",
+            }}
+          />
+          <div
+            className="absolute -right-40 bottom-0 h-[60vh] w-[60vh] rounded-full blur-3xl motion-reduce:opacity-40"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(168,114,70,0.05) 0%, transparent 65%)",
+            }}
+          />
+        </div>
+
         <Sidebar open={open} onClose={() => setOpen(false)} />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col">
           <TopBar onMenu={() => setOpen((o) => !o)} />
           <UpdateBanner />
           <MigrationBanner />

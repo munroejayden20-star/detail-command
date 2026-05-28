@@ -1,6 +1,5 @@
 import { Menu, Moon, Sun, Plus, Search, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { useStore } from "@/store/store";
 import { useEffect, useState } from "react";
@@ -59,25 +58,34 @@ export function TopBar({ onMenu }: TopBarProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border/80 bg-background/75 px-4 backdrop-blur-md md:px-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden"
+      <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-white/[0.06] bg-obsidian-950/70 px-4 backdrop-blur-xl backdrop-saturate-150 md:px-6">
+        {/* Hairline of light at the bottom of the header — "light from above" cue */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.07) 50%, transparent 100%)",
+          }}
+        />
+
+        <button
+          type="button"
           onClick={onMenu}
           aria-label="Open menu"
+          className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md text-platinum-300/80 transition-colors hover:bg-white/[0.05] hover:text-platinum-50"
         >
           <Menu className="h-5 w-5" />
-        </Button>
+        </button>
 
         <div className="hidden md:block">
-          <p className="text-sm font-semibold tracking-tight">
+          <p className="font-sans text-[13px] font-light tracking-tight text-platinum-50">
             {format(new Date(), "EEEE, MMMM d")}
           </p>
-          <p className="text-[11px] text-muted-foreground">
-            <span className="tabular-nums">{todayCount}</span>{" "}
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/70">
+            <span className="tabular-nums text-ember-300">{todayCount}</span>{" "}
             {todayCount === 1 ? "job" : "jobs"} today ·{" "}
-            <span className="tabular-nums">{openTaskCount}</span> open task
+            <span className="tabular-nums text-ember-300">{openTaskCount}</span> open task
             {openTaskCount === 1 ? "" : "s"}
           </p>
         </div>
@@ -88,53 +96,27 @@ export function TopBar({ onMenu }: TopBarProps) {
           aria-label="Search"
           className={[
             "ml-auto md:ml-0 md:w-72",
-            "flex h-9 items-center gap-2 rounded-md border border-border bg-background/60 px-3 text-sm",
-            "text-muted-foreground transition-colors duration-fast",
-            "hover:bg-hover hover:border-foreground/15 hover:text-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 text-[12.5px]",
+            "text-platinum-300/75 transition-all duration-200 backdrop-blur-sm",
+            "hover:border-ember-400/40 hover:bg-white/[0.05] hover:text-platinum-100",
+            "focus-visible:outline-none focus-visible:border-ember-400/55 focus-visible:[box-shadow:0_0_0_4px_rgba(221,41,20,0.08)]",
           ].join(" ")}
         >
           <Search className="h-4 w-4 shrink-0" />
           <span className="hidden md:inline">Search anything…</span>
-          <kbd className="ml-auto hidden md:inline-flex items-center gap-0.5 rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+          <kbd className="ml-auto hidden md:inline-flex items-center gap-0.5 rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[9.5px] text-platinum-300/65">
             {isMac ? "⌘" : "Ctrl"}K
           </kbd>
         </button>
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden md:inline-flex"
-            onClick={() => setTaskOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Task
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden md:inline-flex"
-            onClick={() => setCustOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Customer
-          </Button>
-          <Button
-            size="sm"
-            className="hidden md:inline-flex"
-            onClick={() => setAppOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Appointment
-          </Button>
+          <TopBarAction onClick={() => setTaskOpen(true)} label="Task" hideOnMobile />
+          <TopBarAction onClick={() => setCustOpen(true)} label="Customer" hideOnMobile />
+          <TopBarAction onClick={() => setAppOpen(true)} label="Appointment" primary hideOnMobile />
 
-          {/* Subtle separator between primary actions and utility row */}
-          <span aria-hidden className="mx-1 hidden h-5 w-px bg-border md:block" />
+          <span aria-hidden className="mx-1 hidden h-5 w-px bg-white/[0.08] md:block" />
 
-          <Button
-            variant="ghost"
-            size="icon"
+          <IconButton
             onClick={handleRefresh}
             disabled={refreshing || loading}
             aria-label="Refresh data"
@@ -143,19 +125,17 @@ export function TopBar({ onMenu }: TopBarProps) {
             <RefreshCw
               className={`h-4 w-4 ${refreshing || loading ? "animate-spin" : ""}`}
             />
-          </Button>
+          </IconButton>
           <IrisLauncher className="hidden sm:inline-flex" />
           <NotificationCenter />
-          <Button
-            variant="ghost"
-            size="icon"
+          <IconButton
             onClick={toggle}
             aria-label="Toggle theme"
             className="hidden sm:inline-flex"
           >
             <Sun className="h-4 w-4 dark:hidden" />
             <Moon className="hidden h-4 w-4 dark:block" />
-          </Button>
+          </IconButton>
           <UserMenu />
         </div>
       </header>
@@ -164,5 +144,66 @@ export function TopBar({ onMenu }: TopBarProps) {
       <CustomerDialog open={custOpen} onOpenChange={setCustOpen} />
       <TaskQuickAdd open={taskOpen} onOpenChange={setTaskOpen} />
     </>
+  );
+}
+
+function TopBarAction({
+  onClick,
+  label,
+  primary,
+  hideOnMobile,
+}: {
+  onClick: () => void;
+  label: string;
+  primary?: boolean;
+  hideOnMobile?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        hideOnMobile ? "hidden md:inline-flex" : "inline-flex",
+        "items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.22em] transition-all duration-200",
+        primary
+          ? "border-ember-500/40 bg-gradient-to-b from-ember-500/14 via-ember-500/10 to-ember-500/16 text-platinum-50 hover:border-ember-400/60 hover:from-ember-500/20 hover:to-ember-500/24"
+          : "border-white/10 bg-white/[0.03] text-platinum-200/85 hover:border-white/20 hover:bg-white/[0.05] hover:text-platinum-50",
+      ].join(" ")}
+    >
+      <Plus className={primary ? "h-3.5 w-3.5 text-ember-300" : "h-3.5 w-3.5 text-platinum-300/70"} />
+      {label}
+    </button>
+  );
+}
+
+function IconButton({
+  onClick,
+  disabled,
+  className = "",
+  children,
+  ...props
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  "aria-label": string;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        "inline-flex h-9 w-9 items-center justify-center rounded-md text-platinum-300/80 transition-colors duration-150",
+        "hover:bg-white/[0.05] hover:text-platinum-50",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }

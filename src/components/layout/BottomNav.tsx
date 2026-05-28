@@ -74,9 +74,18 @@ export function BottomNav() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/90 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-white/[0.06] bg-obsidian-950/85 backdrop-blur-xl backdrop-saturate-150 lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
+        {/* Top hairline of light */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.07) 50%, transparent 100%)",
+          }}
+        />
         <div className="grid grid-cols-5">
           {PRIMARY.map((item) => (
             <NavLink
@@ -86,24 +95,24 @@ export function BottomNav() {
               className={({ isActive }) =>
                 cn(
                   "relative flex flex-col items-center justify-center gap-0.5 py-2.5",
-                  "text-[10px] font-medium tracking-tight transition-colors duration-fast",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  "font-mono text-[9.5px] uppercase tracking-[0.18em] transition-colors duration-150",
+                  isActive ? "text-ember-200" : "text-platinum-300/75"
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  {/* Top accent bar on active */}
                   {isActive ? (
                     <span
                       aria-hidden
-                      className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary"
+                      className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-ember-400"
+                      style={{ boxShadow: "0 0 8px rgba(248,114,72,0.6)" }}
                     />
                   ) : null}
                   <item.icon
                     className={cn(
-                      "h-5 w-5 transition-transform duration-fast",
-                      isActive ? "scale-110" : "scale-100"
+                      "h-5 w-5 transition-transform duration-150",
+                      isActive ? "scale-110 text-ember-300" : "scale-100 text-platinum-300/75"
                     )}
                   />
                   {item.label}
@@ -116,11 +125,11 @@ export function BottomNav() {
             onClick={() => setMoreOpen(true)}
             className={cn(
               "flex flex-col items-center justify-center gap-0.5 py-2.5",
-              "text-[10px] font-medium tracking-tight",
-              moreOpen ? "text-primary" : "text-muted-foreground"
+              "font-mono text-[9.5px] uppercase tracking-[0.18em] transition-colors duration-150",
+              moreOpen ? "text-ember-200" : "text-platinum-300/75"
             )}
           >
-            <MoreHorizontal className="h-5 w-5" />
+            <MoreHorizontal className={cn("h-5 w-5", moreOpen ? "text-ember-300" : "text-platinum-300/75")} />
             More
           </button>
         </div>
@@ -133,10 +142,13 @@ export function BottomNav() {
         aria-label="New appointment"
         className={[
           "fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full",
-          "bg-primary text-primary-foreground shadow-lift",
+          "border border-ember-400/45 bg-gradient-to-b from-ember-500/95 to-ember-600/95 text-platinum-50",
           "active:scale-95 transition-transform duration-fast lg:hidden",
         ].join(" ")}
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.5rem)" }}
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.5rem)",
+          boxShadow: "0 18px 40px -12px rgba(221,41,20,0.6)",
+        }}
       >
         <Plus className="h-6 w-6" />
       </button>
@@ -148,10 +160,13 @@ export function BottomNav() {
         aria-label="Search"
         className={[
           "fixed left-4 z-30 flex h-12 w-12 items-center justify-center rounded-full",
-          "bg-card text-foreground border border-border shadow-lift",
+          "border border-white/12 bg-obsidian-900/90 text-platinum-100 backdrop-blur-md",
           "active:scale-95 transition-transform duration-fast lg:hidden",
         ].join(" ")}
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.75rem)" }}
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.75rem)",
+          boxShadow: "0 10px 24px -10px rgba(0,0,0,0.6)",
+        }}
       >
         <Search className="h-5 w-5" />
       </button>
@@ -160,26 +175,26 @@ export function BottomNav() {
       {/* "More" sheet */}
       {moreOpen ? (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden animate-fade-in"
+          className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm lg:hidden animate-fade-in"
           onClick={() => setMoreOpen(false)}
         >
           <div
             ref={sheetRef}
             className={cn(
-              "absolute inset-x-0 bottom-0 rounded-t-xl border-t border-border bg-card",
-              "p-4 shadow-elevated animate-slide-up"
+              "absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-white/[0.08] bg-obsidian-950/95 backdrop-blur-xl",
+              "p-4 animate-slide-up"
             )}
             style={{
               paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/15" />
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold tracking-tight">More</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-ember-300">More</p>
               <button
                 onClick={() => setMoreOpen(false)}
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent transition-colors"
+                className="rounded-md p-1 text-platinum-300/65 transition-colors hover:bg-white/[0.05] hover:text-platinum-50"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -194,12 +209,12 @@ export function BottomNav() {
                     navigate(item.to);
                   }}
                   className={cn(
-                    "flex flex-col items-center gap-1.5 rounded-md border border-border/80 bg-card",
-                    "p-3 text-center text-[11px] font-medium",
-                    "transition-colors duration-fast hover:bg-hover hover:border-border"
+                    "flex flex-col items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.02]",
+                    "p-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-platinum-200/85",
+                    "transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.04] hover:text-platinum-50"
                   )}
                 >
-                  <item.icon className="h-5 w-5 text-muted-foreground" />
+                  <item.icon className="h-5 w-5 text-platinum-300/75" />
                   {item.label}
                 </button>
               ))}
