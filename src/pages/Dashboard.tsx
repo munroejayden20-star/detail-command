@@ -1,30 +1,38 @@
+/* ============================================================================
+ * DashboardPage — the admin command center.
+ *
+ * Visual treatment: dark cinematic glass, matching the booking page palette
+ * (obsidian / platinum / ember). Layout treatment: scannable and FAST —
+ * admin needs to read instantly, so reveals are 200ms not 850ms, hover
+ * responses are subtle, and the most operationally urgent stuff lives at
+ * the top of the page.
+ *
+ * Data layer is untouched from the prior version: same selectors, same
+ * dispatch, same dialog components. Only the visual chrome changed —
+ * shadcn Card/Stat/Button replaced with dashboard-local lux primitives
+ * (see ./components/dashboard/lux/primitives.tsx).
+ *
+ * Embedded widgets (BookingRequests, ReviewsDueWidget, WeatherWatchCard)
+ * still render in their original light-themed Card chrome — they're
+ * shared elsewhere and a separate scope to retreat.
+ * ========================================================================== */
+
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
+  AlertCircle,
+  ArrowRight,
+  Bell,
   CalendarDays,
   CheckSquare,
   DollarSign,
-  Plus,
-  TrendingUp,
-  AlertCircle,
-  Sparkles,
-  Bell,
-  ArrowRight,
   MessageSquare,
+  Plus,
+  Sparkles,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { motion } from "framer-motion";
 import { formatBusinessDateTime } from "@/lib/datetime";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Stat } from "@/components/ui/stat";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/ui/empty-state";
 import { AppointmentRow } from "@/components/appointments/AppointmentRow";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
@@ -35,7 +43,7 @@ import { ReviewsDueWidget } from "@/components/reviews/ReviewsDueWidget";
 import { WeatherWatchCard } from "@/components/intelligence/WeatherWatchCard";
 import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { useStore } from "@/store/store";
-import { vehicleStr } from "@/lib/utils";
+import { cn, formatCurrency, vehicleStr } from "@/lib/utils";
 import {
   appointmentsOnDay,
   appointmentsThisWeek,
@@ -44,7 +52,20 @@ import {
   upcomingAppointments,
   weekRevenueEstimate,
 } from "@/lib/selectors";
-import { cn, formatCurrency } from "@/lib/utils";
+import {
+  formatTaskDate,
+  LuxAmbient,
+  LuxCard,
+  LuxCardBody,
+  LuxCardHeader,
+  LuxEmptyState,
+  LuxQuickAction,
+  LuxRow,
+  LuxSectionLink,
+  LuxSevenDay,
+  LuxStat,
+  PriorityDot,
+} from "@/components/dashboard/lux/primitives";
 
 export function DashboardPage() {
   const { data, dispatch } = useStore();
@@ -56,7 +77,7 @@ export function DashboardPage() {
   const [reachAppointmentId, setReachAppointmentId] = useState<string | null>(null);
   const reachAppointment = useMemo(
     () => data.appointments.find((a) => a.id === reachAppointmentId) ?? null,
-    [data.appointments, reachAppointmentId]
+    [data.appointments, reachAppointmentId],
   );
 
   const today = useMemo(() => new Date(), []);
@@ -84,300 +105,318 @@ export function DashboardPage() {
     data.leads.length === 0 &&
     data.tasks.length === 0;
 
+  /* Hero state line — adapts to current operational reality */
+  const heroStatus = isFirstRun
+    ? "Your command center is ready. Add your first appointment, customer, or task to get rolling."
+    : todays.length === 0
+    ? "No appointments today — perfect window to chase leads or restock the kit."
+    : todays.length === 1
+    ? "One job on the books today."
+    : `${todays.length} jobs on the schedule today.`;
+
   return (
-    <div className="space-y-7">
-      {/* Hero */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            {format(today, "EEEE")} · {format(today, "MMMM d")}
-          </p>
-          <h1 className="mt-1.5 text-3xl font-semibold leading-tight tracking-tight">
-            {greeting()}
-            {owner ? (
-              <span className="text-foreground/70">, {owner}</span>
-            ) : null}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            {isFirstRun
-              ? "Your command center is ready. Add your first appointment, customer, or task to get rolling."
-              : todays.length === 0
-              ? "No appointments today — perfect time to chase leads or restock."
-              : todays.length === 1
-              ? "One job on the books today."
-              : `${todays.length} jobs on the schedule today.`}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
-          <Button onClick={() => setAppOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Add Appointment
-          </Button>
-          <Button variant="outline" onClick={() => setCustOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Customer
-          </Button>
-          <Button variant="outline" onClick={() => setTaskOpen(true)}>
-            <Plus className="h-4 w-4" />
-            To-Do
-          </Button>
-        </div>
-      </div>
+    <div className="relative -mx-4 -mt-4 min-h-[calc(100vh-3rem)] bg-obsidian-950 px-4 pt-6 pb-12 text-platinum-100 sm:-mx-6 sm:px-6 md:-mx-10 md:-mt-6 md:px-10 md:pt-9 md:pb-16">
+      <LuxAmbient />
 
-      {/* Stat cards */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Stat
-          label="This week revenue est."
-          value={formatCurrency(weekRevenue)}
-          hint={`${week.length} job${week.length === 1 ? "" : "s"} booked`}
-          icon={<DollarSign className="h-4 w-4" />}
-        />
-        <Stat
-          label="Booked this week"
-          value={week.length}
-          hint={
-            week.filter((a) => a.status === "confirmed").length +
-              " confirmed · " +
-              week.filter((a) => a.status === "scheduled").length +
-              " scheduled"
-          }
-          icon={<CalendarDays className="h-4 w-4" />}
-        />
-        <Stat
-          label="Pending follow-ups"
-          value={followUps}
-          hint={
-            followUps === 0
-              ? "All caught up"
-              : "Reach out before they cool off"
-          }
-          trend={followUps === 0 ? "up" : "down"}
-          icon={<Bell className="h-4 w-4" />}
-        />
-        <Stat
-          label="Open tasks"
-          value={openTasks.length}
-          hint={`${todayTasks.length} due today`}
-          icon={<CheckSquare className="h-4 w-4" />}
-        />
-      </div>
-
-      {/* Booking requests */}
-      <BookingRequests
-        onReachOut={(contact, appt) => {
-          setReachContact(contact);
-          setReachAppointmentId(appt.id);
-        }}
-      />
-
-      {/* Reviews due (Phase F) */}
-      <ReviewsDueWidget />
-
-      {/* Iris — Weather Watch (Phase H3) */}
-      {/* (Needs Attention + Recent Insights live on /iris to keep the
-          dashboard focused on today's operational view.) */}
-      <WeatherWatchCard />
-
-      {/* Two-column grid */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        {/* Today's appointments */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <div className="space-y-0.5">
-              <CardTitle>Today's appointments</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {format(today, "EEEE, MMMM d")} · {todays.length} scheduled
-              </p>
-            </div>
-            <Button asChild size="sm" variant="ghost">
-              <Link to="/calendar" className="gap-1">
-                Calendar <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {todays.length === 0 ? (
-              <EmptyState
-                icon={<CalendarDays className="h-5 w-5" />}
-                title="No appointments yet today"
-                description="Add your first appointment to get started, or use a quiet day to chase leads."
-                action={
-                  <Button size="sm" onClick={() => setAppOpen(true)}>
-                    <Plus className="h-4 w-4" /> Add appointment
-                  </Button>
-                }
-              />
-            ) : (
-              todays.map((a) => <AppointmentRow key={a.id} appointment={a} />)
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Upcoming */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Upcoming</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Next {upcoming.length} on the books
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="relative space-y-6"
+      >
+        {/* ═══ Hero band ═══ */}
+        <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-ember-300">
+              {format(today, "EEEE").toUpperCase()} · {format(today, "MMMM d")}
             </p>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {upcoming.length === 0 ? (
-              <EmptyState
-                icon={<Sparkles className="h-5 w-5" />}
-                title="No upcoming appointments"
-                description="Once you book a job, it'll show up here."
-                action={
-                  <Button size="sm" variant="outline" onClick={() => setAppOpen(true)}>
-                    <Plus className="h-4 w-4" /> Add appointment
-                  </Button>
-                }
-              />
-            ) : (
-              upcoming.map((a) => <AppointmentRow key={a.id} appointment={a} compact />)
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Confirm + Tasks row */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <div className="space-y-0.5">
-              <CardTitle>Needs confirmation</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Jobs within ~48 hours that still need a yes
-              </p>
-            </div>
-            <Badge variant={unconfirmed.length ? "warning" : "secondary"}>
-              {unconfirmed.length} job{unconfirmed.length === 1 ? "" : "s"}
-            </Badge>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {unconfirmed.length === 0 ? (
-              <EmptyState
-                icon={<AlertCircle className="h-5 w-5" />}
-                title="All upcoming jobs are confirmed"
-                description="When a job is within ~48 hours and still scheduled or inquiry, it'll show up here."
-              />
-            ) : (
-              unconfirmed.map((a) => {
-                const cust = data.customers.find((c) => c.id === a.customerId);
-                return (
-                  <ConfirmRow
-                    key={a.id}
-                    apptId={a.id}
-                    customerName={cust?.name ?? "—"}
-                    start={a.start}
-                    onConfirm={() =>
-                      dispatch({
-                        type: "updateAppointment",
-                        id: a.id,
-                        patch: { status: "confirmed", reminderSent: true },
-                      })
-                    }
-                    onReachOut={() => {
-                      if (!cust) return;
-                      setReachContact({
-                        name: cust.name,
-                        phone: cust.phone,
-                        email: cust.email ?? null,
-                        address: cust.address ?? null,
-                        vehicle: vehicleStr(a.vehicle),
-                      });
-                      setReachAppointmentId(a.id);
-                    }}
-                  />
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <div className="space-y-0.5">
-              <CardTitle>Today's tasks</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {openTasks.length} open ·{" "}
-                {todayTasks.length} due today
-              </p>
-            </div>
-            <Button asChild size="sm" variant="ghost">
-              <Link to="/tasks" className="gap-1">
-                All <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {openTasks.length === 0 ? (
-              <EmptyState
-                icon={<CheckSquare className="h-5 w-5" />}
-                title="Inbox zero"
-                description="No open tasks right now."
-              />
-            ) : (
-              <ul className="space-y-0.5">
-                {openTasks.slice(0, 6).map((t) => (
-                  <li
-                    key={t.id}
-                    className="group flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-hover"
-                  >
-                    <Checkbox
-                      checked={t.completed}
-                      onCheckedChange={() =>
-                        dispatch({
-                          type: "updateTask",
-                          id: t.id,
-                          patch: { completed: !t.completed },
-                        })
-                      }
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={cn(
-                          "text-sm leading-tight",
-                          t.completed && "line-through text-muted-foreground"
-                        )}
-                      >
-                        {t.title}
-                      </p>
-                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <PriorityDot priority={t.priority} />
-                        {t.dueDate
-                          ? format(parseISO(t.dueDate), "MMM d")
-                          : "no due date"}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 7-day outlook */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="space-y-0.5">
-            <CardTitle>Next 7 days</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              How the week is filling up
+            <h1 className="mt-2 font-sans text-[clamp(1.9rem,3.5vw,2.6rem)] font-extralight leading-[1.05] tracking-[-0.02em] text-platinum-50">
+              {greeting()}
+              {owner ? (
+                <span className="font-display italic font-light text-ember-200/95">, {owner}</span>
+              ) : null}
+            </h1>
+            <p className="mt-3 max-w-[56ch] text-[13.5px] leading-relaxed text-platinum-300/80">
+              {heroStatus}
             </p>
           </div>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/calendar" className="gap-1">
-              Calendar <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <SevenDayOutlook />
-        </CardContent>
-      </Card>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <LuxQuickAction
+              variant="ember"
+              icon={<Plus className="h-3.5 w-3.5" />}
+              label="Appointment"
+              onClick={() => setAppOpen(true)}
+            />
+            <LuxQuickAction
+              variant="neutral"
+              icon={<Plus className="h-3.5 w-3.5" />}
+              label="Customer"
+              onClick={() => setCustOpen(true)}
+            />
+            <LuxQuickAction
+              variant="neutral"
+              icon={<Plus className="h-3.5 w-3.5" />}
+              label="Task"
+              onClick={() => setTaskOpen(true)}
+            />
+          </div>
+        </section>
+
+        {/* ═══ Pulse strip — 4 KPI tiles ═══
+         *
+         * Week revenue gets emphasis treatment (signal tone, larger number,
+         * ember accent) because it's the one number the owner glances at
+         * first thing every morning. */}
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <LuxStat
+            kicker="Week revenue"
+            value={formatCurrency(weekRevenue)}
+            hint={`${week.length} job${week.length === 1 ? "" : "s"} booked`}
+            icon={<DollarSign className="h-3.5 w-3.5" />}
+            href="/revenue"
+            emphasis
+          />
+          <LuxStat
+            kicker="Booked this week"
+            value={week.length}
+            hint={
+              week.length === 0
+                ? "Open calendar"
+                : `${week.filter((a) => a.status === "confirmed").length} confirmed · ${week.filter((a) => a.status === "scheduled").length} scheduled`
+            }
+            icon={<CalendarDays className="h-3.5 w-3.5" />}
+            href="/calendar"
+          />
+          <LuxStat
+            kicker="Follow-ups"
+            value={followUps}
+            hint={followUps === 0 ? "All caught up" : "Reach out before they cool"}
+            icon={<Bell className="h-3.5 w-3.5" />}
+            href="/leads"
+          />
+          <LuxStat
+            kicker="Open tasks"
+            value={openTasks.length}
+            hint={`${todayTasks.length} due today`}
+            icon={<CheckSquare className="h-3.5 w-3.5" />}
+            href="/tasks"
+          />
+        </section>
+
+        {/* ═══ Operational board — today's schedule + tasks ═══ */}
+        <section className="grid gap-4 lg:grid-cols-3">
+          <LuxCard tone="signal" className="lg:col-span-2">
+            <LuxCardHeader
+              kicker="Today"
+              title="Today's appointments"
+              description={`${format(today, "EEEE, MMMM d")} · ${todays.length} scheduled`}
+              action={<LuxSectionLink to="/calendar" label="Calendar" />}
+            />
+            <LuxCardBody className="space-y-1.5">
+              {todays.length === 0 ? (
+                <LuxEmptyState
+                  icon={<CalendarDays className="h-5 w-5" />}
+                  title="No appointments yet today"
+                  description="Add one to the schedule or use the day to chase leads."
+                  action={
+                    <LuxQuickAction
+                      variant="ember"
+                      icon={<Plus className="h-3.5 w-3.5" />}
+                      label="Add appointment"
+                      onClick={() => setAppOpen(true)}
+                    />
+                  }
+                />
+              ) : (
+                /* AppointmentRow comes from shadcn-styled components — wrap
+                 * in a subtle dark container so it sits cleanly in the
+                 * cinematic frame. */
+                <div className="space-y-1.5 rounded-sm">
+                  {todays.map((a) => (
+                    <div key={a.id} className="[&>*]:!bg-obsidian-900/70 [&>*]:!border-white/8">
+                      <AppointmentRow appointment={a} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </LuxCardBody>
+          </LuxCard>
+
+          <LuxCard>
+            <LuxCardHeader
+              kicker="Inbox"
+              title="Today's tasks"
+              description={`${openTasks.length} open · ${todayTasks.length} due today`}
+              action={<LuxSectionLink to="/tasks" label="All" />}
+            />
+            <LuxCardBody className="space-y-0 p-0">
+              {openTasks.length === 0 ? (
+                <LuxEmptyState
+                  icon={<CheckSquare className="h-5 w-5" />}
+                  title="Inbox zero"
+                  description="No open tasks right now."
+                />
+              ) : (
+                <ul className="divide-y divide-white/8">
+                  {openTasks.slice(0, 6).map((t) => (
+                    <li key={t.id}>
+                      <LuxRow className="flex items-start gap-3">
+                        <Checkbox
+                          checked={t.completed}
+                          onCheckedChange={() =>
+                            dispatch({
+                              type: "updateTask",
+                              id: t.id,
+                              patch: { completed: !t.completed },
+                            })
+                          }
+                          className="mt-0.5"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={cn(
+                              "text-[13.5px] leading-tight text-platinum-100",
+                              t.completed && "line-through text-platinum-300/50",
+                            )}
+                          >
+                            {t.title}
+                          </p>
+                          <p className="mt-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-platinum-300/65">
+                            <PriorityDot priority={t.priority} />
+                            {formatTaskDate(t.dueDate)}
+                          </p>
+                        </div>
+                      </LuxRow>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </LuxCardBody>
+          </LuxCard>
+        </section>
+
+        {/* ═══ Confirmation + Upcoming row ═══ */}
+        <section className="grid gap-4 lg:grid-cols-3">
+          <LuxCard className="lg:col-span-2" tone={unconfirmed.length ? "signal" : "neutral"}>
+            <LuxCardHeader
+              kicker="Action needed"
+              title="Needs confirmation"
+              description="Jobs within ~48 hours that still need a yes"
+              action={
+                <span
+                  className={cn(
+                    "font-mono text-[10px] uppercase tracking-[0.22em]",
+                    unconfirmed.length ? "text-ember-300" : "text-platinum-300/70",
+                  )}
+                >
+                  {unconfirmed.length} job{unconfirmed.length === 1 ? "" : "s"}
+                </span>
+              }
+            />
+            <LuxCardBody className="space-y-0 p-0">
+              {unconfirmed.length === 0 ? (
+                <LuxEmptyState
+                  icon={<AlertCircle className="h-5 w-5" />}
+                  title="All upcoming jobs are confirmed"
+                  description="When a job is within ~48 hours and still scheduled, it'll show up here."
+                />
+              ) : (
+                <ul className="divide-y divide-white/8">
+                  {unconfirmed.map((a) => {
+                    const cust = data.customers.find((c) => c.id === a.customerId);
+                    return (
+                      <li key={a.id}>
+                        <ConfirmRow
+                          customerName={cust?.name ?? "—"}
+                          start={a.start}
+                          onConfirm={() =>
+                            dispatch({
+                              type: "updateAppointment",
+                              id: a.id,
+                              patch: { status: "confirmed", reminderSent: true },
+                            })
+                          }
+                          onReachOut={() => {
+                            if (!cust) return;
+                            setReachContact({
+                              name: cust.name,
+                              phone: cust.phone,
+                              email: cust.email ?? null,
+                              address: cust.address ?? null,
+                              vehicle: vehicleStr(a.vehicle),
+                            });
+                            setReachAppointmentId(a.id);
+                          }}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </LuxCardBody>
+          </LuxCard>
+
+          <LuxCard>
+            <LuxCardHeader
+              kicker="Pipeline"
+              title="Upcoming"
+              description={`Next ${upcoming.length} on the books`}
+            />
+            <LuxCardBody className="space-y-1.5">
+              {upcoming.length === 0 ? (
+                <LuxEmptyState
+                  icon={<Sparkles className="h-5 w-5" />}
+                  title="Nothing upcoming"
+                  description="Once you book a job, it'll show up here."
+                />
+              ) : (
+                <div className="space-y-1.5">
+                  {upcoming.map((a) => (
+                    <div key={a.id} className="[&>*]:!bg-obsidian-900/70 [&>*]:!border-white/8">
+                      <AppointmentRow appointment={a} compact />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </LuxCardBody>
+          </LuxCard>
+        </section>
+
+        {/* ═══ Week outlook ═══ */}
+        <section>
+          <LuxCard>
+            <LuxCardHeader
+              kicker="Outlook"
+              title="Next 7 days"
+              description="How the week is filling up"
+              action={<LuxSectionLink to="/calendar" label="Calendar" />}
+            />
+            <LuxCardBody>
+              <LuxSevenDay />
+            </LuxCardBody>
+          </LuxCard>
+        </section>
+
+        {/* ═══ Embedded widgets ═══
+         *
+         * Live below the operational board because they're not always
+         * present (booking requests come and go, weather only shows when
+         * there's risk, reviews surface when due). Each renders its own
+         * Card chrome — they don't match the dark cinematic frame yet
+         * but the dashboard reads coherently because they sit visually
+         * at the bottom of the page. Retreat is a follow-up scope. */}
+        <div className="space-y-4 pt-2">
+          <BookingRequests
+            onReachOut={(contact, appt) => {
+              setReachContact(contact);
+              setReachAppointmentId(appt.id);
+            }}
+          />
+          <ReviewsDueWidget />
+          <WeatherWatchCard />
+        </div>
+      </motion.div>
 
       <AppointmentDialog open={appOpen} onOpenChange={setAppOpen} />
       <CustomerDialog open={custOpen} onOpenChange={setCustOpen} />
@@ -397,27 +436,12 @@ export function DashboardPage() {
   );
 }
 
-function PriorityDot({
-  priority,
-}: {
-  priority?: "high" | "medium" | "low";
-}) {
-  const color =
-    priority === "high"
-      ? "bg-rose-500"
-      : priority === "medium"
-      ? "bg-amber-500"
-      : "bg-muted-foreground/30";
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
-        color
-      )}
-    />
-  );
-}
+/* ─────────────────────────────────────────────────────────────────────────────
+ * ConfirmRow — dark version of the prior confirm row.
+ *
+ * Two-button action layout (Reach out / Confirm). The Confirm button is
+ * ember to reinforce that confirming is the goal of this surface.
+ * ──────────────────────────────────────────────────────────────────────── */
 
 function ConfirmRow({
   customerName,
@@ -429,105 +453,43 @@ function ConfirmRow({
   start: string;
   onConfirm: () => void;
   onReachOut: () => void;
-  apptId: string;
 }) {
   return (
-    <div
-      className={cn(
-        "group flex items-center justify-between gap-3 rounded-md border border-border/80 bg-card p-3",
-        "transition-colors duration-fast hover:border-border hover:bg-hover"
-      )}
-    >
+    <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 last:border-b-0">
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold leading-tight">
+        <p className="truncate text-[13.5px] font-light text-platinum-50">
           {customerName}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 font-mono text-[10.5px] uppercase tracking-[0.18em] text-platinum-300/65">
           {formatBusinessDateTime(start)}
         </p>
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <Button size="sm" variant="outline" onClick={onReachOut}>
-          <MessageSquare className="h-3.5 w-3.5" />
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={onReachOut}
+          className="group/btn inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.03] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-100 transition-colors hover:border-white/25 hover:bg-white/[0.06]"
+        >
+          <MessageSquare className="h-3 w-3" />
           <span className="hidden sm:inline">Reach out</span>
-        </Button>
-        <Button size="sm" onClick={onConfirm}>
-          Confirm
-        </Button>
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-ember-500/35 bg-gradient-to-b from-ember-500/14 via-ember-500/10 to-ember-500/16 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-50 transition-all duration-200 hover:border-ember-400/55 hover:from-ember-500/20"
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-full"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(255,220,200,0.2) 0%, transparent 100%)",
+            }}
+          />
+          <span className="relative">Confirm</span>
+          <ArrowRight className="relative h-3 w-3" />
+        </button>
       </div>
-    </div>
-  );
-}
-
-function SevenDayOutlook() {
-  const { data } = useStore();
-  const today = new Date();
-  const max = data.settings.maxJobsPerDay || 3;
-
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const appts = appointmentsOnDay(data, d);
-    const revenue = appts.reduce(
-      (s, a) => s + (a.finalPrice ?? a.estimatedPrice),
-      0
-    );
-    return { date: d, appts, revenue };
-  });
-
-  return (
-    <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
-      {days.map(({ date, appts, revenue }, i) => {
-        const filled = appts.length;
-        const pct = Math.min(100, (filled / max) * 100);
-        const isToday = i === 0;
-        const isFull = filled >= max;
-        return (
-          <div
-            key={date.toISOString()}
-            className={cn(
-              "rounded-md border p-3 transition-colors duration-fast",
-              isToday
-                ? "border-primary/40 bg-primary/5"
-                : "border-border/80 bg-card hover:bg-hover"
-            )}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              {isToday ? "Today" : format(date, "EEE")}
-            </p>
-            <p className="text-sm font-semibold leading-tight tabular-nums">
-              {format(date, "MMM d")}
-            </p>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted/60">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all duration-relaxed ease-smooth",
-                  isFull
-                    ? "bg-emerald-500"
-                    : filled > 0
-                    ? "bg-primary"
-                    : "bg-muted-foreground/20"
-                )}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="mt-1.5 text-[11px] text-muted-foreground tabular-nums">
-              {filled}/{max} jobs
-            </p>
-            {revenue > 0 ? (
-              <p
-                className={cn(
-                  "mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums",
-                  isFull ? "text-emerald-600 dark:text-emerald-400" : "text-foreground/80"
-                )}
-              >
-                <TrendingUp className="h-3 w-3" />
-                {formatCurrency(revenue)}
-              </p>
-            ) : null}
-          </div>
-        );
-      })}
     </div>
   );
 }
