@@ -19,7 +19,7 @@
  *
  * Required Supabase function secrets:
  *   STRIPE_SECRET_KEY     - sk_test_... or sk_live_...
- *   APP_URL               - https://jmdetailing.vercel.app (no trailing slash)
+ *   APP_URL               - https://jmdetailing.us (no trailing slash)
  *   SUPABASE_URL          - auto-set by Supabase
  *   SUPABASE_SERVICE_ROLE_KEY - auto-set by Supabase
  */

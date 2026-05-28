@@ -251,6 +251,10 @@ function SignInGate() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [linkSent, setLinkSent] = useState(false);
+  // One-shot banner if the user just finished a password reset.
+  const resetSuccess =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("reset") === "success";
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -317,9 +321,17 @@ function SignInGate() {
             </label>
 
             <label className="block">
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/80">
-                Password
-              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-platinum-300/80">
+                  Password
+                </span>
+                <Link
+                  to="/auth/forgot"
+                  className="font-mono text-[10px] uppercase tracking-[0.24em] text-platinum-300/70 transition-colors hover:text-ember-200"
+                >
+                  Forgot?
+                </Link>
+              </div>
               <div className="relative mt-2">
                 <Lock className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-platinum-300/55" />
                 <input
@@ -345,6 +357,15 @@ function SignInGate() {
                 </button>
               </div>
             </label>
+
+            {resetSuccess && !err && (
+              <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
+                <p className="text-[12px] leading-relaxed text-emerald-200">
+                  Password updated. Sign in with your new password.
+                </p>
+              </div>
+            )}
 
             {err && (
               <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-2">

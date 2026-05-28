@@ -8,6 +8,8 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthGuard } from "@/auth/AuthGuard";
 import { LoginPage } from "@/auth/LoginPage";
 import { AuthCallback } from "@/auth/AuthCallback";
+import { ForgotPasswordPage } from "@/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/auth/ResetPasswordPage";
 import { AccessDeniedPage } from "@/auth/AccessDeniedPage";
 import { Layout } from "@/components/layout/Layout";
 // Dashboard is the default landing page — keep it eager-loaded so the first
@@ -114,6 +116,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/confirm" element={<AuthCallback />} />
+        <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset" element={<ResetPasswordPage />} />
         <Route path="/access-denied" element={<AccessDeniedPage />} />
         <Route path="/book" element={lazyRoute(<BookingPage />)} />
         <Route path="/booking/success" element={lazyRoute(<BookingSuccessPage />)} />

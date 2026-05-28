@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
-import { Loader2, Mail } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { CheckCircle2, Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,26 @@ type Mode = "signin" | "magic";
 
 export function LoginPage() {
   const { user, loading, configured, signIn, signInWithMagicLink } = useAuth();
+  const [params, setParams] = useSearchParams();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const resetSuccess = params.get("reset") === "success";
+
+  // Drop the reset flag from the URL after first render so a refresh
+  // doesn't replay the banner.
+  useEffect(() => {
+    if (!resetSuccess) return;
+    const t = setTimeout(() => {
+      const next = new URLSearchParams(params);
+      next.delete("reset");
+      setParams(next, { replace: true });
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [resetSuccess, params, setParams]);
 
   if (loading) {
     return <FullScreenLoader />;
@@ -86,6 +100,15 @@ export function LoginPage() {
               Private admin access only. New accounts cannot be created from this page.
             </p>
 
+            {resetSuccess ? (
+              <div className="mt-5 flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-sm">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                <p className="leading-relaxed text-emerald-700 dark:text-emerald-200">
+                  Password updated. Sign in with your new password to continue.
+                </p>
+              </div>
+            ) : null}
+
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
@@ -102,7 +125,15 @@ export function LoginPage() {
 
               {mode !== "magic" ? (
                 <div className="space-y-1.5">
-                  <Label htmlFor="password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <Link
+                      to="/auth/forgot"
+                      className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                   <Input
                     id="password"
                     type="password"

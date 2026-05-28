@@ -993,7 +993,7 @@ export function SettingsPage() {
               <li>Run <span className="font-mono">supabase/phase_7_deposits.sql</span> in Supabase SQL Editor.</li>
               <li>
                 Set Stripe secrets:{" "}
-                <span className="font-mono">supabase secrets set STRIPE_SECRET_KEY=sk_test_… APP_URL=https://jmdetailing.vercel.app</span>
+                <span className="font-mono">supabase secrets set STRIPE_SECRET_KEY=sk_test_… APP_URL=https://jmdetailing.us</span>
               </li>
               <li>
                 Deploy edge functions:{" "}
