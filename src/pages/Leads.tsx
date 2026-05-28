@@ -1,13 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format, formatISO, parseISO } from "date-fns";
-import { Plus, Trash2, MessageSquare } from "lucide-react";
+import { motion } from "framer-motion";
+import { Plus, Trash2, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -23,8 +22,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/ui/empty-state";
-import { SectionHeader } from "@/components/ui/section-header";
 import { useStore, makeId } from "@/store/store";
 import { useRegisterIrisContext } from "@/components/iris/PageContext";
 import { ReachOutDialog } from "@/components/contact/ReachOutDialog";
@@ -35,6 +32,7 @@ import {
   type LeadStatus,
 } from "@/lib/types";
 import { cn, truncate } from "@/lib/utils";
+import { LuxAmbient, LuxEmptyState } from "@/components/dashboard/lux/primitives";
 
 const SOURCES: { value: LeadSource; label: string }[] = [
   { value: "facebook", label: "Facebook" },
@@ -44,12 +42,15 @@ const SOURCES: { value: LeadSource; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-const STATUS_COLUMNS: { value: LeadStatus; label: string; tone: string }[] = [
-  { value: "new", label: "New", tone: "bg-sky-500" },
-  { value: "contacted", label: "Contacted", tone: "bg-amber-500" },
-  { value: "waiting", label: "Waiting response", tone: "bg-violet-500" },
-  { value: "booked", label: "Booked", tone: "bg-emerald-500" },
-  { value: "lost", label: "Lost", tone: "bg-rose-500" },
+/** Status columns in pipeline left→right order. Tone classes are applied to a
+ *  4px top rail on each column to encode status visually without competing
+ *  with the obsidian surface beneath. */
+const STATUS_COLUMNS: { value: LeadStatus; label: string; tone: string; railShadow: string }[] = [
+  { value: "new", label: "New", tone: "bg-sky-400", railShadow: "0 0 12px rgba(56,189,248,0.35)" },
+  { value: "contacted", label: "Contacted", tone: "bg-amber-400", railShadow: "0 0 12px rgba(251,191,36,0.35)" },
+  { value: "waiting", label: "Waiting", tone: "bg-violet-400", railShadow: "0 0 12px rgba(167,139,250,0.35)" },
+  { value: "booked", label: "Booked", tone: "bg-emerald-400", railShadow: "0 0 12px rgba(52,211,153,0.35)" },
+  { value: "lost", label: "Lost", tone: "bg-rose-400", railShadow: "0 0 12px rgba(251,113,133,0.35)" },
 ];
 
 export function LeadsPage() {
@@ -82,110 +83,210 @@ export function LeadsPage() {
     return map;
   }, [data.leads]);
 
+  function openNew() {
+    setEditing(undefined);
+    setOpen(true);
+  }
+
   return (
-    <div className="space-y-6">
-      <SectionHeader
-        title="Leads"
-        description="Track inquiries that haven't booked yet."
-        actions={
-          <Button onClick={() => { setEditing(undefined); setOpen(true); }}>
-            <Plus className="h-4 w-4" />
-            New lead
-          </Button>
-        }
-      />
+    <div className="relative -mx-4 -mt-4 min-h-[calc(100vh-3rem)] bg-obsidian-950 px-4 pt-6 pb-12 text-platinum-100 sm:-mx-6 sm:px-6 md:-mx-10 md:-mt-6 md:px-10 md:pt-9 md:pb-16">
+      <LuxAmbient />
 
-      <div className="grid gap-3 lg:grid-cols-5 md:grid-cols-2">
-        {STATUS_COLUMNS.map((col) => {
-          const leads = grouped.get(col.value) ?? [];
-          return (
-            <Card key={col.value} className="overflow-hidden">
-              {/* Top accent bar — replaces border-t-2 for cleaner color expression */}
-              <div className={cn("h-1 w-full", col.tone)} aria-hidden />
-              <CardHeader className="pb-3 pt-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">{col.label}</CardTitle>
-                  <Badge variant="outline">{leads.length}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {leads.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Empty</p>
-                ) : (
-                  leads.map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => {
-                        setEditing(l);
-                        setOpen(true);
-                      }}
-                      className={cn(
-                        "w-full rounded-md border border-border/80 bg-card p-3 text-left",
-                        "transition-[border-color,background-color,box-shadow] duration-fast",
-                        "hover:border-border hover:bg-hover hover:shadow-soft",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-semibold leading-tight">
-                          {l.name}
-                        </p>
-                        <Badge variant="outline" className="capitalize">
-                          {l.source}
-                        </Badge>
-                      </div>
-                      {l.vehicle ? (
-                        <p className="mt-1 truncate text-xs text-muted-foreground">
-                          {l.vehicle}
-                        </p>
-                      ) : null}
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 capitalize",
-                            l.interest === "high"
-                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                              : l.interest === "medium"
-                              ? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                              : "border-slate-500/20 bg-slate-500/10 text-slate-700 dark:text-slate-300"
-                          )}
-                        >
-                          {l.interest}
-                        </span>
-                        {l.followUpDate ? (
-                          <span className="tabular-nums">
-                            {format(parseISO(l.followUpDate), "MMM d")}
-                          </span>
-                        ) : null}
-                      </div>
-                      {l.notes ? (
-                        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-                          {truncate(l.notes, 90)}
-                        </p>
-                      ) : null}
-                    </button>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="relative space-y-6"
+      >
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[9.5px] uppercase tracking-[0.32em] text-ember-300">
+              Pipeline · {data.leads.length}
+            </p>
+            <h1 className="mt-1.5 font-sans text-3xl font-extralight leading-tight tracking-tight text-platinum-50 sm:text-4xl">
+              Leads
+            </h1>
+            <p className="mt-2 text-[13px] leading-relaxed text-platinum-300/80">
+              Track inquiries that haven't booked yet.
+            </p>
+          </div>
+          <NewLeadButton onClick={openNew} />
+        </section>
 
-      {data.leads.length === 0 ? (
-        <EmptyState
-          title="No leads yet"
-          description="Track your first lead — anyone who messages you about a detail."
-          action={
-            <Button size="sm" onClick={() => { setEditing(undefined); setOpen(true); }}>
-              <Plus className="h-4 w-4" /> Track your first lead
-            </Button>
-          }
-        />
-      ) : null}
+        {data.leads.length === 0 ? (
+          <LuxEmptyState
+            icon={<Sparkles className="h-5 w-5" />}
+            title="No leads yet"
+            description="Track your first lead — anyone who messages you about a detail."
+            action={<NewLeadButton onClick={openNew} small />}
+          />
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+            {STATUS_COLUMNS.map((col) => {
+              const leads = grouped.get(col.value) ?? [];
+              return (
+                <LeadColumn
+                  key={col.value}
+                  label={col.label}
+                  tone={col.tone}
+                  railShadow={col.railShadow}
+                  count={leads.length}
+                >
+                  {leads.length === 0 ? (
+                    <p className="px-1 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-300/45">
+                      Empty
+                    </p>
+                  ) : (
+                    leads.map((l) => (
+                      <LeadCard
+                        key={l.id}
+                        lead={l}
+                        onClick={() => {
+                          setEditing(l);
+                          setOpen(true);
+                        }}
+                      />
+                    ))
+                  )}
+                </LeadColumn>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
 
       <LeadDialog open={open} onOpenChange={setOpen} lead={editing} />
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+function NewLeadButton({ onClick, small = false }: { onClick: () => void; small?: boolean }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.96 }}
+      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        "group/lux-btn relative inline-flex shrink-0 items-center gap-2 overflow-hidden border border-ember-500/35 bg-gradient-to-b from-ember-500/12 via-ember-500/8 to-ember-500/14 font-medium uppercase tracking-[0.22em] text-platinum-50 backdrop-blur-md transition-all duration-200 hover:border-ember-400/55 hover:from-ember-500/18 hover:to-ember-500/22",
+        small ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-[11px]",
+      )}
+      style={{ borderRadius: 999 }}
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-full"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,220,200,0.18) 0%, transparent 100%)",
+        }}
+      />
+      <Plus className="relative h-3.5 w-3.5 text-ember-300" />
+      <span className="relative">New lead</span>
+    </motion.button>
+  );
+}
+
+function LeadColumn({
+  label,
+  tone,
+  railShadow,
+  count,
+  children,
+}: {
+  label: string;
+  tone: string;
+  railShadow: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="relative isolate overflow-hidden border border-white/10 bg-gradient-to-b from-obsidian-850/90 via-obsidian-900/92 to-obsidian-900/95 backdrop-blur-[12px] backdrop-saturate-150"
+      style={{ borderRadius: 4 }}
+    >
+      {/* Top rail status accent */}
+      <div
+        className={cn("absolute inset-x-0 top-0 h-[3px]", tone)}
+        style={{ boxShadow: railShadow }}
+        aria-hidden
+      />
+      {/* Carbon weave */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 4px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 4px)",
+          backgroundSize: "8px 8px",
+        }}
+      />
+      <div className="relative px-4 pb-4 pt-5">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-platinum-300/80">
+            {label}
+          </p>
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-platinum-200/85">
+            {count}
+          </span>
+        </div>
+        <div className="space-y-2">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function LeadCard({ lead: l, onClick }: { lead: Lead; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="group/lux-lead relative w-full overflow-hidden rounded-md border border-white/[0.08] bg-white/[0.02] p-3 text-left transition-all duration-150 hover:border-white/20 hover:bg-white/[0.04]"
+    >
+      {/* Hover ember rail */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-px scale-y-0 bg-ember-400/70 transition-transform duration-200 group-hover/lux-lead:scale-y-100"
+        style={{ transformOrigin: "center" }}
+      />
+      <div className="relative">
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate font-sans text-[13px] font-light leading-tight text-platinum-50">
+            {l.name}
+          </p>
+          <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.22em] text-platinum-300/80">
+            {l.source}
+          </span>
+        </div>
+        {l.vehicle ? (
+          <p className="mt-1 truncate text-[11px] text-platinum-300/70">{l.vehicle}</p>
+        ) : null}
+        <div className="mt-2 flex items-center justify-between font-mono text-[10px] tracking-wider">
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full border px-1.5 py-0.5 uppercase tracking-[0.22em]",
+              l.interest === "high"
+                ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300"
+                : l.interest === "medium"
+                ? "border-amber-400/30 bg-amber-500/10 text-amber-300"
+                : "border-white/10 bg-white/[0.03] text-platinum-300/65",
+            )}
+          >
+            {l.interest}
+          </span>
+          {l.followUpDate ? (
+            <span className="tabular-nums text-platinum-300/65">
+              {format(parseISO(l.followUpDate), "MMM d")}
+            </span>
+          ) : null}
+        </div>
+        {l.notes ? (
+          <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-platinum-300/65">
+            {truncate(l.notes, 90)}
+          </p>
+        ) : null}
+      </div>
+    </button>
   );
 }
 
