@@ -12,7 +12,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowUpRight, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/store";
 import { runAttentionRules, countByPriority } from "@/lib/intelligence";
@@ -130,166 +129,241 @@ export function IrisDock() {
 
   return (
     <>
-      {/* ── FAB ─────────────────────────────────────────────── */}
+      {/* ── FAB — "Ask Iris" pill on every authenticated page ─
+       *
+       * Cinematic glass pill with the orb inset on the left and a mono
+       * "Ask Iris" label. Ember rim glow scales with orb urgency state.
+       * Sits above the BottomNav FAB on mobile (9rem clearance), bottom-6
+       * on md+ via the !important class.
+       * ────────────────────────────────────────────────────────── */}
       {!open ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open Iris"
           className={cn(
-            "fixed z-30 right-4 md:right-6 md:!bottom-6",
-            "inline-flex items-center gap-2 rounded-full pl-1.5 pr-3 py-1.5",
-            "border border-primary/30 bg-card/95 backdrop-blur-md shadow-lg",
-            "hover:border-primary/50 hover:shadow-xl",
-            "transition-all duration-fast",
+            "group/iris-fab fixed z-30 right-4 md:right-6 md:!bottom-6",
+            "inline-flex items-center gap-2 rounded-full pl-1.5 pr-3.5 py-1.5",
+            "border border-ember-400/35 bg-obsidian-900/85 backdrop-blur-xl backdrop-saturate-150",
+            "transition-all duration-200",
+            "hover:border-ember-400/55 hover:bg-obsidian-900/95",
           )}
-          // Mobile: sit ABOVE the bottom-nav "+" FAB (which lives at
-          // ~bottom 4.5rem + safe-area). 9rem clears its 3.5rem height
-          // plus a small gap. md+ uses bottom-6 via the !important class.
           style={{
             bottom: "calc(env(safe-area-inset-bottom, 0px) + 9rem)",
+            boxShadow:
+              orbState === "alert"
+                ? "0 18px 40px -12px rgba(255,38,38,0.45), 0 0 24px -8px rgba(248,114,72,0.55)"
+                : orbState === "thinking"
+                ? "0 16px 36px -14px rgba(221,41,20,0.4), 0 0 20px -10px rgba(248,114,72,0.4)"
+                : "0 14px 32px -14px rgba(0,0,0,0.55), 0 0 16px -10px rgba(248,114,72,0.3)",
           }}
         >
           <IrisOrb size="sm" state={orbState} noHalo />
-          <span className="text-xs font-semibold tracking-tight">Ask Iris</span>
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-platinum-100/90 transition-colors duration-200 group-hover/iris-fab:text-platinum-50">
+            Ask Iris
+          </span>
         </button>
       ) : null}
 
-      {/* ── Drawer ──────────────────────────────────────────── */}
+      {/* ── Drawer ──────────────────────────────────────────────
+       *
+       * Cinematic glass panel anchored bottom-right on desktop, full-width
+       * bottom sheet on mobile. Top hairline of light + ember rail at top-
+       * left so the drawer feels of-a-piece with the IrisPanel transmission
+       * card. Header is mono-kicker rhythm. User bubbles use ember tint,
+       * Iris replies hang on a left orb-anchored layout.
+       * ────────────────────────────────────────────────────────── */}
       {open ? (
         <>
           {/* Backdrop — mobile only, click to close */}
           <div
-            className="fixed inset-0 z-30 bg-background/40 backdrop-blur-[1px] md:hidden"
+            className="fixed inset-0 z-30 bg-black/55 backdrop-blur-[2px] md:hidden"
             onClick={() => setOpen(false)}
             aria-hidden
           />
           <div
             className={cn(
               "fixed z-40",
-              // Mobile: full-bottom sheet
               "inset-x-0 bottom-0 md:inset-x-auto md:bottom-6 md:right-6",
               "md:w-[420px] md:max-w-[calc(100vw-3rem)]",
               "max-h-[80vh] md:max-h-[640px]",
-              "rounded-t-2xl md:rounded-2xl",
-              "border border-border/80 md:border-primary/25",
-              "bg-card/95 backdrop-blur-xl shadow-2xl",
-              "flex flex-col overflow-hidden",
+              "relative isolate overflow-hidden",
+              "border border-white/[0.08]",
+              "bg-gradient-to-b from-obsidian-850/92 via-obsidian-900/95 to-obsidian-950/97",
+              "backdrop-blur-2xl backdrop-saturate-150",
+              "flex flex-col",
               "animate-iris-fade-up",
             )}
             role="dialog"
             aria-label="Iris"
+            style={{
+              borderRadius: 4,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              boxShadow:
+                "0 -20px 60px -20px rgba(0,0,0,0.7), 0 0 40px -20px rgba(248,114,72,0.25)",
+            }}
           >
+            {/* Carbon weave */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-[0.30]"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 4px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 4px)",
+                backgroundSize: "8px 8px",
+              }}
+            />
+            {/* Top hairline of light */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)",
+              }}
+            />
+            {/* Ember L-bracket — matches IrisPanel's "signal" cue */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-0 top-0 h-10 w-px bg-ember-400"
+              style={{ boxShadow: "0 0 10px rgba(248,114,72,0.7)" }}
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-0 top-0 h-px w-10 bg-ember-400"
+              style={{ boxShadow: "0 0 10px rgba(248,114,72,0.7)" }}
+            />
+
             {/* Header */}
-            <div className="flex items-center gap-2 border-b border-border/70 px-3 py-2.5">
+            <div className="relative flex items-center gap-2.5 border-b border-white/[0.06] px-4 py-3">
               <IrisOrb size="sm" state={isLoading ? "thinking" : orbState} noHalo />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight">Iris</p>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {pageContext?.label
-                    ? `On ${pageContext.label}`
-                    : "Your business assistant"}
+              <div className="flex-1 min-w-0 leading-tight">
+                <p className="font-sans text-[13px] font-light text-platinum-50">Iris</p>
+                <p className="truncate font-mono text-[9.5px] uppercase tracking-[0.26em] text-ember-300/85">
+                  {pageContext?.label ? `On ${pageContext.label}` : "Business assistant"}
                 </p>
               </div>
               {turns.length > 0 ? (
-                <Button
+                <button
                   type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-[11px]"
                   onClick={clearChat}
+                  className="inline-flex h-7 items-center rounded-full border border-white/10 bg-white/[0.03] px-2.5 font-mono text-[9.5px] uppercase tracking-[0.22em] text-platinum-300/75 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.05] hover:text-platinum-50"
                 >
                   Clear
-                </Button>
+                </button>
               ) : null}
-              <Button
+              <button
                 type="button"
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
                 onClick={() => navigate("/iris")}
                 aria-label="Open full Iris panel"
                 title="Open full Iris panel"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-platinum-300/70 transition-colors duration-150 hover:bg-white/[0.05] hover:text-ember-200"
               >
                 <ArrowUpRight className="h-3.5 w-3.5" />
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
                 onClick={() => setOpen(false)}
                 aria-label="Close Iris"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-platinum-300/70 transition-colors duration-150 hover:bg-white/[0.05] hover:text-platinum-50"
               >
                 <X className="h-3.5 w-3.5" />
-              </Button>
+              </button>
             </div>
 
             {/* Scroll area */}
-            <div ref={scrollerRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+            <div ref={scrollerRef} className="relative flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin">
               {turns.length === 0 ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Hi — I'm Iris. Ask me anything about your business,
-                    {pageContext?.label ? ` or about ${pageContext.label.toLowerCase()}` : ""}.
+                <div className="space-y-4">
+                  <p className="text-[12.5px] leading-relaxed text-platinum-200/85">
+                    Hi — I'm Iris. Ask me anything about your business
+                    {pageContext?.label ? `, or about ${pageContext.label.toLowerCase()}` : ""}.
                     I can also propose actions for you to approve.
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {suggestions.map((s) => (
-                      <button
-                        key={s.label}
-                        type="button"
-                        onClick={() => handleAsk(s.prompt)}
-                        className={cn(
-                          "inline-flex items-center rounded-full px-3 py-1",
-                          "border border-border/70 bg-card/60 text-[11px]",
-                          "hover:border-primary/40 hover:bg-primary/[0.04] hover:text-foreground",
-                          "transition-colors duration-fast text-foreground/80",
-                        )}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
+                  <div>
+                    <p className="mb-2 font-mono text-[9.5px] uppercase tracking-[0.28em] text-ember-300/85">
+                      Suggested
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestions.map((s) => (
+                        <button
+                          key={s.label}
+                          type="button"
+                          onClick={() => handleAsk(s.prompt)}
+                          className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.20em] text-platinum-200/85 transition-all duration-200 hover:border-ember-400/45 hover:bg-ember-500/10 hover:text-ember-200"
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : (
                 turns.map((turn) => (
-                  <div key={turn.id} className="space-y-2">
-                    {/* User turn */}
+                  <div key={turn.id} className="space-y-2.5">
+                    {/* User turn — ember-tinted bubble, right-aligned */}
                     <div className="flex justify-end">
-                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary/10 px-3 py-2 text-sm">
+                      <div
+                        className="relative max-w-[85%] overflow-hidden rounded-2xl rounded-br-md border border-ember-400/25 bg-ember-500/[0.12] px-3.5 py-2 text-[13px] text-platinum-50"
+                        style={{ boxShadow: "inset 0 1px 0 rgba(255,220,200,0.1)" }}
+                      >
                         {turn.query}
                       </div>
                     </div>
 
                     {/* Iris turn */}
                     {turn.pending ? (
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2.5">
                         <IrisOrb size="xs" state="thinking" noHalo />
-                        <p className="text-xs text-muted-foreground italic animate-pulse">
-                          Thinking…
-                        </p>
+                        <div className="flex-1 space-y-1.5 pt-1">
+                          <p className="font-mono text-[10px] uppercase tracking-[0.26em] text-ember-300/85">
+                            Receiving
+                          </p>
+                          <div className="relative h-px w-full overflow-hidden bg-white/[0.06]">
+                            <span
+                              className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-ember-400 to-transparent animate-iris-scanline"
+                              style={{ animationDuration: "2.4s" }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     ) : turn.error ? (
-                      <div className="text-xs text-muted-foreground">
-                        {turn.error.reason === "not_configured" ? (
-                          <p>
-                            Iris is offline. Deploy <code className="rounded bg-muted px-1 font-mono">ai-assistant</code> with{" "}
-                            <code className="rounded bg-muted px-1 font-mono">ANTHROPIC_API_KEY</code> set.
-                          </p>
-                        ) : turn.error.reason === "unauthorized" ? (
-                          <p>Session expired. Sign in again.</p>
-                        ) : turn.error.reason === "rate_limited" ? (
-                          <p>Too many requests. Try again shortly.</p>
-                        ) : (
-                          <p>Iris ran into an issue ({turn.error.reason}). Try again.</p>
-                        )}
+                      <div className="flex items-start gap-2.5">
+                        <IrisOrb size="xs" state="alert" noHalo />
+                        <div className="flex-1 text-[12px] leading-relaxed text-platinum-200/85">
+                          {turn.error.reason === "not_configured" ? (
+                            <p>
+                              Iris is offline. Deploy{" "}
+                              <code className="rounded bg-white/[0.05] px-1.5 py-0.5 font-mono text-[10.5px] text-ember-200">
+                                ai-assistant
+                              </code>{" "}
+                              with{" "}
+                              <code className="rounded bg-white/[0.05] px-1.5 py-0.5 font-mono text-[10.5px] text-ember-200">
+                                ANTHROPIC_API_KEY
+                              </code>{" "}
+                              set.
+                            </p>
+                          ) : turn.error.reason === "unauthorized" ? (
+                            <p>Session expired. Sign in again.</p>
+                          ) : turn.error.reason === "rate_limited" ? (
+                            <p>Too many requests. Try again shortly.</p>
+                          ) : (
+                            <p>
+                              Iris ran into an issue
+                              <span className="ml-1 font-mono text-[10px] text-platinum-300/55">
+                                ({turn.error.reason})
+                              </span>
+                              . Try again.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     ) : turn.response ? (
                       <>
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-2.5">
                           <IrisOrb size="xs" state="success" noHalo />
-                          <div className="min-w-0 flex-1 space-y-1.5 text-sm leading-relaxed">
+                          <div className="min-w-0 flex-1 space-y-2 text-[13px] leading-relaxed text-platinum-100/95">
                             {turn.response.text.split(/\n\n+/).map((p, i) => (
                               <p key={i}>{p}</p>
                             ))}
@@ -298,7 +372,7 @@ export function IrisDock() {
 
                         {/* Proposed actions */}
                         {turn.response.proposedActions.length > 0 ? (
-                          <div className="ml-6 space-y-1.5">
+                          <div className="ml-7 space-y-1.5">
                             {turn.response.proposedActions
                               .filter((a) => !turn.resolvedActionIds.has(a.id))
                               .map((action: ProposedAction) => (
@@ -313,7 +387,7 @@ export function IrisDock() {
 
                         {/* Citations */}
                         {turn.response.citations.length > 0 ? (
-                          <div className="ml-6 flex flex-wrap gap-1.5">
+                          <div className="ml-7 flex flex-wrap gap-1.5">
                             {turn.response.citations.map((c, i) => (
                               <ExternalSourceChip key={i} citation={c} />
                             ))}
@@ -327,7 +401,7 @@ export function IrisDock() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border/70 p-2.5">
+            <div className="relative border-t border-white/[0.06] bg-obsidian-950/40 p-3">
               <CommandInputBar
                 onSubmit={handleAsk}
                 isLoading={isLoading}
