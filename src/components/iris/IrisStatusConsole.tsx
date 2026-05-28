@@ -179,18 +179,39 @@ export function IrisStatusConsole({ data, className }: IrisStatusConsoleProps) {
     };
   }, [lineIndex, lines]);
 
+  // Subtle alert tint: when the typed line contains the word "critical" we
+  // glow the chevron + cursor a touch warmer. Cheap signal-meets-decoration.
+  const isCritical = /critical/i.test(typed);
+
   return (
     <div
       className={cn(
-        "font-mono text-xs text-foreground/75 tabular-nums",
+        "font-mono text-[12px] text-platinum-200/85 tabular-nums",
         "flex items-center justify-center gap-2 min-h-[1.75rem]",
         className,
       )}
       aria-live="polite"
     >
-      <span className="text-primary">{">"}</span>
-      <span className="whitespace-nowrap overflow-hidden">{typed}</span>
-      <span className="inline-block h-3 w-[3px] bg-primary animate-iris-cursor-blink shadow-[0_0_6px_hsl(var(--primary))]" />
+      <span
+        className={cn(
+          "transition-colors duration-300",
+          isCritical ? "text-rose-300" : "text-ember-300",
+        )}
+      >
+        {">"}
+      </span>
+      <span className="whitespace-nowrap overflow-hidden tracking-wide">{typed}</span>
+      <span
+        className={cn(
+          "inline-block h-3 w-[3px] animate-iris-cursor-blink transition-colors duration-300",
+          isCritical ? "bg-rose-400" : "bg-ember-400",
+        )}
+        style={{
+          boxShadow: isCritical
+            ? "0 0 8px rgba(251,113,133,0.7)"
+            : "0 0 8px rgba(248,114,72,0.7)",
+        }}
+      />
     </div>
   );
 }
