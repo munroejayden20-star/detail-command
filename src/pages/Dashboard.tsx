@@ -163,6 +163,19 @@ export function DashboardPage() {
           </div>
         </section>
 
+        {/* ═══ Pending booking requests ═══
+         *
+         * Renders only when there's at least one request waiting. Lives above
+         * the KPI strip so a fresh online booking is the first thing the
+         * owner sees — pending requests need eyeballs faster than week
+         * revenue does. */}
+        <BookingRequests
+          onReachOut={(contact, appt) => {
+            setReachContact(contact);
+            setReachAppointmentId(appt.id);
+          }}
+        />
+
         {/* ═══ Pulse strip — 4 KPI tiles ═══
          *
          * Week revenue gets emphasis treatment (signal tone, larger number,
@@ -401,18 +414,12 @@ export function DashboardPage() {
         {/* ═══ Embedded widgets ═══
          *
          * Live below the operational board because they're not always
-         * present (booking requests come and go, weather only shows when
-         * there's risk, reviews surface when due). Each renders its own
-         * Card chrome — they don't match the dark cinematic frame yet
-         * but the dashboard reads coherently because they sit visually
-         * at the bottom of the page. Retreat is a follow-up scope. */}
+         * present (weather only shows when there's risk, reviews surface
+         * when due). BookingRequests USED to live here too but it's now
+         * mounted at the top of the page — see the comment above the KPI
+         * strip. These two still render their original light-themed Card
+         * chrome; a retreat is a follow-up scope. */}
         <div className="space-y-4 pt-2">
-          <BookingRequests
-            onReachOut={(contact, appt) => {
-              setReachContact(contact);
-              setReachAppointmentId(appt.id);
-            }}
-          />
           <ReviewsDueWidget />
           <WeatherWatchCard />
         </div>

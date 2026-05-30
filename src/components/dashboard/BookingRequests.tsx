@@ -1,5 +1,17 @@
+/* ============================================================================
+ * BookingRequests — pending online booking requests panel.
+ *
+ * Retreats the prior shadcn/yellow-light card into the dashboard's dark
+ * cinematic language (LuxCard with signal tone, ember accents, mono
+ * kickers, platinum text). Sort is newest-first so a fresh booking always
+ * lands at the top of the list — and the whole panel is mounted at the
+ * top of the dashboard so the owner sees it before anything else.
+ *
+ * Functional contract is identical to the prior version: same props, same
+ * approve/decline RPCs, same Reach Out hand-off — only the chrome changed.
+ * ========================================================================== */
+
 import { useState } from "react";
-import { format, parseISO } from "date-fns";
 import { formatBusinessDateTime } from "@/lib/datetime";
 import {
   CheckCircle2,
@@ -15,12 +27,16 @@ import {
   DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/store/store";
 import { cn, vehicleStr, formatCurrency } from "@/lib/utils";
+import {
+  LuxCard,
+  LuxCardBody,
+  LuxCardHeader,
+} from "@/components/dashboard/lux/primitives";
 import type { Appointment, Customer } from "@/lib/types";
+
+/* ─── Inner request card ─────────────────────────────────────────────────── */
 
 interface BookingRequestCardProps {
   appt: Appointment;
@@ -30,14 +46,19 @@ interface BookingRequestCardProps {
   onReachOut: () => void;
 }
 
-function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }: BookingRequestCardProps) {
+function BookingRequestCard({
+  appt,
+  customer,
+  onApprove,
+  onDecline,
+  onReachOut,
+}: BookingRequestCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { data } = useStore();
 
   const services = data.services.filter((s) => appt.serviceIds.includes(s.id));
   const addons = data.services.filter((s) => appt.addonIds.includes(s.id));
   const vehicleLabel = vehicleStr(appt.vehicle);
-
   const photoUrls: string[] = appt.bookingPhotoUrls ?? [];
 
   const depositAmount =
@@ -52,93 +73,130 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
   const balanceDue = Math.max(0, (appt.estimatedPrice ?? 0) - depositAmount);
 
   return (
-    <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 overflow-hidden">
+    <div
+      className="relative overflow-hidden border border-ember-500/22 bg-obsidian-900/60"
+      style={{ borderRadius: 4 }}
+    >
+      {/* Top hairline picking up "light from above" */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(255,200,170,0.4) 50%, transparent 100%)",
+        }}
+      />
+
       {/* Header row */}
-      <div className="p-4 space-y-3">
+      <div className="space-y-3 px-5 py-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-sm truncate">{customer?.name ?? "Unknown"}</p>
-              <Badge className="status-pending-approval text-[10px] h-4 px-1.5 shrink-0">Pending</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate font-sans text-[14px] font-light text-platinum-50">
+                {customer?.name ?? "Unknown"}
+              </p>
+              <Pill tone="ember">Pending</Pill>
               {appt.source === "Public Booking Page" && (
-                <Badge variant="outline" className="text-[10px] h-4 px-1.5 shrink-0 border-blue-500/40 text-blue-400">
-                  Online
-                </Badge>
+                <Pill tone="neutral">Online</Pill>
               )}
               {showDepositPaid && (
-                <Badge className="text-[10px] h-4 px-1.5 shrink-0 bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
+                <Pill tone="emerald">
                   <DollarSign className="h-2.5 w-2.5" />
-                  Deposit Paid {formatCurrency(depositAmount)}
-                </Badge>
+                  Deposit {formatCurrency(depositAmount)}
+                </Pill>
               )}
             </div>
             {customer?.phone && (
-              <p className="text-xs text-muted-foreground mt-0.5">{customer.phone}</p>
+              <p className="mt-1 font-mono text-[11px] text-platinum-300/65">
+                {customer.phone}
+              </p>
             )}
           </div>
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="shrink-0 rounded-md p-1 hover:bg-accent transition-colors"
+            className="shrink-0 rounded-full border border-white/10 bg-white/[0.02] p-1.5 transition-colors hover:border-white/25 hover:bg-white/[0.05]"
             aria-label={expanded ? "Collapse" : "Expand"}
           >
-            {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            {expanded ? (
+              <ChevronUp className="h-3 w-3 text-platinum-200" />
+            ) : (
+              <ChevronDown className="h-3 w-3 text-platinum-200" />
+            )}
           </button>
         </div>
 
-        {/* Key info row */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        {/* Key info row — when / what / size */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-platinum-300/75">
           {appt.start && (
-            <span className="flex items-center gap-1">
-              <CalendarDays className="h-3 w-3 shrink-0" />
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-3 w-3 shrink-0 text-ember-300" />
               {formatBusinessDateTime(appt.start)}
             </span>
           )}
           {vehicleLabel && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3 shrink-0" />
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3 shrink-0 text-ember-300" />
               {vehicleLabel}
             </span>
           )}
           {appt.vehicle.size && (
-            <span className="capitalize text-muted-foreground">{appt.vehicle.size.replace("_", " ")}</span>
+            <span className="capitalize">
+              {appt.vehicle.size.replace("_", " ")}
+            </span>
           )}
         </div>
 
         {/* Service + price */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate">
+            <p className="truncate text-[13px] font-light text-platinum-100">
               {services.map((s) => s.name).join(", ") || "No service selected"}
             </p>
             {addons.length > 0 && (
-              <p className="text-xs text-muted-foreground truncate">+ {addons.map((a) => a.name).join(", ")}</p>
+              <p className="truncate text-[11.5px] text-platinum-300/65">
+                + {addons.map((a) => a.name).join(", ")}
+              </p>
             )}
           </div>
-          <div className="shrink-0 ml-2 text-right">
-            <p className="text-sm font-bold">{formatCurrency(appt.estimatedPrice)}</p>
+          <div className="shrink-0 text-right">
+            <p className="font-sans text-[16px] font-light text-platinum-50">
+              {formatCurrency(appt.estimatedPrice)}
+            </p>
             {showDepositPaid && (
-              <div className="mt-0.5 text-[11px] leading-tight">
-                <p className="text-emerald-600">−{formatCurrency(depositAmount)} deposit</p>
-                <p className="font-semibold text-foreground">Bal {formatCurrency(balanceDue)}</p>
+              <div className="mt-0.5 font-mono text-[10px] leading-tight">
+                <p className="text-emerald-300/85">
+                  −{formatCurrency(depositAmount)}
+                </p>
+                <p className="text-platinum-100">Bal {formatCurrency(balanceDue)}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Utility access */}
-        <div className="flex gap-3 text-xs">
-          <span className={cn("flex items-center gap-1", appt.waterAccess ? "text-emerald-600" : "text-rose-500")}>
+        <div className="flex flex-wrap gap-4 font-mono text-[10.5px] uppercase tracking-[0.18em]">
+          <span
+            className={cn(
+              "flex items-center gap-1.5",
+              appt.waterAccess ? "text-emerald-300/85" : "text-rose-300/85",
+            )}
+          >
             <Droplets className="h-3 w-3" />
             {appt.waterAccess ? "Water ✓" : "No water"}
           </span>
-          <span className={cn("flex items-center gap-1", appt.powerAccess ? "text-emerald-600" : "text-rose-500")}>
+          <span
+            className={cn(
+              "flex items-center gap-1.5",
+              appt.powerAccess ? "text-emerald-300/85" : "text-rose-300/85",
+            )}
+          >
             <Zap className="h-3 w-3" />
             {appt.powerAccess ? "Power ✓" : "No power"}
           </span>
           {photoUrls.length > 0 && (
-            <span className="flex items-center gap-1 text-blue-500">
-              <ImageIcon className="h-3 w-3" />
+            <span className="flex items-center gap-1.5 text-platinum-300/75">
+              <ImageIcon className="h-3 w-3 text-ember-300" />
               {photoUrls.length} photo{photoUrls.length !== 1 ? "s" : ""}
             </span>
           )}
@@ -147,38 +205,68 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
 
       {/* Expanded details */}
       {expanded && (
-        <div className="border-t border-yellow-500/20 px-4 py-3 space-y-3 bg-background/50">
+        <div className="space-y-3 border-t border-white/8 bg-obsidian-950/40 px-5 py-4">
           {appt.customerNotes && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Notes</p>
-              <p className="text-sm text-foreground">{appt.customerNotes}</p>
+              <p className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.28em] text-ember-300">
+                Notes
+              </p>
+              <p className="text-[13px] text-platinum-100">{appt.customerNotes}</p>
             </div>
           )}
           {(appt.interiorCondition || appt.exteriorCondition) && (
-            <div className="flex gap-6 text-xs text-muted-foreground">
-              {appt.interiorCondition && <span>Interior: <span className="capitalize text-foreground">{appt.interiorCondition}</span></span>}
-              {appt.exteriorCondition && <span>Exterior: <span className="capitalize text-foreground">{appt.exteriorCondition}</span></span>}
+            <div className="flex flex-wrap gap-6 font-mono text-[11px] text-platinum-300/70">
+              {appt.interiorCondition && (
+                <span>
+                  Interior ·{" "}
+                  <span className="capitalize text-platinum-100">
+                    {appt.interiorCondition}
+                  </span>
+                </span>
+              )}
+              {appt.exteriorCondition && (
+                <span>
+                  Exterior ·{" "}
+                  <span className="capitalize text-platinum-100">
+                    {appt.exteriorCondition}
+                  </span>
+                </span>
+              )}
             </div>
           )}
           {(appt.petHair || appt.stains || appt.heavyDirt) && (
-            <div className="flex gap-2 flex-wrap">
-              {appt.petHair && <Badge variant="outline" className="text-[10px]">Pet hair</Badge>}
-              {appt.stains && <Badge variant="outline" className="text-[10px]">Stains</Badge>}
-              {appt.heavyDirt && <Badge variant="outline" className="text-[10px]">Heavy dirt</Badge>}
+            <div className="flex flex-wrap gap-2">
+              {appt.petHair && <Pill tone="neutral">Pet hair</Pill>}
+              {appt.stains && <Pill tone="neutral">Stains</Pill>}
+              {appt.heavyDirt && <Pill tone="neutral">Heavy dirt</Pill>}
             </div>
           )}
           {appt.address && (
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Location:</span> {appt.address}
+            <p className="font-mono text-[11px] text-platinum-300/70">
+              <span className="text-ember-300">Location · </span>
+              <span className="text-platinum-100">{appt.address}</span>
             </p>
           )}
           {photoUrls.length > 0 && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Customer photos</p>
+              <p className="mb-2 font-mono text-[9.5px] uppercase tracking-[0.28em] text-ember-300">
+                Customer photos
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 {photoUrls.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border border-border hover:opacity-80 transition-opacity">
-                    <img src={url} alt={`Vehicle photo ${i + 1}`} className="w-full h-full object-cover" />
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block aspect-video overflow-hidden border border-white/8 transition-colors hover:border-white/25"
+                    style={{ borderRadius: 2 }}
+                  >
+                    <img
+                      src={url}
+                      alt={`Vehicle photo ${i + 1}`}
+                      className="h-full w-full object-cover"
+                    />
                   </a>
                 ))}
               </div>
@@ -188,51 +276,91 @@ function BookingRequestCard({ appt, customer, onApprove, onDecline, onReachOut }
       )}
 
       {/* Actions */}
-      <div className="border-t border-yellow-500/20 px-4 py-3 flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+      <div className="flex flex-wrap items-center gap-2 border-t border-white/8 px-5 py-3">
+        <button
+          type="button"
           onClick={onApprove}
+          className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-ember-500/35 bg-gradient-to-b from-ember-500/14 via-ember-500/10 to-ember-500/16 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-50 transition-all duration-200 hover:border-ember-400/55 hover:from-ember-500/22"
         >
-          <CheckCircle2 className="h-3.5 w-3.5" />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-full"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 100%)",
+            }}
+          />
+          <CheckCircle2 className="h-3 w-3 text-ember-200" />
           Approve
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="border-rose-500/40 text-rose-500 hover:bg-rose-500/10 gap-1.5"
+        </button>
+        <button
+          type="button"
           onClick={onDecline}
+          className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/35 bg-rose-500/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-rose-200 transition-colors hover:border-rose-400/55 hover:bg-rose-500/10"
         >
-          <XCircle className="h-3.5 w-3.5" />
+          <XCircle className="h-3 w-3" />
           Decline
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-1.5"
+        </button>
+        <button
+          type="button"
           onClick={onReachOut}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.03] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-platinum-100 transition-colors hover:border-white/25 hover:bg-white/[0.06]"
         >
-          <MessageSquare className="h-3.5 w-3.5" />
-          Reach Out
-        </Button>
+          <MessageSquare className="h-3 w-3" />
+          Reach out
+        </button>
       </div>
     </div>
   );
 }
 
+/* ─── Tiny pill helper — three tonal variants matching the lux palette ──── */
+
+function Pill({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone: "ember" | "neutral" | "emerald";
+}) {
+  const toneCls =
+    tone === "ember"
+      ? "border-ember-500/35 bg-ember-500/8 text-ember-200"
+      : tone === "emerald"
+      ? "border-emerald-500/35 bg-emerald-500/8 text-emerald-200"
+      : "border-white/12 bg-white/[0.03] text-platinum-200";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em]",
+        toneCls,
+      )}
+      style={{ borderRadius: 2 }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/* ─── Container ──────────────────────────────────────────────────────────── */
+
 interface BookingRequestsProps {
   onReachOut: (
     contact: { name: string; phone: string; email?: string },
-    appointment: Appointment
+    appointment: Appointment,
   ) => void;
 }
 
 export function BookingRequests({ onReachOut }: BookingRequestsProps) {
   const { data, commit } = useStore();
 
+  // Newest first — a fresh booking always lands at the top of the list.
   const pending = data.appointments
     .filter((a) => a.status === "pending_approval")
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
   if (pending.length === 0) return null;
 
@@ -242,7 +370,7 @@ export function BookingRequests({ onReachOut }: BookingRequestsProps) {
       id: appt.id,
       patch: { status: "confirmed" },
     });
-    if (r.ok) toast.success("Booking approved — status set to Confirmed.");
+    if (r.ok) toast.success("Booking approved — added to the schedule.");
   }
 
   async function decline(appt: Appointment) {
@@ -251,26 +379,22 @@ export function BookingRequests({ onReachOut }: BookingRequestsProps) {
       id: appt.id,
       patch: { status: "canceled" },
     });
-    if (r.ok) toast.success("Booking declined — status set to Canceled.");
+    if (r.ok) toast.success("Booking declined.");
   }
 
   return (
-    <Card className="border-yellow-500/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <CalendarDays className="h-4 w-4 text-yellow-500" />
-            Booking Requests
-          </CardTitle>
-          <Badge className="status-pending-approval">
+    <LuxCard tone="signal">
+      <LuxCardHeader
+        kicker="New requests"
+        title="Pending booking requests"
+        description="Online requests waiting for your approval. Approve to add them to the calendar."
+        action={
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ember-300">
             {pending.length} pending
-          </Badge>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Online requests waiting for your approval. Approve to add them to the calendar.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3">
+          </span>
+        }
+      />
+      <LuxCardBody className="space-y-3">
         {pending.map((appt) => {
           const customer = data.customers.find((c) => c.id === appt.customerId);
           return (
@@ -283,14 +407,18 @@ export function BookingRequests({ onReachOut }: BookingRequestsProps) {
               onReachOut={() => {
                 if (!customer) return;
                 onReachOut(
-                  { name: customer.name, phone: customer.phone, email: customer.email },
-                  appt
+                  {
+                    name: customer.name,
+                    phone: customer.phone,
+                    email: customer.email,
+                  },
+                  appt,
                 );
               }}
             />
           );
         })}
-      </CardContent>
-    </Card>
+      </LuxCardBody>
+    </LuxCard>
   );
 }

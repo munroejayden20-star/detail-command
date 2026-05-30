@@ -29,6 +29,13 @@ import {
   JOB_STATUSES,
 } from "@/lib/types";
 import { cn, formatCurrency } from "@/lib/utils";
+import { computeQuote } from "@/lib/pricing/engine";
+import { mergePricingConfig } from "@/lib/pricing/merge";
+import type { PublicService } from "@/lib/booking-api";
+import {
+  VEHICLE_SIZES,
+  CONDITION_OPTIONS,
+} from "@/components/booking/luxury/form-steps/types";
 
 interface AppointmentFormProps {
   appointment?: Appointment;
@@ -124,18 +131,67 @@ export function AppointmentForm({ appointment, initialDate, onDone, onDelete, on
     }));
   }, [selectedCustomer, appointment]);
 
-  // Auto-update estimated price + duration based on service selections
+  // Owner-tuned pricing config from settings — same source the booking page
+  // and standalone calculator read, so all three surfaces stay in sync.
+  const pricingConfig = useMemo(
+    () => mergePricingConfig(data.settings.pricingConfig ?? null),
+    [data.settings.pricingConfig],
+  );
+
+  // Auto-update estimated price + duration via the pricing engine. This is
+  // the same `computeQuote` the customer-facing /book and /calculator screens
+  // call, so the number the admin sees matches what the customer would have
+  // been quoted for the same configuration (vehicle size, condition tiers,
+  // flags, addons, discounts, profit floor, minimum booking, rounding).
   useEffect(() => {
-    const all = [
-      ...services.filter((s) => form.serviceIds.includes(s.id)),
-      ...addons.filter((a) => form.addonIds.includes(a.id)),
-    ];
-    const price = all.reduce((sum, s) => sum + (s.priceLow + s.priceHigh) / 2, 0);
-    const duration = all.reduce((sum, s) => sum + s.durationMinutes, 0) || 90;
-    const newEnd = formatISO(addMinutes(parseISO(form.start), duration));
-    setForm((f) => ({ ...f, estimatedPrice: Math.round(price), end: newEnd }));
+    const selectedPackages = form.serviceIds
+      .map((id) => services.find((s) => s.id === id))
+      .filter((s): s is typeof services[number] => !!s)
+      .map((s) => s as PublicService);
+
+    const selectedAddons = form.addonIds
+      .map((id) => addons.find((a) => a.id === id))
+      .filter((a): a is typeof addons[number] => !!a)
+      .map((service) => ({ service: service as PublicService, quantity: 1 }));
+
+    if (selectedPackages.length === 0 && selectedAddons.length === 0) {
+      // Nothing selected → don't disturb start/end; just zero the estimate.
+      setForm((f) => ({ ...f, estimatedPrice: 0 }));
+      return;
+    }
+
+    const quote = computeQuote(
+      {
+        packages: selectedPackages,
+        addons: selectedAddons,
+        vehicleSize: form.vehicle.size ?? "",
+        interiorCondition: form.interiorCondition ?? "",
+        exteriorCondition: form.exteriorCondition ?? "",
+        flags: {
+          petHair: form.petHair,
+          stains: form.stains,
+          heavyDirt: form.heavyDirt,
+        },
+      },
+      pricingConfig,
+    );
+
+    const durationMinutes = Math.max(60, Math.round(quote.laborHours * 60));
+    const newEnd = formatISO(addMinutes(parseISO(form.start), durationMinutes));
+    setForm((f) => ({ ...f, estimatedPrice: quote.estimate, end: newEnd }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.serviceIds.join(","), form.addonIds.join(","), form.start]);
+  }, [
+    form.serviceIds.join(","),
+    form.addonIds.join(","),
+    form.vehicle.size,
+    form.interiorCondition,
+    form.exteriorCondition,
+    form.petHair,
+    form.stains,
+    form.heavyDirt,
+    form.start,
+    pricingConfig,
+  ]);
 
   function update<K extends keyof Appointment>(key: K, value: Appointment[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -374,24 +430,68 @@ export function AppointmentForm({ appointment, initialDate, onDone, onDelete, on
           </div>
         </div>
 
+        {/* Vehicle size — feeds the pricing engine's size multiplier so the
+         *  estimated price tracks what the customer would have been quoted. */}
+        <div className="space-y-1.5">
+          <Label htmlFor="vehicleSize">Size</Label>
+          <Select
+            value={form.vehicle.size ?? ""}
+            onValueChange={(v) =>
+              update("vehicle", { ...form.vehicle, size: v })
+            }
+          >
+            <SelectTrigger id="vehicleSize">
+              <SelectValue placeholder="Pick a size (baseline = sedan)" />
+            </SelectTrigger>
+            <SelectContent>
+              {VEHICLE_SIZES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                  <span className="ml-2 text-xs text-muted-foreground">{s.hint}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="extCond">Exterior condition</Label>
-            <Textarea
-              id="extCond"
+            <Select
               value={form.exteriorCondition ?? ""}
-              onChange={(e) => update("exteriorCondition", e.target.value)}
-              placeholder="Light dust, no swirls…"
-            />
+              onValueChange={(v) => update("exteriorCondition", v)}
+            >
+              <SelectTrigger id="extCond">
+                <SelectValue placeholder="Pick a tier (baseline = average)" />
+              </SelectTrigger>
+              <SelectContent>
+                {CONDITION_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                    <span className="ml-2 text-xs text-muted-foreground">{c.hint}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="intCond">Interior condition</Label>
-            <Textarea
-              id="intCond"
+            <Select
               value={form.interiorCondition ?? ""}
-              onChange={(e) => update("interiorCondition", e.target.value)}
-              placeholder="Crumbs in seats, light dust…"
-            />
+              onValueChange={(v) => update("interiorCondition", v)}
+            >
+              <SelectTrigger id="intCond">
+                <SelectValue placeholder="Pick a tier (baseline = average)" />
+              </SelectTrigger>
+              <SelectContent>
+                {CONDITION_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                    <span className="ml-2 text-xs text-muted-foreground">{c.hint}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
